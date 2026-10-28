@@ -31,6 +31,45 @@ public static partial class LevelGen
         Piece(cur, a1, 0, H);
     }
 
+
+    public static bool LegacyTrim;              // -legacytrim: rebuild the pre-0.4.2 unsplit band (before/after shots only)
+    public static int TrimCrossBefore, TrimPieces;
+    public static readonly List<Bounds> Openings = new List<Bounds>();
+    public static readonly List<Bounds> NoRide = new List<Bounds>();
+    /// horizontal wainscot/trim band along a wall, split around every door/window opening on that wall line
+    static void Band(Transform h, bool ax, float wallFc, float fixedC, float a0, float a1, float y, Color c, List<Op> ops)
+    {
+        const float bh = 0.08f, bt = 0.05f, gap = 0.18f;
+        var holes = ops.FindAll(o => o.ax == ax && Mathf.Abs(o.fc - wallFc) < 0.01f && o.y0 <= y + bh && o.y1 >= y - bh && o.c + o.w / 2 + gap > a0 && o.c - o.w / 2 - gap < a1);
+        holes.Sort((a, b) => a.c.CompareTo(b.c));
+        TrimCrossBefore += holes.Count;
+        void Piece(float s0, float e0)
+        {
+            if (e0 - s0 < 0.06f) return; float mid = (s0 + e0) / 2; TrimPieces++;
+            Block(h, ax ? new Vector3(mid, FY + y, fixedC) : new Vector3(fixedC, FY + y, mid), ax ? new Vector3(e0 - s0, bh, bt) : new Vector3(bt, bh, e0 - s0), c, 0.02f, false, 0, -1, 0, null, "sk_trimbar");
+        }
+        if (LegacyTrim) { Piece(a0, a1); return; }
+        float cur = a0;
+        foreach (var o in holes) { Piece(cur, o.c - o.w / 2 - gap); cur = Mathf.Max(cur, o.c + o.w / 2 + gap); }
+        Piece(cur, a1);
+    }
+    /// counts thin horizontal bar/trim renderers whose bounds cross a door/window opening (should be 0)
+    public static int TrimDoorHits(Transform root, bool log = true)
+    {
+        int n = 0; if (!root) return 0;
+        foreach (var r in root.GetComponentsInChildren<Renderer>())
+        {
+            if (!r.enabled || !r.gameObject.activeInHierarchy) continue;
+            var b = r.bounds; float len = Mathf.Max(b.size.x, b.size.z);
+            if (b.size.y > 0.35f || len < 0.5f || len < b.size.y * 3) continue;
+            bool skip = false;
+            for (var q = r.transform; q && q != root; q = q.parent) { var nm = q.name; if (nm == "Door" || nm == "LockedDoor" || nm == "sk_grille" || nm == "sk_curtain" || nm == "flowerbox" || q.GetComponent<Interactable>()) { skip = true; break; } }
+            if (skip) continue;
+            foreach (var o in Openings) if (o.Intersects(b)) { n++; if (log) Debug.Log("[trimcheck] " + r.name + " " + b.ToString("F2") + " crosses opening " + o.ToString("F2")); break; }
+        }
+        return n;
+    }
+
     class ARoom { public string name; public float x0, x1, z0, z1; public Color wall, trim; public System.Func<float, float, Color> floor; public Vector3 C => new Vector3((x0 + x1) / 2, FY, (z0 + z1) / 2); }
 
     static LootContainer SCont(Transform parent, string kind, Vector3 lp, float yaw, Color accent, string label = null, bool special = false, List<LootContainer> bucket = null)
@@ -147,10 +186,17 @@ public static partial class LevelGen
             SWall(h, false, r.x0, so, r.z0 + ins, r.z1 - ins, 0.04f, r.wall, ops, false);
             SWall(h, false, r.x1, -so, r.z0 + ins, r.z1 - ins, 0.04f, r.wall, ops, false);
             // two-tone wainscot band
-            Block(h, new Vector3(r.x0 + 0.17f, FY + 1.0f, (r.z0 + r.z1) / 2), new Vector3(0.05f, 0.08f, r.z1 - r.z0 - 0.3f), r.trim, 0.02f, false);
-            Block(h, new Vector3(r.x1 - 0.17f, FY + 1.0f, (r.z0 + r.z1) / 2), new Vector3(0.05f, 0.08f, r.z1 - r.z0 - 0.3f), r.trim, 0.02f, false);
+            // (v0.4.2: split around every opening on that wall instead of running through doorways)
+            Band(h, false, r.x0, r.x0 + 0.17f, r.z0 + 0.15f, r.z1 - 0.15f, 1.0f, r.trim, ops);
+            Band(h, false, r.x1, r.x1 - 0.17f, r.z0 + 0.15f, r.z1 - 0.15f, 1.0f, r.trim, ops);
         }
         foreach (var o in ops) Trim(h, o, trim, o.y0 == 0 && o.w < 2);
+        foreach (var o in ops)
+        {   // world-space opening volumes (inset so the frame trim / sill touching the edge doesn't count) for the trim-crossing check
+            var ctr = o.ax ? new Vector3(o.c, FY + (o.y0 + o.y1) / 2, o.fc) : new Vector3(o.fc, FY + (o.y0 + o.y1) / 2, o.c);
+            var sz = o.ax ? new Vector3(o.w - 0.1f, o.y1 - o.y0 - 0.1f, 0.6f) : new Vector3(0.6f, o.y1 - o.y0 - 0.1f, o.w - 0.1f);
+            Openings.Add(new Bounds(h.TransformPoint(ctr), sz));
+        }
 
         // ---- doors
         SDoor(h, 0, 0, 1.6f, 2.75f, Mint, trim, false);
@@ -357,6 +403,7 @@ public static partial class LevelGen
     {
         rng = new System.Random(seed); luck = luckLv; GlobalSeed = seed;
         L = new Level { theme = th, seed = seed, vmult = vmult, root = new GameObject("Level").transform };
+        Openings.Clear(); NoRide.Clear(); TrimCrossBefore = TrimPieces = 0;
         var root = L.root; blocks.Clear(); var deco = new System.Random(20260424);   // fixed layout; loot varies by seed
         // ---- ground, road, sidewalks
         Field(root, Vector3.zero, 130, 130, 2f, (x, z) => Color.Lerp(H("c4ec9f"), H("ade08c"), VN(new Vector3(x * 0.06f, 0, z * 0.06f), 9)), true, "grass_ground");
@@ -382,8 +429,14 @@ public static partial class LevelGen
         // back row silhouettes (seen from the high shots)
         for (float x = -54; x < 56; x += 9.5f) { SoftProps.TownHouse(root, new Vector3(x, 0, 24f), 0, 9f, 9, 3 + deco.Next(2), new[] { Lite(Lav, 0.2f), Lite(Sky, 0.2f), Lite(Mint, 0.2f), Lite(Butter, 0.2f) }[deco.Next(4)], White, new[] { Rose, LavD, SkyD }[deco.Next(3)], deco); }
         var shop = CandyShop(root, new Vector3(-23.6f, 0, -9.5f), 180);
+        // no-ride zones (scooter must be parked outside; dismount to go in)
+        { Bounds Z(Transform t, Vector3 a, Vector3 b) { var bb = new Bounds(t.TransformPoint(a), Vector3.zero); bb.Encapsulate(t.TransformPoint(b)); bb.Expand(new Vector3(0.6f, 10, 0.6f)); return bb; }
+          NoRide.Add(Z(house, new Vector3(-9.3f, 0, -0.2f), new Vector3(9.3f, 4, 12.3f))); NoRide.Add(Z(shop, new Vector3(-4.7f, 0, -0.2f), new Vector3(4.7f, 4, 6.2f))); }
+        Debug.Log("[trimcheck] bands crossing openings if unsplit: " + TrimCrossBefore + ", pieces now " + TrimPieces + (LegacyTrim ? " (LEGACY unsplit mode)" : ""));
         Park(root, deco);
         foreach (var st in root.GetComponentsInChildren<Transform>()) if (st.name == "slide") { st.gameObject.AddComponent<SlideRide>(); break; }
+        // rideable toy scooter, parked on the sidewalk near the spawn + one in front of the house
+        Moto.Build(root, new Vector3(-47.5f, 0.12f, 5.3f), 90, Pink); Moto.Build(root, new Vector3(-13.5f, 0.12f, 5.2f), 90, Sky);
 
         // street furniture
         for (float x = -50; x <= 50; x += 16) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, 4.6f), 180);

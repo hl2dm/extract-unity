@@ -12,7 +12,7 @@ public class Game : MonoBehaviour
     public List<Item> bag = new List<Item>(); public int keys; public float runT; public int searched, caughtRun, luresRun; bool warn60, warn20;
     LootContainer openC; Interactable focus; float tickT;
     public const float RaidTime = Data.RaidTime;
-    public bool autoshots; string shotDir;
+    public bool autoshots, doorOnly; string shotDir;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot() { if (I) return; var g = new GameObject("Game"); DontDestroyOnLoad(g); g.AddComponent<Game>(); }
@@ -22,6 +22,7 @@ public class Game : MonoBehaviour
         I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
+        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; }
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>();
         SaveSys.Load();
@@ -108,7 +109,12 @@ public class Game : MonoBehaviour
         }
         // interaction focus
         focus = null; HintRing.focused = null;
-        if ((state == St.Raid || state == St.Base) && !InputLocked && player.alive)
+        if (Moto.Cur && !InputLocked && player.alive)
+        {   // riding: the only interaction is hopping off (no looting / doors / bus from the saddle)
+            focus = Moto.Cur; prompt = focus.Prompt; if (Input.GetKeyDown(KeyCode.E)) focus.Use();
+            hint = "W 油門　S 煞車　A/D 轉彎　滑鼠 看看　V 換視角　E 下車";
+        }
+        else if ((state == St.Raid || state == St.Base) && !InputLocked && player.alive)
         {
             var cam = player.cam.transform; float best = 999;
             // 1) whatever is under the crosshair wins (sphere cast, triggers included)
@@ -435,6 +441,13 @@ public class Game : MonoBehaviour
     {
         Application.logMessageReceived += OnLog; Time.timeScale = 1; yield return new WaitForSeconds(2.5f);
         var S0 = SaveSys.S; S0.money += 20000;
+        if (doorOnly)
+        {   // before/after doorway trim shots (run once with -legacytrim for "before")
+            Deploy(0); yield return new WaitForSeconds(3.0f); Pet.FreezeAll = 999;
+            int hits = LevelGen.TrimDoorHits(level.root); Debug.Log("[trimcheck] mode " + (LevelGen.LegacyTrim ? "legacy" : "split") + " hits " + hits);
+            yield return DoorShots(LevelGen.LegacyTrim ? "before" : "after");
+            Debug.Log("[casual] doorOnly done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
+        }
         yield return Shot("oneMap_bedroom");
         var desk = FindObjectsByType<Station>(FindObjectsSortMode.None).FirstOrDefault(x => x.id == "deploy");
         if (desk) { var b = desk.WorldBounds; yield return Aim(b.center + new Vector3(0, 0.9f, 0) + (player.transform.position - b.center).normalized * 1.6f, b.center); yield return new WaitForSeconds(0.6f); Check(focus == desk, "bedroom desk focus"); yield return Shot("oneMap_bedroom_desk"); }
@@ -463,6 +476,11 @@ public class Game : MonoBehaviour
                   Check(LevelGen.SignBlocked == 0, "no tree crown in a sign's view from the street centreline (" + LevelGen.SignBlocked + ")"); Check(left == 0, "street dressing clear of buildings + each other (remaining " + left + ")"); }
                 yield return CamShot(new Vector3(30, 3.5f, 1), new Vector3(52, 2.5f, 8), "oneMap_street_e");
                 yield return CamShot(new Vector3(-30, 3.5f, -1), new Vector3(-50, 2.5f, -8), "oneMap_street_w");
+                {   // v0.4.2: wall trim must not cross any door/window opening
+                    int th0 = LevelGen.TrimDoorHits(level.root); Debug.Log("[trimcheck] unsplit bands would cross " + LevelGen.TrimCrossBefore + " openings; trim/bar renderers crossing openings now " + th0);
+                    Check(th0 == 0, "no trim/bar geometry crosses a door/window opening (" + th0 + ")"); yield return DoorShots("after");
+                }
+                yield return MotoTest();
                 var slide = FindFirstObjectByType<SlideRide>(); Check(slide, "slide is interactable");
                 if (slide)
                 {
@@ -556,6 +574,48 @@ public class Game : MonoBehaviour
         Debug.Log("[casual] errors " + errs + (errList.Count > 0 ? " :: " + string.Join(" || ", errList) : "") + " checks failed " + fails);
         Debug.Log(errs == 0 && fails == 0 ? "[casual] full loop ok" : "[casual] full loop FAILED");
         PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit();
+    }
+    IEnumerator DoorShots(string tag)
+    {
+        var ho = new Vector3(-6, 0, 9);   // 阿姨家 house origin
+        yield return CamShot(ho + new Vector3(-5.4f, 1.35f, 0.9f), ho + new Vector3(-1.5f, 1.1f, 2.2f), "v042_door_" + tag + "_a", 0.3f);
+        yield return CamShot(ho + new Vector3(0.6f, 1.35f, 0.9f), ho + new Vector3(4.5f, 1.1f, 2.2f), "v042_door_" + tag + "_b", 0.3f);
+    }
+    IEnumerator MotoTest()
+    {
+        var moto = level.root.GetComponentsInChildren<Moto>().OrderBy(m => (m.transform.position - new Vector3(-47.5f, 0, 5.3f)).sqrMagnitude).FirstOrDefault();
+        Check(moto, "rideable scooter placed on 阿姨家 map"); if (!moto) yield break;
+        var mt = moto.transform; var fwd0 = mt.forward;
+        yield return Aim(mt.position - mt.right * 1.6f + Vector3.up * 1.25f, mt.position + Vector3.up * 0.7f); yield return new WaitForSeconds(0.4f);
+        Check(focus == moto && moto.Prompt.Contains("騎"), "scooter focus + prompt (" + (focus ? focus.name : "none") + ")");
+        yield return Shot("v042_scooter_parked");
+        moto.Use(); yield return null; Check(Moto.Cur == moto && Player.Riding, "mount scooter");
+        Moto.Auto = true; Moto.AutoSteer = 0; Moto.AutoThrottle = 1;
+        player.Teleport(new Vector3(-50, 0.15f, 1.5f), 90); moto.SetHeading(90); var p0 = player.transform.position;
+        yield return new WaitForSeconds(1.2f); yield return Shot("v042_ride_third");
+        yield return new WaitForSeconds(0.8f);
+        var d = player.transform.position - p0; d.y = 0;
+        Check(d.magnitude > 9f && moto.speed > 6.4f, "riding is faster than sprinting (2 s: " + d.magnitude.ToString("0.0") + " m, " + moto.speed.ToString("0.0") + " m/s)");
+        Moto.FirstPerson = true; yield return new WaitForSeconds(0.25f); yield return Shot("v042_ride_first"); Moto.FirstPerson = false;
+        var cat = Pet.All.FirstOrDefault(); int e0 = Moto.Escapes;
+        if (cat) { Pet.FreezeAll = 0; PlacePet(cat, player.transform.position - player.transform.forward * 4.5f); cat.ForceState(Pet.St.Chase); yield return new WaitForSeconds(0.3f);
+            Check(Moto.Escapes > e0 && cat.st != Pet.St.Chase, "chasing pet loses track at scooter speed"); Pet.FreezeAll = 999; }
+        // houses are no-ride zones
+        player.Teleport(new Vector3(-6, 0.15f, 5.3f), 0); moto.SetHeading(0); moto.speed = 0; yield return new WaitForSeconds(1.6f);
+        var hp = player.transform.position;
+        { var o = hp + Vector3.up * 0.6f; Debug.Log("[moto] house approach stop " + hp + " spd " + moto.speed.ToString("0.0") + " locked " + InputLocked + " hit " + (Physics.SphereCast(o, 0.3f, Vector3.forward, out var hh, 4f, Art.ShotMask, QueryTriggerInteraction.Ignore) ? hh.collider.name + "@" + hh.point : "none")); }
+        Check(!Moto.InNoRide(hp) && hp.z < 8.3f, "scooter can't ride into the house (z " + hp.z.ToString("0.00") + ")");
+        Moto.AutoThrottle = 0; yield return new WaitForSeconds(0.2f);
+        Check(focus == moto, "riding: no looting/doors, only dismount");
+        yield return CamShot(hp + new Vector3(3.2f, 2.2f, -3.6f), hp + new Vector3(0, 1.0f, 0.6f), "v042_ride_house", 0.2f);
+        for (float w = 0; w < 2 && Mathf.Abs(moto.speed) > 0.1f; w += Time.deltaTime) yield return null;
+        moto.Use(); yield return null; yield return null; Moto.Auto = false;
+        var pp = player.transform.position;
+        { var cs = Physics.OverlapCapsule(pp + Vector3.up * 0.4f, pp + Vector3.up * 1.0f, 0.25f, Art.ShotMask, QueryTriggerInteraction.Ignore);
+          Debug.Log("[moto] dismount riding " + Player.Riding + " cur " + (Moto.Cur != null) + " cc " + player.cc.enabled + " r " + player.cc.radius + " at " + pp + " overlaps " + string.Join(",", cs.Select(c => c.name))); }
+        Check(!Player.Riding && Moto.Cur == null && player.cc.enabled && player.cc.radius < 0.4f && !Physics.OverlapCapsule(pp + Vector3.up * 0.4f, pp + Vector3.up * 1.0f, 0.25f, Art.ShotMask, QueryTriggerInteraction.Ignore).Any(c => !c.transform.IsChildOf(player.transform)), "dismount: on foot, free spot, collider restored");
+        Check(moto.GetComponent<BoxCollider>().enabled, "parked scooter collides again");
+        yield return new WaitForSeconds(0.3f);
     }
     // ---------- autoshots ----------
     IEnumerator Shot(string name)
