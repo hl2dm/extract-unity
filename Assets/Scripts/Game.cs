@@ -459,8 +459,8 @@ public class Game : MonoBehaviour
                 Debug.Log("[contrast] signs checked " + SoftProps.SignCount + ", fails " + SoftProps.SignFails);
                 yield return CamShot(new Vector3(-34, 3.5f, -1), new Vector3(-12, 2, 3), "oneMap_street");
                 { var thz = GameObject.Find("TownHouse"); int left = thz ? LevelGen.ClearStreet(thz.transform.parent, false) : -1;
-                  Debug.Log("[overlap] props " + LevelGen.OverlapProps + " moved " + LevelGen.OverlapMoved + " hidden " + LevelGen.OverlapHidden + " remaining " + left);
-                  Check(left == 0, "street dressing clear of buildings + each other (remaining " + left + ")"); }
+                  Debug.Log("[overlap] props " + LevelGen.OverlapProps + " moved " + LevelGen.OverlapMoved + " hidden " + LevelGen.OverlapHidden + " remaining " + left + " signBlocked " + LevelGen.SignBlocked);
+                  Check(LevelGen.SignBlocked == 0, "no tree crown in a sign's view from the street centreline (" + LevelGen.SignBlocked + ")"); Check(left == 0, "street dressing clear of buildings + each other (remaining " + left + ")"); }
                 yield return CamShot(new Vector3(30, 3.5f, 1), new Vector3(52, 2.5f, 8), "oneMap_street_e");
                 yield return CamShot(new Vector3(-30, 3.5f, -1), new Vector3(-50, 2.5f, -8), "oneMap_street_w");
                 var slide = FindFirstObjectByType<SlideRide>(); Check(slide, "slide is interactable");
@@ -469,7 +469,7 @@ public class Game : MonoBehaviour
                     var st = slide.transform; var near = st.TransformPoint(new Vector3(0, 0, -2.6f));
                     player.Teleport(near, st.eulerAngles.y); yield return null; yield return null;
                     Check(slide.Prompt.Contains("溜滑梯"), "slide prompt");
-                    int r0 = SlideRide.Rides; slide.Use(); yield return new WaitForSeconds(1.75f); yield return Shot("oneMap_slide_ride");
+                    int r0 = SlideRide.Rides; slide.Use(); yield return new WaitForSeconds(1.85f); yield return Shot("oneMap_slide_ride");
                     for (float w = 0; w < 6 && SlideRide.Busy; w += Time.deltaTime) yield return null;
                     var land = st.TransformPoint(new Vector3(0, 0, 2.9f));
                     Check(SlideRide.Rides == r0 + 1 && !SlideRide.Busy && Vector3.Distance(player.transform.position, land) < 0.6f && player.cc.enabled, "slide ride lands at the bottom");

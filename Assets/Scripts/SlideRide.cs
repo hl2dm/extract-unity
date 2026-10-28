@@ -22,13 +22,13 @@ public class SlideRide : Interactable
             if ((int)(t * 6) != (int)((t - Time.deltaTime / 0.9f) * 6)) Sfx.Play("click_002", 0.25f);
             Pose(p, Vector3.Lerp(b, c, t) + Vector3.up * Mathf.Sin(t * 37) * 0.03f, yaw, -10 - 25 * t, 0, 75); yield return null;
         }
-        for (t = 0; t < 1; t += Time.deltaTime / 0.25f) { Pose(p, Vector3.Lerp(c, d, t), yaw, Mathf.Lerp(-35, 22, t), 0, 75); yield return null; }
+        for (t = 0; t < 1; t += Time.deltaTime / 0.25f) { Pose(p, Vector3.Lerp(c, d, t), yaw, Mathf.Lerp(-35, 34, t), 0, 75); yield return null; }
         Sfx.Play("whoosh", 0.9f);
         foreach (var pet in Pet.All) if (pet) pet.LoseTrack();
         for (t = 0; t < 1; t += Time.deltaTime / 1.1f)
         {
             float s = t * t * (2.2f - 1.2f * t); // ease-in, slight ease-out at the end
-            Pose(p, Vector3.Lerp(d, e, s), yaw, 22 - 10 * t, Mathf.Sin(t * Mathf.PI * 3) * 6 * (1 - t), Mathf.Lerp(75, 98, Mathf.Sin(t * Mathf.PI * 0.9f))); yield return null;
+            Pose(p, Vector3.Lerp(d, e, s), yaw, 34 - 22 * t, Mathf.Sin(t * Mathf.PI * 3) * 6 * (1 - t), Mathf.Lerp(75, 98, Mathf.Sin(t * Mathf.PI * 0.9f))); yield return null;
         }
         for (t = 0; t < 1; t += Time.deltaTime / 0.35f) { Pose(p, Vector3.Lerp(e, f, t) + Vector3.up * Mathf.Sin(t * Mathf.PI) * 0.12f, yaw, Mathf.Lerp(12, 0, t), 0, Mathf.Lerp(90, 75, t)); yield return null; }
         Sfx.Play("confirmation_001", 0.5f);
@@ -37,8 +37,9 @@ public class SlideRide : Interactable
     }
     static void Pose(Player p, Vector3 pos, float yaw, float pitch, float roll, float fov)
     {
+        bool sit = pitch > 15; // seated on the chute: lower eye so the chute fills the bottom of the view
         p.transform.position = pos; p.yaw = yaw; p.pitch = pitch; p.transform.rotation = Quaternion.Euler(0, yaw, 0);
-        p.camRig.localPosition = new Vector3(0, 1.25f, 0); p.camRig.localRotation = Quaternion.Euler(pitch, 0, roll);
+        p.camRig.localPosition = new Vector3(0, sit ? 0.8f : 1.25f, 0); p.camRig.localRotation = Quaternion.Euler(pitch, 0, roll);
         if (p.cam) p.cam.fieldOfView = fov;
     }
     void OnDisable() { if (Busy) { Busy = false; Player.Riding = false; if (Player.I) Player.I.cc.enabled = true; } }
