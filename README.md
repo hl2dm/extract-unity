@@ -20,6 +20,7 @@ Windows 版下載：見 [Releases](https://github.com/hl2dm/extract-unity/releas
 | F | 搜刮時全部拿走 |
 | Q | 搜刮時付費跳過等待 |
 | Esc | 放開滑鼠 / 跳過過場 |
+| F8 | 切換反鋸齒畫質（低 / 中 / 高） |
 
 > 目前可遊玩的地圖：**阿姨家**。在倒數結束前走到公車站上車即可撤離成功。
 

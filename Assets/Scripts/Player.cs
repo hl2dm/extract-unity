@@ -19,7 +19,7 @@ public class Player : MonoBehaviour
         p.camRig = new GameObject("CamRig").transform; p.camRig.SetParent(g.transform, false); p.camRig.localPosition = new Vector3(0, 1.25f, 0);
         var cg = new GameObject("MainCamera"); cg.tag = "MainCamera"; cg.transform.SetParent(p.camRig, false); p.cam = cg.AddComponent<Camera>(); cg.AddComponent<AudioListener>();
         p.cam.fieldOfView = 75; p.cam.nearClipPlane = 0.05f; p.cam.farClipPlane = 400; p.cam.cullingMask = ~(1 << Art.VMLayer);
-        var cd = p.cam.GetUniversalAdditionalCameraData(); cd.renderPostProcessing = true; cd.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing; cd.renderShadows = true;
+        var cd = p.cam.GetUniversalAdditionalCameraData(); cd.renderPostProcessing = true; AAQuality.Apply(p.cam); cd.renderShadows = true;
         var vg = new GameObject("VMCamera"); vg.transform.SetParent(cg.transform, false); p.vmCam = vg.AddComponent<Camera>(); p.vmCam.cullingMask = 1 << Art.VMLayer; p.vmCam.fieldOfView = 55; p.vmCam.nearClipPlane = 0.01f; p.vmCam.farClipPlane = 5;
         var vd = p.vmCam.GetUniversalAdditionalCameraData(); vd.renderType = CameraRenderType.Overlay; vd.renderShadows = false; cd.cameraStack.Add(p.vmCam);
         p.vmRoot = new GameObject("VM").transform; p.vmRoot.SetParent(cg.transform, false); p.vmRoot.localPosition = new Vector3(0.28f, -0.24f, 0.45f);
@@ -48,6 +48,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         float dt = Time.deltaTime;
+        if (Input.GetKeyDown(KeyCode.F8) && Game.I) Game.I.Toast(AAQuality.Cycle(cam));
         if (!alive) return;
         bool canAct = controlEnabled && !Locked;
         if (canAct) { yaw += Input.GetAxisRaw("Mouse X") * Sens; pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * Sens, -85, 85); }
@@ -119,4 +120,26 @@ public class Player : MonoBehaviour
         if (caught % 3 == 0) { cryT = 7f; Sfx.Play("cry", 0.9f); Game.I.Toast("嗚哇——被抓到三次，哭哭了！（7 秒內跑不快）"); }
     }
     public void Shake(float s) { shake = Mathf.Max(shake, s); }
+}
+
+/// 反鋸齒 低/中/高 — MSAA (covers inverted-hull outlines) + SMAA post. F8 cycles; saved in PlayerPrefs "aa".
+public static class AAQuality
+{
+    public static readonly string[] Names = { "低", "中", "高" };
+    public static int Level = -1;
+    static int Default => Application.platform == RuntimePlatform.WebGLPlayer ? 1 : 2;
+    public static void Apply(Camera cam)
+    {
+        if (Level < 0) Level = Mathf.Clamp(PlayerPrefs.GetInt("aa", Default), 0, 2);
+        var urp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
+        if (urp) { urp.msaaSampleCount = Level == 0 ? 1 : (Level == 1 ? 2 : 4); urp.renderScale = 1f; }
+        if (cam)
+        {
+            cam.allowMSAA = Level > 0;
+            var cd = cam.GetUniversalAdditionalCameraData();
+            cd.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            cd.antialiasingQuality = Level == 0 ? AntialiasingQuality.Medium : AntialiasingQuality.High;
+        }
+    }
+    public static string Cycle(Camera cam) { Level = (Level + 1) % 3; PlayerPrefs.SetInt("aa", Level); PlayerPrefs.Save(); Apply(cam); return "反鋸齒：" + Names[Level]; }
 }
