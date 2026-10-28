@@ -9,7 +9,7 @@ public class Moto : Interactable
     public const float MaxSpd = 9.5f;
     public float speed; Transform model, rider, riderHead; BoxCollider box; float escT, yaw, vy, steerVis, noiseT, toastT, putT, origR; Color col;
     public bool Riding => Cur == this;
-    public override string Prompt => Riding ? "[E] 下車（下車才能翻東西、進屋）　V 換視角" : "[E] 騎上小綿羊";
+    public override string Prompt => Riding ? "[E] 下車（下車可以翻東西）" + (TouchIn.Active ? "" : "　V 換視角") : "[E] 騎上小機車";
     public override Vector3 Point => transform.position + Vector3.up * 0.8f;
 
     static Quaternion Q(float x, float y, float z) => Quaternion.Euler(x, y, z);
@@ -148,9 +148,9 @@ public class Moto : Interactable
         float thr = 0, st = 0;
         if (canAct)
         {
-            thr = Auto ? AutoThrottle : Input.GetAxisRaw("Vertical"); st = Auto ? AutoSteer : Input.GetAxisRaw("Horizontal");
-            if (!Auto) { yaw += Input.GetAxisRaw("Mouse X") * p.Sens * 0.6f; p.pitch = Mathf.Clamp(p.pitch - Input.GetAxisRaw("Mouse Y") * p.Sens, -30, 40); }
-            if (Input.GetKeyDown(KeyCode.V)) FirstPerson = !FirstPerson;
+            thr = Auto ? AutoThrottle : TouchIn.Axis("Vertical"); st = Auto ? AutoSteer : TouchIn.Axis("Horizontal");
+            if (!Auto) { yaw += TouchIn.Look("Mouse X") * p.Sens * 0.6f; p.pitch = Mathf.Clamp(p.pitch - TouchIn.Look("Mouse Y") * p.Sens, -30, 40); }
+            if (TouchIn.Down(KeyCode.V)) FirstPerson = !FirstPerson;
         }
         float target = thr > 0 ? thr * MaxSpd : thr < 0 ? (speed > 0.5f ? 0 : thr * 2.5f) : 0;
         float acc = thr < 0 && speed > 0.5f ? 14f : (Mathf.Abs(target) > Mathf.Abs(speed) ? 6f : 4f);
@@ -160,7 +160,7 @@ public class Moto : Interactable
         var pos = p.transform.position;
         if (Mathf.Abs(speed) > 0.05f && InNoRide(pos + fwd * Mathf.Sign(speed) * 1.3f + fwd * speed * dt))
         {   // houses/shops are no-ride zones: bump + hint
-            speed = 0; if (Time.time > toastT && Game.I) { toastT = Time.time + 2.5f; Game.I.Toast("小綿羊不能騎進屋子喔！按 E 下車再走進去。"); Sfx.Play("error_004", 0.4f); }
+            speed = 0; if (Time.time > toastT && Game.I) { toastT = Time.time + 2.5f; Game.I.Toast(TouchIn.Active ? "機車不能騎到房子裡喔！下車再走過去。" : "機車不能騎到房子裡喔！按 E 下車再走過去。"); Sfx.Play("error_004", 0.4f); }
         }
         if (p.cc.isGrounded) vy = -1f; else vy -= 14f * dt;
         var flags = p.cc.Move(fwd * speed * dt + Vector3.up * vy * dt);

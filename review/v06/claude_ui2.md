@@ -1,0 +1,14 @@
+OVERALL: 7/10
+TOUCH_CONTROLS: 7/10 - Thumb reach and spacing are good now (joystick bottom-left, action cluster bottom-right, 互動 biggest in the corner as intended). But on tablet/phone-landscape/win-touch the 跑 button sits visually on top of the 罐頭 can/barrel icon — I understand the can is the intentional ammo icon, not a clipping bug, but a tappable circle stacked directly on it still reads as one smeared shape and hurts both the icon's and the button's legibility. 丟/換零食/跑/跳 are all nearly the same size, so nothing but 互動 signals priority.
+RESPONSIVE_LAYOUT: 7/10 - Breakpoint reflow is solid: phone landscape wraps 罐頭/肉肉 to a second line to dodge the timer, tablet/desktop scale cleanly. Two real gaps: the portrait "rotate your phone" prompt overlays the HUD but the joystick and action buttons underneath stay fully rendered and presumably still live, risking stray input while the prompt is up; and in phone portrait/landscape the bottom button row sits close enough to the mood bar that there's little breathing room at these screen heights.
+TEXT_CONTRAST: 8/10 - Most HUD text (subtitle, item counters, dialogue bubble, loot panel) has strong dark-on-light or outlined-light-on-dark contrast. The one soft spot is the white "3:55" timer and event title sitting in the brightest part of the sky gradient — the glow/outline carries it, but it's the thinnest margin of any HUD text.
+SIGNS: 9/10 - "阿姨家" plaque and the dialogue chip are dark maroon on cream, crisp and on-brand with the hand-drawn lettering style; very legible. Props between the debug camera and the timer in the close-up are understood to be expected there, not scored as clipping.
+ART_CONSISTENCY: 8/10 - Palette, chunky rounded shapes, and the cel-shaded outline look carry consistently from exterior street to interior shop to vehicle and UI chrome. Indoor warm tan walls vs. exterior pastel sky is a deliberate but noticeable tonal seam; everything else (button styling, can/prop rendering, character proportions) matches cleanly.
+
+TOP FIXES:
+1. Separate the 跑 button from the 罐頭 can/barrel icon spatially (nudge one of them) — the overlap muddies both even though the can itself is correct.
+2. Gate touch input (joystick + buttons) behind the portrait rotate-prompt so taps don't leak through to gameplay while it's shown.
+3. Give the bottom button row more clearance from the mood/XP bar on phone portrait and landscape — currently tight at these heights.
+4. Add a scrim or stronger shadow behind the top timer/event text where the sky is brightest, since it has the least contrast margin of any HUD text.
+5. Size-differentiate 跑/跳/丟/換零食 by use frequency instead of near-uniform circles, so 互動 isn't the only button that visually communicates priority.
+6. Fade or shrink the "這半邊滑動看看" swipe hint after first use — it currently sits in the same band as the secondary button row and reads as label clutter once learned.

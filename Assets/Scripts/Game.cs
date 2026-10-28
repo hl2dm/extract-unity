@@ -26,7 +26,7 @@ public class Game : MonoBehaviour
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>();
         SaveSys.Load();
-        ui = gameObject.AddComponent<UI>(); ui.Build();
+        ui = gameObject.AddComponent<UI>(); ui.Build(); TouchIn.Ensure();
         player = Player.Create();
         if (SaveSys.S.inRaid)
         {
@@ -36,6 +36,7 @@ public class Game : MonoBehaviour
         if (SaveSys.S.quest == null || string.IsNullOrEmpty(SaveSys.S.quest.t)) { SaveSys.S.quest = Data.MakeQuest(SaveSys.S.questN); SaveSys.S.hasQuest = true; }
         EnterBase(true);
         if (autoshots) StartCoroutine(AutoShotsCasual());
+        else if ((Application.absoluteURL ?? "").Contains("demo=")) StartCoroutine(WebDemo(Application.absoluteURL));
     }
     IEnumerator Later(float t, System.Action a) { yield return new WaitForSeconds(t); a(); }
 
@@ -97,7 +98,7 @@ public class Game : MonoBehaviour
     void Update()
     {
         float dt = Time.deltaTime; var S = SaveSys.S;
-        bool wantLock = !InputLocked && !autoshots;
+        bool wantLock = !InputLocked && !autoshots && TouchIn.WantCursorLock;
         if (!autoshots) { Cursor.lockState = wantLock ? CursorLockMode.Locked : CursorLockMode.None; Cursor.visible = !wantLock; }
         string prompt = null, hint = null;
         if (state == St.Raid)
@@ -111,8 +112,8 @@ public class Game : MonoBehaviour
         focus = null; HintRing.focused = null;
         if (Moto.Cur && !InputLocked && player.alive)
         {   // riding: the only interaction is hopping off (no looting / doors / bus from the saddle)
-            focus = Moto.Cur; prompt = focus.Prompt; if (Input.GetKeyDown(KeyCode.E)) focus.Use();
-            hint = "W 油門　S 煞車　A/D 轉彎　滑鼠 看看　V 換視角　E 下車";
+            focus = Moto.Cur; prompt = focus.Prompt; if (TouchIn.Down(KeyCode.E)) focus.Use();
+            hint = TouchIn.Active ? "" : "W 加速　S 往後　A/D 轉　滑鼠 看看　V 換視角　E 下車";
         }
         else if ((state == St.Raid || state == St.Base) && !InputLocked && player.alive)
         {
@@ -147,13 +148,13 @@ public class Game : MonoBehaviour
             }
             HintRing.focused = focus;
             if (focus) prompt = focus.Prompt;
-            if (focus && Input.GetKeyDown(KeyCode.E)) { focus.Use(); }
-            hint = state == St.Base ? "WASD 走路　滑鼠 看看　E 互動" : "WASD 走路　Shift 跑（會吵到狗狗）　1/2 或滾輪 換零食　左鍵 丟零食　E 互動";
+            if (focus && TouchIn.Down(KeyCode.E)) { focus.Use(); }
+            hint = TouchIn.Active ? "" : state == St.Base ? "WASD 走路　滑鼠 看看　E 互動" : "WASD 走路　Shift 跑（會吵到狗狗）　1/2 或滾輪 換零食　左鍵 丟零食　E 互動";
         }
         // loot
         if (ui.LootOpen && openC)
         {
-            if ((Input.GetKeyDown(KeyCode.E) || Input.GetKeyDown(KeyCode.Escape)) && Time.frameCount != openFrame) CloseLoot();
+            if ((TouchIn.Down(KeyCode.E) || Input.GetKeyDown(KeyCode.Escape)) && Time.frameCount != openFrame) CloseLoot();
             else
             {
                 if (Input.GetKeyDown(KeyCode.F)) LootAll(); if (Input.GetKeyDown(KeyCode.Q)) PaySkip();
@@ -164,7 +165,7 @@ public class Game : MonoBehaviour
         }
         if (ui.ModalOpen && Input.GetKeyDown(KeyCode.Escape)) CloseModal();
         if (state == St.End && Input.GetKeyDown(KeyCode.Space)) BackToBase();
-        ui.Hud(state == St.Raid, player, TimeLeft, Objective(), bag, BagCap, S.money, ui.LootOpen || ui.ModalOpen ? null : prompt, ui.LootOpen ? "點一下亮起來的東西拿走　F 全部拿　Q 花錢加速　E 關閉" : hint);
+        ui.Hud(state == St.Raid, player, TimeLeft, Objective(), bag, BagCap, S.money, ui.LootOpen || ui.ModalOpen ? null : prompt, ui.LootOpen ? (TouchIn.Active ? "點一下亮起來的東西就能拿走" : "點一下亮起來的東西拿走　F 全部拿　Q 花錢加速　E 關閉") : hint);
     }
     string Objective()
     {
@@ -269,7 +270,7 @@ public class Game : MonoBehaviour
         yield return new WaitForSeconds(0.4f);
         player.vmCam.enabled = false; var cam = player.cam; cam.transform.SetParent(null, true);
         bool skip = false;
-        yield return level.bus.Cinematic(cam, ui.CineText, () => skip = skip || (!autoshots && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(0))));
+        yield return level.bus.Cinematic(cam, ui.CineText, () => skip = skip || (!autoshots && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape) || TouchIn.AnyTap())));
         Sfx.Engine(0); ui.Cine(false); state = St.End; ShowExtract(info);
     }
     void ShowExtract(Info info)
@@ -482,6 +483,7 @@ public class Game : MonoBehaviour
                     Check(th0 == 0, "no trim/bar geometry crosses a door/window opening (" + th0 + ")"); yield return DoorShots("after");
                 }
                 yield return MotoTest();
+                yield return TouchTest();
                 var slide = FindFirstObjectByType<SlideRide>(); Check(slide, "slide is interactable");
                 if (slide)
                 {
@@ -612,6 +614,44 @@ public class Game : MonoBehaviour
         var ho = new Vector3(-6, 0, 9);   // 阿姨家 house origin
         yield return CamShot(ho + new Vector3(-5.4f, 1.35f, 0.9f), ho + new Vector3(-1.5f, 1.1f, 2.2f), "v042_door_" + tag + "_a", 0.3f);
         yield return CamShot(ho + new Vector3(0.6f, 1.35f, 0.9f), ho + new Vector3(4.5f, 1.1f, 2.2f), "v042_door_" + tag + "_b", 0.3f);
+    }
+    IEnumerator WebDemo(string url)
+    {   // ?demo=raid|loot|ride : jump straight to a state for responsive/touch screenshots
+        yield return new WaitForSeconds(1.0f); SaveSys.S.cans = Mathf.Max(SaveSys.S.cans, 3);
+        if (url.Contains("demo=base")) yield break;
+        Deploy(0); for (float w = 0; w < 30 && state != St.Raid; w += Time.unscaledDeltaTime) yield return null; yield return new WaitForSeconds(1.5f); Pet.FreezeAll = 999;
+        if (url.Contains("demo=loot")) { var box = FindObjectsByType<LootContainer>(FindObjectsSortMode.None).Where(c => c.isActiveAndEnabled).OrderBy(c => (c.transform.position - player.transform.position).sqrMagnitude).FirstOrDefault(); if (box) { player.Teleport(box.transform.position + box.transform.forward * 1.6f + Vector3.up * 0.15f, box.transform.eulerAngles.y + 180); yield return null; OpenLoot(box); } }
+        else if (url.Contains("demo=ride")) { var moto = level.root.GetComponentsInChildren<Moto>().FirstOrDefault(); if (moto) { moto.Use(); yield return null; moto.SetHeading(90); player.Teleport(new Vector3(-30, 0.15f, 1.5f), 90); } }
+        else if (url.Contains("demo=shop")) { player.Teleport(new Vector3(-23.6f, 0.15f, -1.2f), 180); }
+        Debug.Log("[webdemo] ready");
+    }
+    IEnumerator TouchTest()
+    {   // v0.6: virtual joystick / buttons drive the same actions as keyboard+mouse
+        TouchIn.Set(true); yield return null; yield return null;
+        Check(TouchIn.UIVisible, "touch controls visible in touch mode");
+        Pet.FreezeAll = 999; player.Teleport(new Vector3(-30, 0.15f, 1.5f), 90); yield return new WaitForSeconds(0.2f);
+        var p0 = player.transform.position; TouchIn.SimStick(new Vector2(0, 1)); yield return new WaitForSeconds(0.6f); TouchIn.SimStick(Vector2.zero);
+        float mv = (player.transform.position - p0).magnitude; Check(mv > 1.5f, "joystick moves the player (" + mv.ToString("0.0") + " m)");
+        SaveSys.S.cans = Mathf.Max(SaveSys.S.cans, 3); player.sel = 0; int c0 = SaveSys.S.cans; yield return new WaitForSeconds(0.5f);
+        TouchIn.Sim(KeyCode.Mouse0); yield return null; yield return null; Check(SaveSys.S.cans == c0 - 1, "throw button throws a lure");
+        var box = FindObjectsByType<LootContainer>(FindObjectsSortMode.None).Where(c => c.isActiveAndEnabled).OrderBy(c => (c.transform.position - player.transform.position).sqrMagnitude).FirstOrDefault();
+        if (box)
+        {
+            var b = box.WorldBounds; var eye = b.center + new Vector3(0, 0.6f, 0) + Vector3.ProjectOnPlane(player.transform.position - b.center, Vector3.up).normalized * 1.4f;
+            yield return Aim(eye, b.center); yield return new WaitForSeconds(0.3f);
+            if (focus == box) { TouchIn.Sim(KeyCode.E); yield return null; yield return null; Check(ui.LootOpen, "interact button opens loot");
+                yield return new WaitForSeconds(0.3f); yield return Shot("v06_touch_loot");
+                TouchIn.Sim(KeyCode.E); yield return null; yield return null; Check(!ui.LootOpen, "interact button closes loot"); }
+            else Debug.Log("[touch] could not focus a container for the E test");
+        }
+        yield return Shot("v06_touch_hud");
+        {   // every glyph on screen must exist in the (subset) font, otherwise Unity silently drops it
+            int miss = 0; var bad = new System.Text.StringBuilder();
+            foreach (var t in FindObjectsByType<UnityEngine.UI.Text>(FindObjectsInactive.Include, FindObjectsSortMode.None)) if (t.font) foreach (var ch in System.Text.RegularExpressions.Regex.Replace(t.text ?? "", "<[^>]+>", "")) if (ch > 0x2e80 && !t.font.HasCharacter(ch)) { miss++; if (bad.Length < 80) bad.Append(ch); }
+            foreach (var t in FindObjectsByType<TextMesh>(FindObjectsInactive.Include, FindObjectsSortMode.None)) if (t.font) foreach (var ch in t.text ?? "") if (ch > 0x2e80 && !t.font.HasCharacter(ch)) { miss++; if (bad.Length < 80) bad.Append(ch); }
+            Check(miss == 0, "no missing CJK glyphs in on-screen text (" + miss + " " + bad + ")");
+        }
+        TouchIn.Set(false); yield return null; Check(!TouchIn.UIVisible, "touch controls hidden on desktop");
     }
     IEnumerator MotoTest()
     {

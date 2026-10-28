@@ -121,6 +121,7 @@ public static class Builder
     }
     public static void BuildWebGL()
     {
+        PlayerSettings.WebGL.template = "PROJECT:Responsive";
         var r = BuildPipeline.BuildPlayer(new BuildPlayerOptions { scenes = Scenes, locationPathName = Path.GetFullPath("Build/WebGL"), target = BuildTarget.WebGL, options = BuildOptions.None });
         Debug.Log("[build] webgl " + r.summary.result + " " + r.summary.totalSize); if (Application.isBatchMode) EditorApplication.Exit(r.summary.result == UnityEditor.Build.Reporting.BuildResult.Succeeded ? 0 : 1);
     }

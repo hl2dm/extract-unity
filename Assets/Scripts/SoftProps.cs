@@ -381,8 +381,9 @@ public static class SoftProps
         float em = Hb * 0.56f / 0.92f / lines / (lines == 2 ? 0.95f : 1f);   // CJK ink ~0.92em
         float wd = per * em + Hb * 0.5f;
         Block(g, new Vector3(0, 0, 0.32f), new Vector3(wd, Hb, 0.3f), board, Mathf.Min(Hb * 0.47f, 0.14f), false);
-        MatA = om;
-        var face = Readable(c, board, 6f); float cr = Contrast(face, board); SignCount++;
+        var face = Readable(c, board, 7f);
+        Block(g, new Vector3(0, 0, 0.4f), new Vector3(wd + 0.16f, Hb + 0.16f, 0.26f), Lt(face, 0.15f), Mathf.Min(Hb * 0.47f, 0.14f) + 0.06f, false);   // coloured rim frames the plaque
+        MatA = om; float cr = Contrast(face, board); SignCount++;
         if (cr < 4.5f) { SignFails++; Debug.Log("[contrast] FAIL sign '" + s + "' ratio " + cr.ToString("0.00")); }
         float cs = em / 8f;
         for (int k = 4; k >= 0; k--) { var t = Text(g, new Vector3(0, 0, 0.12f - k * 0.03f), Quaternion.identity, txt, cs, k == 0 ? face : (k == 1 ? Lt(face, 0.35f) : Dk(face, 0.7f))); t.lineSpacing = 0.95f; t.GetComponent<MeshRenderer>().sortingOrder = 20 - k * 2; }

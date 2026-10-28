@@ -6,7 +6,7 @@ using UnityEngine;
 public class SlideRide : Interactable
 {
     public static int Rides; public static bool Busy; public static Vector3 LastLanding;
-    public override string Prompt => Busy ? "" : "[E] 爬上溜滑梯";
+    public override string Prompt => Busy ? "" : "[E] 上溜滑梯";
     public override Vector3 Point => transform.TransformPoint(new Vector3(0, 1.2f, -1.4f));
     Vector3 L(float y, float z) => transform.TransformPoint(new Vector3(0, y, z));
     public override void Use() { if (!Busy && Player.I && Player.I.alive) StartCoroutine(Ride()); }

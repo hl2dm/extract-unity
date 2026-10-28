@@ -52,7 +52,7 @@ public class Player : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.F8) && Game.I) Game.I.Toast(AAQuality.Cycle(cam));
         if (!alive || Riding) return;
         bool canAct = controlEnabled && !Locked;
-        if (canAct) { yaw += Input.GetAxisRaw("Mouse X") * Sens; pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * Sens, -85, 85); }
+        if (canAct) { yaw += TouchIn.Look("Mouse X") * Sens; pitch = Mathf.Clamp(pitch - TouchIn.Look("Mouse Y") * Sens, -85, 85); }
         shake = Mathf.Max(0, shake - dt * 3);
         float sx = (Mathf.PerlinNoise(Time.time * 25, 0) - 0.5f) * shake, sy = (Mathf.PerlinNoise(0, Time.time * 25) - 0.5f) * shake;
         transform.rotation = Quaternion.Euler(0, yaw, 0);
@@ -60,13 +60,13 @@ public class Player : MonoBehaviour
         Vector3 mv = Vector3.zero; bool sprint = false;
         if (canAct)
         {
-            mv = new Vector3(Input.GetAxisRaw("Horizontal"), 0, Input.GetAxisRaw("Vertical")); if (mv.sqrMagnitude > 1) mv.Normalize();
-            sprint = Input.GetKey(KeyCode.LeftShift) && mv.z > 0.1f && !Crying;
+            mv = new Vector3(TouchIn.Axis("Horizontal"), 0, TouchIn.Axis("Vertical")); if (mv.sqrMagnitude > 1) mv.Normalize();
+            sprint = TouchIn.Held(KeyCode.LeftShift) && mv.z > 0.1f && !Crying;
         }
         Sprinting = sprint && mv.sqrMagnitude > 0.1f;
         float spd = (sprint ? 6.4f : 4.1f) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1);
         var vel = transform.TransformDirection(mv) * spd;
-        if (cc.isGrounded) { vy = -1f; if (canAct && Input.GetKeyDown(KeyCode.Space)) vy = 4.4f; } else vy -= 14f * dt;
+        if (cc.isGrounded) { vy = -1f; if (canAct && TouchIn.Down(KeyCode.Space)) vy = 4.4f; } else vy -= 14f * dt;
         vel.y = vy; cc.Move(vel * dt);
         float hs = new Vector2(vel.x, vel.z).magnitude;
         if (cc.isGrounded && hs > 0.5f)
@@ -86,7 +86,7 @@ public class Player : MonoBehaviour
         {
             if (Input.GetKeyDown(KeyCode.Alpha1)) sel = 0; if (Input.GetKeyDown(KeyCode.Alpha2)) sel = 1;
             float w = Input.mouseScrollDelta.y; if (Mathf.Abs(w) > 0.1f) sel = 1 - sel;
-            throwT -= dt; if (inRaid && Input.GetMouseButtonDown(0) && throwT <= 0) Throw();
+            throwT -= dt; if (inRaid && TouchIn.Fire() && throwT <= 0) Throw();
         }
         if (handSel != sel || !hand) BuildHand();
         throwAnim = Mathf.MoveTowards(throwAnim, 0, dt * 3.5f);

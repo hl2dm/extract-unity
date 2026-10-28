@@ -12,7 +12,11 @@ Shader "Soft/WorldText" {
       sampler2D _MainTex; float4 _MainTex_ST; fixed4 _Color;
       struct a { float4 v:POSITION; fixed4 c:COLOR; float2 uv:TEXCOORD0; };
       struct v2f { float4 p:SV_POSITION; fixed4 c:COLOR; float2 uv:TEXCOORD0; };
-      v2f vert(a i){ v2f o; o.p=UnityObjectToClipPos(i.v); o.c=i.c*_Color; o.uv=TRANSFORM_TEX(i.uv,_MainTex); return o; }
+      v2f vert(a i){ v2f o; o.p=UnityObjectToClipPos(i.v); o.c=i.c*_Color;
+      #ifndef UNITY_COLORSPACE_GAMMA
+      o.c.rgb=GammaToLinearSpace(o.c.rgb);
+      #endif
+      o.uv=TRANSFORM_TEX(i.uv,_MainTex); return o; }
       fixed4 frag(v2f i):SV_Target { fixed4 c=i.c; c.a*=tex2D(_MainTex,i.uv).a; clip(c.a-0.01); return c; }
       ENDCG
     }
