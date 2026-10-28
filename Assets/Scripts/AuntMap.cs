@@ -383,6 +383,7 @@ public static partial class LevelGen
         for (float x = -54; x < 56; x += 9.5f) { SoftProps.TownHouse(root, new Vector3(x, 0, 24f), 0, 9f, 9, 3 + deco.Next(2), new[] { Lite(Lav, 0.2f), Lite(Sky, 0.2f), Lite(Mint, 0.2f), Lite(Butter, 0.2f) }[deco.Next(4)], White, new[] { Rose, LavD, SkyD }[deco.Next(3)], deco); }
         var shop = CandyShop(root, new Vector3(-23.6f, 0, -9.5f), 180);
         Park(root, deco);
+        foreach (var st in root.GetComponentsInChildren<Transform>()) if (st.name == "slide") { st.gameObject.AddComponent<SlideRide>(); break; }
 
         // street furniture
         for (float x = -50; x <= 50; x += 16) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, 4.6f), 180);
@@ -391,13 +392,14 @@ public static partial class LevelGen
         for (int i = 0; i < 4; i++) SoftProps.Scooter(root, new Vector3(8.5f + i * 1.0f, 0.12f, 5.35f), 180 + (i % 2) * 8, sc[i]);
         for (int i = 0; i < 3; i++) SoftProps.Scooter(root, new Vector3(-41f + i * 1.0f, 0.12f, -5.35f), (i % 2) * -8, sc[i + 2]);
         for (int i = 0; i < 2; i++) SoftProps.Scooter(root, new Vector3(44f + i * 1.0f, 0.12f, 5.35f), 180, sc[(i + 4) % 6]);
-        foreach (float x in new[] { -46f, -34f, 46f, 54f }) SoftProps.Tree(root, new Vector3(x, 0.12f, -8.6f), x < 0 ? 0 : 1, 0.85f);
-        foreach (float x in new[] { -52f, 24f, 52f }) SoftProps.Tree(root, new Vector3(x, 0.12f, 8.5f), 1, 0.8f, Lite(Pink, 0.05f));
+        foreach (float x in new[] { -46f, -34f, 46f, 54f }) SoftProps.Tree(root, new Vector3(x, 0.12f, -5.9f), x < 0 ? 0 : 1, 0.85f);
+        foreach (float x in new[] { -52f, 24f, 52f }) SoftProps.Tree(root, new Vector3(x, 0.12f, 5.9f), 1, 0.8f, Lite(Pink, 0.05f));
         SoftProps.Hydrant(root, new Vector3(16f, 0.12f, 4.7f)); SoftProps.Hydrant(root, new Vector3(-30f, 0.12f, -4.7f));
         SoftProps.TrashBin(root, new Vector3(-17.5f, 0.12f, -9.0f), Mint); SoftProps.TrashBin(root, new Vector3(-16.9f, 0.12f, -9.0f), Butter);
-        SoftProps.Mailbox(root, new Vector3(30.5f, 0.12f, -8.9f), 0);
-        foreach (float x in new[] { -44f, -36f, 18f, 30f }) SoftProps.FlowerPot(root, new Vector3(x, 0.12f, 8.55f), Coral, Rose, 1.1f);
+        SoftProps.Mailbox(root, new Vector3(30.5f, 0.12f, -5.6f), 0);
+        foreach (float x in new[] { -44f, -36f, 18f, 30f }) SoftProps.FlowerPot(root, new Vector3(x, 0.12f, 5.6f), Coral, Rose, 1.1f);
         SCont(root, "box", new Vector3(-42f, 0.12f, 8.2f), 0, Wood, "回收箱");
+        ClearStreet(root);
         // backdrop: hills + clouds
         for (int i = 0; i < 9; i++) { float x = -64 + i * 16; SoftProps.Hill(root, new Vector3(x, -4, 62 + (i % 2) * 4), new Vector3(30 + (i % 3) * 8, 26 + (i % 2) * 10, 18), i % 2 == 0 ? H("a8dc8f") : H("bfe6a2")); SoftProps.Hill(root, new Vector3(x + 8, -4, -64), new Vector3(30, 22 + (i % 3) * 6, 18), i % 2 == 0 ? H("b5e09a") : H("a3d48c")); }
         for (int i = 0; i < 5; i++) { SoftProps.Hill(root, new Vector3(68, -4, -48 + i * 24), new Vector3(18, 22, 30), H("b2df98")); SoftProps.Hill(root, new Vector3(-68, -4, -48 + i * 24), new Vector3(18, 22, 30), H("aedb93")); }
@@ -422,5 +424,52 @@ public static partial class LevelGen
         Art.Toonify(root.gameObject, 0.012f);
         Debug.Log("[aunt] containers " + L.containers.Count + " locked " + lockedC.Count);
         return L;
+    }
+
+    public static int OverlapMoved, OverlapHidden, OverlapLeft, OverlapProps;
+    static readonly string[] PropNames = { "sk_tree", "sk_lamp", "sk_scooter", "sk_hydrant", "sk_bin", "sk_mailbox", "sk_pot" };
+    static Bounds RB(Transform t)
+    {
+        var b = new Bounds(t.position, Vector3.zero); bool any = false;
+        foreach (var r in t.GetComponentsInChildren<Renderer>()) { if (!r.enabled) continue; if (!any) { b = r.bounds; any = true; } else b.Encapsulate(r.bounds); }
+        return b;
+    }
+    static bool InBuilding(Transform t)
+    {
+        for (var q = t.parent; q; q = q.parent) if (q.name == "TownHouse" || q.name == "House" || q.name == "Shop" || System.Array.IndexOf(PropNames, q.name) >= 0) return true;
+        return false;
+    }
+    static Bounds Shrink(Bounds b, float m) { b.Expand(new Vector3(-2 * m, 0, -2 * m)); return b; }
+    /// keeps street dressing clear of building footprints/facades (+0.25 m) and of each other.
+    public static int ClearStreet(Transform root, bool fix = true)
+    {
+        var bld = new List<Bounds>(); var props = new List<Transform>();
+        foreach (var t in root.GetComponentsInChildren<Transform>())
+        {
+            if (t.name == "TownHouse" || t.name == "House" || t.name == "Shop" || t.name == "box") { var b = RB(t); b.Expand(new Vector3(0.5f, 0, 0.5f)); bld.Add(b); }
+            else if (System.Array.IndexOf(PropNames, t.name) >= 0 && t.gameObject.activeInHierarchy && !InBuilding(t)) props.Add(t);
+        }
+        var placed = new List<Bounds>(); int left = 0; OverlapProps = props.Count;
+        bool Hit(Bounds b) { foreach (var o in bld) if (o.Intersects(b)) return true; foreach (var o in placed) if (o.Intersects(b)) return true; return false; }
+        foreach (var p in props)
+        {
+            var b0 = Shrink(RB(p), 0.08f);
+            if (!Hit(b0)) { placed.Add(b0); continue; }
+            if (!fix) { left++; string w = ""; foreach (var o in bld) if (o.Intersects(b0)) w += " B" + o.ToString("F1"); foreach (var o in placed) if (o.Intersects(b0)) w += " P" + o.ToString("F1"); Debug.Log("[overlap] " + p.name + " " + b0.ToString("F1") + " hits" + w); continue; }
+            bool ok = false; float zs = p.position.z > 0 ? -1 : 1;
+            for (int ring = 1; ring <= 16 && !ok; ring++)
+                for (int dz = 0; dz <= 3 && !ok; dz++)
+                    foreach (int sx in new[] { 1, -1 })
+                    {
+                        var off = new Vector3(sx * ring * 0.5f, 0, zs * dz * 0.6f); if (dz == 0 && false) continue;
+                        if (Mathf.Abs(p.position.z + off.z) < 4.5f) continue;
+                        var bb = b0; bb.center += off; if (Hit(bb)) continue;
+                        p.position += off; placed.Add(bb); ok = true; OverlapMoved++;
+                        Debug.Log("[overlap] moved " + p.name + " by " + off); break;
+                    }
+            if (!ok) { p.gameObject.SetActive(false); OverlapHidden++; Debug.Log("[overlap] hid " + p.name + " @" + p.position); }
+        }
+        if (!fix) OverlapLeft = left;
+        return left;
     }
 }

@@ -5,6 +5,7 @@ using UnityEngine.Rendering.Universal;
 public class Player : MonoBehaviour
 {
     public static Player I;
+    public static bool Riding;
     public CharacterController cc; public Camera cam, vmCam; public Transform camRig, vmRoot, hand;
     public float yaw, pitch, hp = 100; public bool alive = true, inRaid, controlEnabled = true;
     public GearDef shoes; public int sel; // 0 can, 1 meat
@@ -49,7 +50,7 @@ public class Player : MonoBehaviour
     {
         float dt = Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.F8) && Game.I) Game.I.Toast(AAQuality.Cycle(cam));
-        if (!alive) return;
+        if (!alive || Riding) return;
         bool canAct = controlEnabled && !Locked;
         if (canAct) { yaw += Input.GetAxisRaw("Mouse X") * Sens; pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * Sens, -85, 85); }
         shake = Mathf.Max(0, shake - dt * 3);

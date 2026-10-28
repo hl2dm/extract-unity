@@ -19,7 +19,7 @@ public class Game : MonoBehaviour
 
     void Awake()
     {
-        I = this; Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
+        I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
@@ -458,6 +458,23 @@ public class Game : MonoBehaviour
             {   // street wide, then one shot per room
                 Debug.Log("[contrast] signs checked " + SoftProps.SignCount + ", fails " + SoftProps.SignFails);
                 yield return CamShot(new Vector3(-34, 3.5f, -1), new Vector3(-12, 2, 3), "oneMap_street");
+                { var thz = GameObject.Find("TownHouse"); int left = thz ? LevelGen.ClearStreet(thz.transform.parent, false) : -1;
+                  Debug.Log("[overlap] props " + LevelGen.OverlapProps + " moved " + LevelGen.OverlapMoved + " hidden " + LevelGen.OverlapHidden + " remaining " + left);
+                  Check(left == 0, "street dressing clear of buildings + each other (remaining " + left + ")"); }
+                yield return CamShot(new Vector3(30, 3.5f, 1), new Vector3(52, 2.5f, 8), "oneMap_street_e");
+                yield return CamShot(new Vector3(-30, 3.5f, -1), new Vector3(-50, 2.5f, -8), "oneMap_street_w");
+                var slide = FindFirstObjectByType<SlideRide>(); Check(slide, "slide is interactable");
+                if (slide)
+                {
+                    var st = slide.transform; var near = st.TransformPoint(new Vector3(0, 0, -2.6f));
+                    player.Teleport(near, st.eulerAngles.y); yield return null; yield return null;
+                    Check(slide.Prompt.Contains("溜滑梯"), "slide prompt");
+                    int r0 = SlideRide.Rides; slide.Use(); yield return new WaitForSeconds(1.75f); yield return Shot("oneMap_slide_ride");
+                    for (float w = 0; w < 6 && SlideRide.Busy; w += Time.deltaTime) yield return null;
+                    var land = st.TransformPoint(new Vector3(0, 0, 2.9f));
+                    Check(SlideRide.Rides == r0 + 1 && !SlideRide.Busy && Vector3.Distance(player.transform.position, land) < 0.6f && player.cc.enabled, "slide ride lands at the bottom");
+                    yield return CamShot(st.TransformPoint(new Vector3(3.5f, 2.2f, 4.5f)), st.TransformPoint(new Vector3(0, 1, 0)), "oneMap_slide");
+                }
                 {   // sign close-ups from 3 angles (text clipping check)
                     var signs = FindObjectsByType<Transform>(FindObjectsSortMode.None).Where(t => t.name == "sk_text3d").OrderBy(t => (t.position - bld.position).sqrMagnitude).Take(10).ToList(); int si = 0;
                     foreach (var sg in signs.Take(2)) yield return CamShot(sg.position + sg.forward * 5f + Vector3.up * 0.5f, sg.position, "oneMap_occlusion" + si++, 0.2f); si = 0;
@@ -480,6 +497,7 @@ public class Game : MonoBehaviour
                 if (run == 0) yield return Shot("oneMap_container_prompt");
                 OpenLoot(c); yield return new WaitForSeconds(0.5f); if (run == 0) yield return Shot("oneMap_loot_spin");
                 for (float w = 0; w < 15 && c.slots.Any(s => s.state < 2); w += Time.deltaTime) yield return null; yield return new WaitForSeconds(0.3f);
+                UIContrast.PassNow(); Debug.Log("[contrast-ui] checked " + UIContrast.Checked + " fixed " + UIContrast.Fixed + " fails " + UIContrast.Fails); Check(UIContrast.Fails == 0, "UI text contrast >= 4.5 (fails " + UIContrast.Fails + ")");
                 yield return Shot("oneMap_" + tn + "_loot_" + run); LootAll(); yield return new WaitForSeconds(0.3f); CloseLoot();
                 Check(bag.Count > 0, tn + " looted " + bag.Count);
             }
@@ -534,6 +552,7 @@ public class Game : MonoBehaviour
         Pet.FreezeAll = 0; BackToBase(); yield return new WaitForSeconds(2f);
         OpenStation("stash"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_stash"); CloseModal();
         OpenStation("quest"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_quest"); CloseModal();
+        UIContrast.PassNow(); Check(UIContrast.Fails == 0, "UI contrast across all screens (checked " + UIContrast.Checked + ", fixed " + UIContrast.Fixed + ")");
         Debug.Log("[casual] errors " + errs + (errList.Count > 0 ? " :: " + string.Join(" || ", errList) : "") + " checks failed " + fails);
         Debug.Log(errs == 0 && fails == 0 ? "[casual] full loop ok" : "[casual] full loop FAILED");
         PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit();

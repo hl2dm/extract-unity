@@ -124,6 +124,7 @@ public class Pet : MonoBehaviour
         if (st == St.Flee || st == St.Lured && lure) return;
         lure = l; Set(St.Lured); target = l.transform.position;
     }
+    public void LoseTrack() { if (st == St.Chase || st == St.Notice || st == St.Investigate) Set(St.Patrol); }
     void Set(St s) { if (st == s) return; st = s; stT = 0; lostT = 0; }
     void Say(string n) { Sfx.At(n, transform.position + Vector3.up * 0.4f, 0.9f, 3, 30); }
     Vector3 Eye => transform.position + Vector3.up * (dog ? 0.6f : 0.45f);
