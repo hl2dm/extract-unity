@@ -26,13 +26,13 @@ public static class UiKit
         x.horizontalOverflow = HorizontalWrapMode.Wrap; x.verticalOverflow = VerticalWrapMode.Overflow; x.raycastTarget = false; x.supportRichText = true; x.lineSpacing = 1.05f;
         return x;
     }
-    public static Text Shadowed(Text t, float a = 0.6f) { var s = t.gameObject.AddComponent<Shadow>(); s.effectColor = Art.Casual ? new Color(1f, 0.97f, 0.92f, a * 0.8f) : new Color(0, 0, 0, a); s.effectDistance = new Vector2(2, -2); return t; }
+    public static Text Shadowed(Text t, float a = 0.6f) { if (Art.Casual && SoftProps.Lum(t.color) > 0.45f) { var ol = t.gameObject.AddComponent<Outline>(); ol.effectColor = new Color(0.36f, 0.24f, 0.3f, 0.85f); ol.effectDistance = new Vector2(1.6f, -1.6f); var sd = t.gameObject.AddComponent<Shadow>(); sd.effectColor = new Color(0.3f, 0.2f, 0.26f, 0.45f); sd.effectDistance = new Vector2(2, -3); return t; } var s = t.gameObject.AddComponent<Shadow>(); s.effectColor = Art.Casual ? new Color(1f, 0.97f, 0.92f, a * 0.8f) : new Color(0, 0, 0, a); s.effectDistance = new Vector2(2, -2); return t; }
     public static Button Btn(Transform parent, string label, Action onClick, Color bg, int size = 26, Color? fg = null)
     {
         var img = Img(parent, bg, Art.Rounded, "btn:" + label); img.raycastTarget = true;
         var b = img.gameObject.AddComponent<Button>(); var cb = b.colors; cb.highlightedColor = new Color(1.15f, 1.15f, 1.15f); cb.pressedColor = new Color(0.8f, 0.8f, 0.8f); cb.fadeDuration = 0.06f; b.colors = cb;
         b.onClick.AddListener(() => { Sfx.Play("click_002", 0.5f); onClick?.Invoke(); });
-        var t = Txt(img.transform, label, size, fg ?? Color.white, TextAnchor.MiddleCenter, true); t.rectTransform.Fill(6);
+        var t = Txt(img.transform, label, size, fg ?? Color.white, TextAnchor.MiddleCenter, true); if (Art.Casual && SoftProps.Contrast(t.color, img.color) < 4.5f) t.color = SoftProps.Readable(t.color, img.color); t.rectTransform.Fill(6); if (Art.Casual) { var ol = t.gameObject.AddComponent<Outline>(); ol.effectColor = new Color(0.42f, 0.29f, 0.32f, 0.35f); ol.effectDistance = new Vector2(1.5f, -1.5f); }
         return b;
     }
     /// pastel crayon UI: dark neutral panels -> cream paper, saturated fills -> soft pastel. Pure white (icons) untouched.

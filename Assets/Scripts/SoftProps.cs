@@ -280,21 +280,100 @@ public static class SoftProps
             }
             else
             {
-                if (rng.Next(2) == 0) RoundWin(fr, new Vector3(0, y, -0.05f), Mathf.Min(1.1f, w * 0.2f), trim, true);
-                else Win(fr, new Vector3(0, y, -0.05f), Mathf.Min(2.8f, w * 0.48f), 1.75f, trim, true, rng.Next(2) == 0 ? (Color?)new[] { PinkD, ButterD, LavD }[rng.Next(3)] : null);
+                if (rng.Next(2) == 0 && f == floors - 1) RoundWin(fr, new Vector3(0, y, -0.05f), Mathf.Min(1.1f, w * 0.2f), trim, Mathf.Abs(Mathf.RoundToInt(pos.x * 0.37f + pos.z)) % 3 == 0);
+                else Win(fr, new Vector3(0, y, -0.05f), Mathf.Min(2.8f, w * 0.48f), 1.75f, trim, f % 2 == 0, rng.Next(2) == 0 ? (Color?)new[] { PinkD, ButterD, LavD }[rng.Next(3)] : null);
+                Block(fr, new Vector3(0, y - 1.05f, -0.2f), new Vector3(Mathf.Min(2.4f, w * 0.42f), 0.16f, 0.42f), White, 0.07f, false);   // window sill
             }
         }
+        Craft(g, fr, pos, w, d, H, floors, gh, fh, wall, trim, acc, gt);
         return g;
     }
 
+    /// medium/small-scale craft pass for townhouses: corner pilasters, plinth, step, canopy, mailbox, house number,
+    /// lamp, AC units, laundry pole, planters, rooftop rail/antenna. Uses its own rng so map layout stays identical.
+    static void Craft(Transform g, Transform fr, Vector3 pos, float w, float d, float H, int floors, float gh, float fh, Color wall, Color trim, Color acc, int gt)
+    {
+        var r = new System.Random(Mathf.RoundToInt(pos.x * 73.1f + pos.z * 131.7f) + floors * 7);
+        var om = PushM(1f);
+        foreach (int s in new[] { -1, 1 }) Block(fr, new Vector3(s * (w / 2 - 0.12f), H / 2 + 0.3f, 0.45f), new Vector3(0.34f, H - 0.6f, 0.34f), Lt(trim, 0.15f), 0.12f, false);   // accent corner pilasters
+        Block(fr, new Vector3(0, 0.09f, -0.35f), new Vector3(w + 0.1f, 0.18f, 0.7f), Dk(wall, 0.8f), 0.08f, false);   // ground plinth / curb contact
+        Block(fr, new Vector3(0, 0.015f, -1.0f), new Vector3(w + 0.3f, 0.03f, 0.9f), Dk(wall, 0.62f), 0.01f, false);   // AO contact strip
+        float dx = gt == 1 ? w * 0.3f : (gt == 2 ? -w * 0.2f : 0f);
+        if (gt != 0)
+        {
+            Block(fr, new Vector3(dx, 0.12f, -0.5f), new Vector3(2.3f, 0.24f, 0.8f), Lt(wall, 0.25f), 0.08f, false);   // door step
+            var om2 = PushM(0.5f); var cn = Block(fr, new Vector3(dx, 3.25f, -0.45f), new Vector3(2.5f, 0.14f, 0.9f), acc, 0.06f, false); cn.transform.localRotation = Q(-12, 0, 0); MatA = om2;   // door canopy
+            foreach (int s in new[] { -1, 1 }) Cyl(fr, new Vector3(dx + s * 1.05f, 3.0f, -0.2f), 0.04f, 0.5f, White, 0.02f, Q(40, 0, 0), 8);   // canopy brackets
+            float mx = dx + (dx > 0 ? -1.45f : 1.45f);
+            Block(fr, new Vector3(mx, 1.3f, -0.2f), new Vector3(0.5f, 0.6f, 0.3f), new[] { Coral, MintD, Sky }[r.Next(3)], 0.08f, false);   // mailbox
+            Block(fr, new Vector3(mx, 1.45f, -0.36f), new Vector3(0.32f, 0.05f, 0.03f), Dk(wall, 0.45f), 0.01f, false);
+            var pl = Block(fr, new Vector3(mx, 2.15f, -0.1f), new Vector3(0.62f, 0.4f, 0.1f), Butter, 0.12f, false);   // house-number plaque
+            Text(fr, new Vector3(mx, 2.15f, -0.17f), Quaternion.identity, (r.Next(2, 98)).ToString(), 0.045f, Dk(trim, 0.55f));
+        }
+        // wall lamp next to the entrance
+        float lx = gt == 0 ? w * 0.42f : dx + (dx > 0 ? 1.4f : -1.4f);
+        Block(fr, new Vector3(lx, 2.6f, -0.1f), new Vector3(0.1f, 0.1f, 0.3f), GreyD, 0.03f, false);
+        var om3 = PushM(0.5f); Ball(fr, new Vector3(lx, 2.52f, -0.32f), new Vector3(0.26f, 0.32f, 0.26f), Lt(ButterD, 0.4f), 12); MatA = om3;
+        // planters hugging the base
+        foreach (int s in new[] { -1, 1 }) if (r.Next(3) > 0) { Block(fr, new Vector3(s * (w / 2 - 0.65f), 0.32f, -0.45f), new Vector3(0.8f, 0.45f, 0.55f), Lt(trim, 0.3f), 0.12f, false); Ball(fr, new Vector3(s * (w / 2 - 0.65f), 0.7f, -0.45f), new Vector3(0.75f, 0.5f, 0.5f), new[] { MintD, Mint }[r.Next(2)], 12); }
+        // AC units + laundry pole on upper floors
+        int side = r.Next(2) == 0 ? -1 : 1; bool laundry = false;
+        for (int f = 1; f < floors; f++)
+        {
+            float y0 = gh + (f - 1) * fh;
+            if (r.Next(3) > 0)
+            {
+                float ax = side * w * 0.36f;
+                Block(fr, new Vector3(ax, y0 + 0.55f, -0.25f), new Vector3(0.8f, 0.55f, 0.45f), new Color(0.95f, 0.94f, 0.92f), 0.14f, false);
+                Cyl(fr, new Vector3(ax + 0.08f, y0 + 0.55f, -0.48f), 0.19f, 0.03f, new Color(0.78f, 0.79f, 0.8f), 0.01f, Q(90, 0, 0), 16);
+                Block(fr, new Vector3(ax, y0 + 0.24f, -0.25f), new Vector3(0.7f, 0.06f, 0.4f), GreyD, 0.02f, false);
+            }
+            if (!laundry && f == floors - 1 && r.Next(2) == 0)
+            {
+                laundry = true; float ly = y0 + fh - 0.25f, lw = w * 0.5f;
+                foreach (int s in new[] { -1, 1 }) Cyl(fr, new Vector3(s * lw / 2, ly, -0.35f), 0.035f, 0.6f, GreyD, 0.015f, Q(90, 0, 0), 8);
+                Cyl(fr, new Vector3(0, ly, -0.62f), 0.035f, lw, White, 0.015f, Q(0, 0, 90), 8);
+                for (int i = 0; i < 3; i++) { float cx = -lw * 0.3f + i * lw * 0.3f; var cl = Block(fr, new Vector3(cx, ly - 0.32f, -0.62f), new Vector3(0.42f, 0.55f, 0.05f), new[] { PinkD, Sky, Butter, Lav }[r.Next(4)], 0.04f, false); cl.transform.localRotation = Q(0, 0, (float)(r.NextDouble() * 8 - 4)); }
+            }
+        }
+        // rooftop rim rail + antenna
+        if (r.Next(2) == 0)
+        {
+            Cyl(g, new Vector3(w * 0.3f, H + 0.9f, d * 0.7f), 0.03f, 1.8f, GreyD, 0.01f, null, 6);
+            Cyl(g, new Vector3(w * 0.3f, H + 1.5f, d * 0.7f), 0.02f, 0.9f, GreyD, 0.01f, Q(0, 0, 90), 6);
+        }
+        MatA = om;
+    }
+
     /// chunky extruded 3D letters: stacked darker layers behind a bright face, on a puffy pill
+    public static float Lum(Color c) { float f(float v) => v <= 0.03928f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f); return 0.2126f * f(c.r) + 0.7152f * f(c.g) + 0.0722f * f(c.b); }
+    public static float Contrast(Color a, Color b) { float x = Lum(a), y = Lum(b); return (Mathf.Max(x, y) + 0.05f) / (Mathf.Min(x, y) + 0.05f); }
+    /// keep hue, push lightness until text vs board reaches ratio (dark text on light board, cream on dark board)
+    public static Color Readable(Color text, Color board, float ratio = 4.5f)
+    {
+        bool lightBoard = Lum(board) > 0.18f; var c = text;
+        for (int i = 0; i < 40 && Contrast(c, board) < ratio; i++) c = lightBoard ? Dk(c, 0.92f) : Color.Lerp(c, new Color(1f, 0.98f, 0.93f), 0.15f);
+        if (Contrast(c, board) < ratio) c = lightBoard ? new Color(0.25f, 0.16f, 0.2f) : new Color(1f, 0.98f, 0.93f);
+        return c;
+    }
+    public static int SignCount, SignFails;
+    /// chunky extruded 3D letters on a puffy pill board. Board height fixed by `size`; glyphs fill ~68% of it,
+    /// names longer than 4 chars wrap to two lines; text colour forced to >= 4.5:1 contrast with the board.
     public static Transform Text3D(Transform p, Vector3 pos, string s, float size, Color c)
     {
         var g = Group(p, "sk_text3d", pos); var om = PushM(0.5f);
-        float wd = s.Length * size * 7.2f + 0.6f;
-        var pill = Block(g, new Vector3(0, 0, 0.32f), new Vector3(wd, size * 9f, 0.3f), White, Mathf.Min(size * 4.2f, 0.14f), false);   // pill face at z=+0.17, letters fully in front
+        Color board = new Color(1f, 0.98f, 0.94f);
+        int n = s.Length, lines = n > 4 ? 2 : 1; int per = (n + lines - 1) / lines;
+        string txt = lines == 2 ? s.Substring(0, per) + "\n" + s.Substring(per) : s;
+        float Hb = size * 9f * (lines == 2 ? 1.35f : 1f);
+        float em = Hb * 0.56f / 0.92f / lines / (lines == 2 ? 0.95f : 1f);   // CJK ink ~0.92em
+        float wd = per * em + Hb * 0.5f;
+        Block(g, new Vector3(0, 0, 0.32f), new Vector3(wd, Hb, 0.3f), board, Mathf.Min(Hb * 0.47f, 0.14f), false);
         MatA = om;
-        for (int k = 4; k >= 0; k--) { var t = Text(g, new Vector3(0, 0, 0.12f - k * 0.03f), Quaternion.identity, s, size, k == 0 ? c : (k == 1 ? Lt(c, 0.5f) : Dk(c, 0.62f))); t.GetComponent<MeshRenderer>().sortingOrder = 20 - k * 2; }   // front layer always sorted last: no doubling
+        var face = Readable(c, board, 6f); float cr = Contrast(face, board); SignCount++;
+        if (cr < 4.5f) { SignFails++; Debug.Log("[contrast] FAIL sign '" + s + "' ratio " + cr.ToString("0.00")); }
+        float cs = em / 8f;
+        for (int k = 4; k >= 0; k--) { var t = Text(g, new Vector3(0, 0, 0.12f - k * 0.03f), Quaternion.identity, txt, cs, k == 0 ? face : (k == 1 ? Lt(face, 0.35f) : Dk(face, 0.7f))); t.lineSpacing = 0.95f; t.GetComponent<MeshRenderer>().sortingOrder = 20 - k * 2; }
         return g;
     }
 

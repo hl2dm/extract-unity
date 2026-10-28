@@ -2,7 +2,7 @@
 - Cat / Dog models (Assets/Resources/Pets) — Quaternius, "Animated Animales Low Poly" / Animal Pack Vol.2, CC0 1.0 (https://opengameart.org/content/animated-animales-low-poly). Verified 2026-10-28: files are byte-identical (MD5) to Cat.fbx/Dog.fbx in the official zip.
 - UI icons — derived from Noto Color Emoji (SIL OFL 1.1 / Apache 2.0), re-processed into pastel crayon stickers (posterise, pastelise, grain, wobbly outline) by casual/pastel_icons.py.
 - Sounds meow/woof/cry/honk/engine — procedurally synthesized (casual/gen.py), no third-party audio.
-- Font — Noto Sans TC (SIL OFL 1.1, fallback) and Iansui 芫荽 v1.020 by ButTaiwan (SIL OFL 1.1, subset to used glyphs; licence at Assets/Resources/Fonts/Iansui-OFL.txt).
+- Font — 源樂圓體 GenSenRounded2 TW v2.100 (Bold / Heavy) by ButTaiwan (SIL OFL 1.1, subset to used glyphs; licence at Assets/Resources/Fonts/GenSenRounded-OFL.txt). Noto Sans TC and Iansui (SIL OFL 1.1) kept as fallback files.
 - Remaining furniture / props — see the original CREDITS (Poly Haven CC0, Kenney CC0, Quaternius CC0).
 - Removed in casual build: soldier, rifles, helicopter.
 

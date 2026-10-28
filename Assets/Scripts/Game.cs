@@ -456,6 +456,7 @@ public class Game : MonoBehaviour
             if (bld) { yield return CamShot(bld.position + new Vector3(9, 6.5f, -15), bld.position + new Vector3(0, 3, 3), "oneMap_" + tn + "_ext_" + run); }
             if (run == 0 && bld)
             {   // street wide, then one shot per room
+                Debug.Log("[contrast] signs checked " + SoftProps.SignCount + ", fails " + SoftProps.SignFails);
                 yield return CamShot(new Vector3(-34, 3.5f, -1), new Vector3(-12, 2, 3), "oneMap_street");
                 {   // sign close-ups from 3 angles (text clipping check)
                     var signs = FindObjectsByType<Transform>(FindObjectsSortMode.None).Where(t => t.name == "sk_text3d").OrderBy(t => (t.position - bld.position).sqrMagnitude).Take(10).ToList(); int si = 0;

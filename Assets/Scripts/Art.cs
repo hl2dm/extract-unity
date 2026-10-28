@@ -24,7 +24,7 @@ public static class Art
         litT = Resources.Load<Material>("Mat/Lit"); pbrT = Resources.Load<Material>("Mat/LitPBR") ?? Resources.Load<Material>("Mat/Lit"); emT = Resources.Load<Material>("Mat/LitEmissive");
         unlitT = Resources.Load<Material>("Mat/Unlit"); cutT = Resources.Load<Material>("Mat/UnlitCutout");
         Font = Resources.Load<Font>("Fonts/NotoTC-Medium"); FontBold = Resources.Load<Font>("Fonts/NotoTC-Black") ?? Font;
-        if (Casual) { var hand = Resources.Load<Font>("Fonts/Iansui-Regular"); if (hand) { Font = hand; FontBold = hand; } }
+        if (Casual) { var rb = Resources.Load<Font>("Fonts/GenSenRounded-B"); var rh = Resources.Load<Font>("Fonts/GenSenRounded-H"); if (rb) Font = rb; if (rh) FontBold = rh; else if (rb) FontBold = rb; }
     }
     public static Texture2D Tex(string n) { if (!texs.TryGetValue(n, out var t)) { t = Resources.Load<Texture2D>("Tex/" + n); texs[n] = t; } return t; }
 
