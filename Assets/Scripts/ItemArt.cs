@@ -1,0 +1,96 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+/// CASUAL: flat sticker icons (Resources/Icons) for UI, and billboard sticker "toys" for ground loot.
+public static class ItemArt
+{
+    public static Sprite Pic(Item it) => it == null ? null : Art.Icon(it.ic);
+    public static Sprite Pic(string name, string ic) => Art.Icon(ic);
+    static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
+    public static Transform Build(Transform parent, Item it, out bool fallback)
+    {
+        fallback = false; var root = new GameObject("model").transform; root.SetParent(parent, false);
+        var sp = Art.Icon(it.ic);
+        if (!sp) { fallback = true; Art.Prim(PrimitiveType.Cube, root, new Vector3(0, 0.15f, 0), Vector3.one * 0.3f, Art.Lit(Data.RarCol[it.r])); return root; }
+        if (!mats.TryGetValue(it.ic, out var m) || !m) { m = Art.Cutout(sp.texture); mats[it.ic] = m; }
+        var q = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(q.GetComponent<Collider>()); q.name = "sticker";
+        q.transform.SetParent(root, false); q.transform.localPosition = new Vector3(0, 0.28f, 0); q.transform.localScale = Vector3.one * 0.48f;
+        var r = q.GetComponent<Renderer>(); r.sharedMaterial = m; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        q.AddComponent<Billboard>();
+        var sh = Art.Prim(PrimitiveType.Cylinder, root, new Vector3(0, 0.01f, 0), new Vector3(0.3f, 0.005f, 0.3f), Art.Unlit(new Color(0, 0, 0, 0.35f)));
+        return root;
+    }
+}
+
+public class Billboard : MonoBehaviour
+{
+    void LateUpdate() { var c = Camera.main; if (!c) return; var d = transform.position - c.transform.position; d.y = 0; if (d.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.LookRotation(d) ; transform.localPosition = new Vector3(0, 0.28f + 0.05f * Mathf.Sin(Time.time * 3 + transform.parent.GetInstanceID()), 0); }
+}
+
+/// Glowing floor ring that tells the player "this can be searched". Fades with distance, hides when empty.
+public class HintRing : MonoBehaviour
+{
+    public static Interactable focused;
+    public Interactable owner; public Color col = new Color(1f, 0.85f, 0.45f); public float radius = 0.6f, aspect = 1f;
+    MeshRenderer mr, mk; Transform marker; MaterialPropertyBlock mpb; float t0; static Mesh ring;
+    static Mesh RingMesh()
+    {
+        if (ring) return ring; int n = 48; var v = new Vector3[n * 2]; var tr = new int[n * 6];
+        for (int i = 0; i < n; i++) { float a = i * Mathf.PI * 2 / n; var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)); v[i * 2] = d * 0.86f; v[i * 2 + 1] = d; int j = (i + 1) % n; tr[i * 6] = i * 2; tr[i * 6 + 1] = j * 2; tr[i * 6 + 2] = i * 2 + 1; tr[i * 6 + 3] = i * 2 + 1; tr[i * 6 + 4] = j * 2; tr[i * 6 + 5] = j * 2 + 1; }
+        ring = new Mesh { vertices = v, triangles = tr }; ring.RecalculateNormals(); ring.RecalculateBounds(); return ring;
+    }
+    public static HintRing Add(Interactable owner, Vector3 worldFloor, float radius, Color c)
+    {
+        var g = new GameObject("hintRing"); g.transform.SetParent(owner.transform, true); g.transform.position = worldFloor + Vector3.up * 0.025f; g.transform.rotation = Quaternion.identity;
+        var h = g.AddComponent<HintRing>(); h.owner = owner; h.radius = radius; h.col = c; return h;
+    }
+    void Start()
+    {
+        t0 = Random.value * 5; mpb = new MaterialPropertyBlock(); FitClear();
+        var rg = new GameObject("ring"); rg.transform.SetParent(transform, false); rg.AddComponent<MeshFilter>().sharedMesh = RingMesh();
+        mr = rg.AddComponent<MeshRenderer>(); mr.sharedMaterial = Art.Emissive(Color.white, 1f); mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
+        var lossy = transform.lossyScale; rg.transform.localScale = new Vector3(radius / Mathf.Max(lossy.x, 1e-3f), 1, radius * aspect / Mathf.Max(lossy.z, 1e-3f));
+        var m = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(m.GetComponent<Collider>()); marker = m.transform; marker.SetParent(transform, true); marker.localScale = new Vector3(0.09f / Mathf.Max(lossy.x, 1e-3f), 0.09f / Mathf.Max(lossy.y, 1e-3f), 0.09f / Mathf.Max(lossy.z, 1e-3f));
+        mk = m.GetComponent<MeshRenderer>(); mk.sharedMaterial = Art.Emissive(Color.white, 1f); mk.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+    }
+    // shrink the ring until its outline no longer passes through neighbouring props / walls
+    public int shrinks;
+    void FitClear()
+    {
+        var c = transform.position; float ox = radius, oz = radius * aspect;
+        for (int k = 0; k < 12; k++)
+        {
+            bool hit = false;
+            for (int i = 0; i < 16 && !hit; i++)
+            {
+                float a = i * Mathf.PI / 8; var p = c + new Vector3(Mathf.Cos(a) * radius, 0.12f, Mathf.Sin(a) * radius * aspect);
+                foreach (var col in Physics.OverlapSphere(p, 0.05f, ~0, QueryTriggerInteraction.Ignore))
+                { if (owner && (col.transform.IsChildOf(owner.transform) || col.GetComponentInParent<Interactable>() == owner)) continue; var cb = col.bounds; if (c.x > cb.min.x - 0.05f && c.x < cb.max.x + 0.05f && c.z > cb.min.z - 0.05f && c.z < cb.max.z + 0.05f) continue; /* the body this ring surrounds */ if (col.GetComponentInParent<Player>()) continue; if (col.bounds.max.y < 0.1f + c.y) continue; hit = true; break; }
+            }
+            if (!hit) break; radius *= 0.9f; shrinks++; if (radius < 0.32f) { radius = 0.32f; break; }
+        }
+        if (shrinks > 0) Debug.Log("[ring] " + (owner ? owner.name : "?") + " shrunk " + ox.ToString("0.00") + "->" + radius.ToString("0.00"));
+    }
+    void LateUpdate()
+    {
+        if (!owner) { Destroy(gameObject); return; }
+        var lc = owner as LootContainer; bool empty = lc && lc.Empty; bool searched = lc && lc.opened;
+        var cam = Camera.main; float d = cam ? Vector3.Distance(cam.transform.position, transform.position) : 0;
+        bool foc = focused == owner;
+        float vis = empty ? 0 : Mathf.Clamp01((14f - d) / 5f); if (foc) vis = 1;
+        mr.enabled = vis > 0.01f; float t = Time.time + t0;
+        if (mr.enabled)
+        {
+            float pulse = 0.75f + 0.25f * Mathf.Sin(t * 3.2f);
+            var c = searched ? Color.Lerp(col, Color.gray, 0.55f) : col; float inten = (foc ? 4.5f : 1.6f) * pulse * vis * (searched ? 0.6f : 1f);
+            mpb.SetColor("_EmissionColor", c * inten); mpb.SetColor("_BaseColor", c * 0.5f * vis); mr.SetPropertyBlock(mpb);
+            float s = foc ? 1.08f + 0.04f * Mathf.Sin(t * 6) : 1f; mr.transform.localScale = new Vector3(radius * s / Mathf.Max(transform.lossyScale.x, 1e-3f), 1, radius * aspect * s / Mathf.Max(transform.lossyScale.z, 1e-3f));
+        }
+        mk.enabled = foc && !empty;
+        if (mk.enabled)
+        {
+            var b = owner.TopPoint; marker.position = b + Vector3.up * (0.28f + 0.06f * Mathf.Sin(t * 4)); marker.rotation = Quaternion.Euler(45, t * 120, 45);
+            mpb.SetColor("_EmissionColor", col * 5f); mpb.SetColor("_BaseColor", col); mk.SetPropertyBlock(mpb);
+        }
+    }
+}

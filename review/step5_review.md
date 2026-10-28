@@ -1,0 +1,12 @@
+I did a deep pass over the new STEP 5 code (`Props.cs`, the warehouse/`base`-theme additions in `LevelGen.cs`, the `Enemy.cs` static-modifier/elite code, `Data.cs` base theme, and the `Game.cs` autoshot coroutine) checking for crashes, null refs, blocked paths/doors, unreachable loot, and balance breakers. Most of the generation logic (pallet-rack aisles, locked-room/key placement, corner-slot furnishing, collider defaults) is actually internally consistent — corner-slot placement never exceeds 4 uses per room, locked containers are always excluded from key-eligibility, and every new `Data.CK` kind used in `LevelGen`/`Props` exists in the dictionary (no `KeyNotFoundException` risk).
+
+One real issue stood out:
+
+**LevelGen.cs:505 vs LevelGen.cs:166 — sandbag trench can spawn flush against/blocking a warehouse front door**
+`BaseYard()` hardcodes a sandbag trench at world `x = -20, z = 10.6` (and another at `x = 8`). The warehouse's front door position is randomized via `frontCell`/`frontCell2` (`LevelGen.cs:166`), and for `cols=5, cell=6.4`, the two front-door world-x positions land on `{-20, -13.6, -7.2, -0.8, 5.6}` depending on the roll. `frontCell==0` or `frontCell==3` (→`frontCell2==0`) both resolve to door-x `-20` — i.e. **~40% of base-theme raids** place a door centered exactly under/behind the first sandbag trench, only ~1.5m from the building's south wall. The second trench (`x=8`) also sits within ~0.2m of the `frontCell==4` door edge. `Art.Spawn` defaults `collider=true` and this call doesn't override it, so the trench's collider can sit right in the doorway.
+- Fix: don't hardcode trench x in world space — compute it relative to the building's actual door x (which `BuildHouse`/`Furnish` already know), or push the trenches further out (z) and offset them away from the full set of possible door-x values, or simply skip spawning a trench if `Mathf.Abs(x - doorX) < 2f` for either front door.
+
+Beyond that, I didn't find a confirmed runtime-exception, stuck-state, or unreachable-loot bug in this diff — containers, pallet-rack aisles, and locked-room access all check out geometrically. The `Enemy.FirstShotDelay`/`AccMul` nerf applied to `office`/`base` (making "harder" tiers react slower/less accurately) looked backwards at first glance, but it's offset by higher enemy count + the new elite unit, so I'm treating it as a tuning choice rather than a bug.
+
+## Fix applied
+- Trenches moved to x=-26 / x=14 (outside every possible front-door x of the 5-wide warehouse).
