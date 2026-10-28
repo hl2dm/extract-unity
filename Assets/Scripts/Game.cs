@@ -12,7 +12,7 @@ public class Game : MonoBehaviour
     public List<Item> bag = new List<Item>(); public int keys; public float runT; public int searched, caughtRun, luresRun; bool warn60, warn20;
     LootContainer openC; Interactable focus; float tickT;
     public const float RaidTime = Data.RaidTime;
-    public bool autoshots, doorOnly; string shotDir;
+    public bool autoshots, doorOnly, gallery; string shotDir;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot() { if (I) return; var g = new GameObject("Game"); DontDestroyOnLoad(g); g.AddComponent<Game>(); }
@@ -22,7 +22,7 @@ public class Game : MonoBehaviour
         I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
-        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; }
+        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; }
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>();
         SaveSys.Load();
@@ -441,6 +441,7 @@ public class Game : MonoBehaviour
     {
         Application.logMessageReceived += OnLog; Time.timeScale = 1; yield return new WaitForSeconds(2.5f);
         var S0 = SaveSys.S; S0.money += 20000;
+        if (gallery) { yield return Gallery(); yield break; }
         if (doorOnly)
         {   // before/after doorway trim shots (run once with -legacytrim for "before")
             Deploy(0); yield return new WaitForSeconds(3.0f); Pet.FreezeAll = 999;
@@ -574,6 +575,37 @@ public class Game : MonoBehaviour
         Debug.Log("[casual] errors " + errs + (errList.Count > 0 ? " :: " + string.Join(" || ", errList) : "") + " checks failed " + fails);
         Debug.Log(errs == 0 && fails == 0 ? "[casual] full loop ok" : "[casual] full loop FAILED");
         PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit();
+    }
+    IEnumerator Gallery()
+    {   // v0.5 art-review gallery: same framing every round
+        Deploy(0); yield return new WaitForSeconds(3.0f); Pet.FreezeAll = 999;
+        var ho = new Vector3(-6, 0, 9);
+        var cat = Pet.All.FirstOrDefault(q => !q.dog); var dog = Pet.All.FirstOrDefault(q => q.dog);
+        foreach (var q in Pet.All) q.enabled = false;
+        var spot = new Vector3(-38, 0.12f, 1.2f);
+        if (cat) { PlacePet(cat, spot); cat.transform.rotation = Quaternion.Euler(0, 200, 0); }
+        if (dog) { PlacePet(dog, spot + new Vector3(1.3f, 0, 0.2f)); dog.transform.rotation = Quaternion.Euler(0, 160, 0); }
+        yield return new WaitForSeconds(0.5f);
+        yield return CamShot(spot + new Vector3(0.65f, 0.75f, -2.4f), spot + new Vector3(0.65f, 0.3f, 0), "g_pets", 0.3f);
+        if (cat) yield return CamShot(spot + new Vector3(-0.35f, 0.55f, -1.1f), spot + new Vector3(0, 0.3f, 0), "g_cat", 0.2f);
+        if (dog) yield return CamShot(spot + new Vector3(1.9f, 0.7f, -1.2f), spot + new Vector3(1.3f, 0.4f, 0.2f), "g_dog", 0.2f);
+        var moto = level.root.GetComponentsInChildren<Moto>().FirstOrDefault();
+        if (moto)
+        {
+            var mp = moto.transform.position;
+            yield return CamShot(mp - moto.transform.right * 2.2f + moto.transform.forward * 1.4f + Vector3.up * 1.2f, mp + Vector3.up * 0.7f, "g_scooter", 0.2f);
+            moto.Use(); yield return null; Moto.CamFree = true; moto.SetHeading(90); player.Teleport(new Vector3(-30, 0.15f, 1.5f), 90); yield return new WaitForSeconds(0.3f);
+            var rp = player.transform.position;
+            yield return CamShot(rp + new Vector3(2.0f, 1.6f, -1.5f), rp + Vector3.up * 1.3f, "g_rider", 0.2f);
+            Moto.CamFree = false; yield return new WaitForSeconds(0.2f); yield return Shot("g_ride_third");
+            moto.Use(); yield return null;
+        }
+        yield return CamShot(new Vector3(-6, 1.8f, 0.5f), ho + new Vector3(0, 2.6f, 2), "g_house", 0.2f);
+        yield return CamShot(new Vector3(-23.6f, 1.7f, -1.2f), new Vector3(-23.6f, 2.6f, -9.5f), "g_shop", 0.2f);
+        yield return CamShot(new Vector3(-50, 3.2f, 0), new Vector3(-30, 1.5f, 0), "g_street", 0.2f);
+        yield return CamShot(ho + new Vector3(1.8f, 1.6f, 1.0f), ho + new Vector3(-1.8f, 0.7f, 4.5f), "g_living", 0.2f);
+        yield return CamShot(ho + new Vector3(-1.0f, 1.6f, 1.0f), ho + new Vector3(4.5f, 0.8f, 3.5f), "g_kitchen", 0.2f);
+        Debug.Log("[casual] gallery done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit();
     }
     IEnumerator DoorShots(string tag)
     {

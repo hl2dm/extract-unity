@@ -22,7 +22,7 @@ public static class SoftKit
         else
         {
             m = new Material(sh); m.SetColor("_BaseColor", Color.white); m.SetFloat("_UseVC", 1); m.SetFloat("_UseAvg", 0); m.SetFloat("_TexAmt", 0); m.SetFloat("_PaletteAmt", 0);
-            m.SetFloat("_OutlineWidth", outline); m.SetColor("_ShadeColor", Art.PastelShade); m.SetColor("_OutlineColor", new Color(0.42f, 0.29f, 0.32f));
+            m.SetFloat("_OutlineWidth", outline); m.SetColor("_ShadeColor", new Color(0.8f, 0.72f, 0.88f)); // v0.5: lighter warm lilac shade so north-facing facades stay pastel m.SetColor("_OutlineColor", new Color(0.42f, 0.29f, 0.32f));
         }
         m.name = "SoftKit_" + k; m.enableInstancing = true; mats[k] = m; return m;
     }

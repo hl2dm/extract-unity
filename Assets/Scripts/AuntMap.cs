@@ -9,6 +9,7 @@ public static partial class LevelGen
     struct Op { public bool ax; public float fc, c, w, y0, y1; }
     const float AWH = 3.5f, AWT = 0.24f, FY = 0.12f;
     static Color Lite(Color c, float k) => Color.Lerp(c, Color.white, k);
+    static Color k2c(float x) => new[] { Rose, ButterD, Coral }[Mathf.Abs(Mathf.RoundToInt(x)) % 3];
     static void NoShadow(GameObject g) { foreach (var r in g.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.Off; }
 
     static void SWall(Transform h, bool ax, float wallFc, float off, float a0, float a1, float th, Color c, List<Op> ops, bool col, float H = AWH)
@@ -107,6 +108,7 @@ public static partial class LevelGen
         foreach (int s in new[] { -1, 1 }) Block(h, P(o.c + s * (o.w / 2 + 0.06f), ym), S(0.14f, o.y1 - o.y0 + 0.1f), c, 0.05f, false);
         Block(h, P(o.c, o.y1 + 0.06f), S(o.w + 0.26f, 0.14f), c, 0.05f, false);
         if (o.y0 > 0) Block(h, P(o.c, o.y0 - 0.05f), S(o.w + 0.36f, 0.12f) + (o.ax ? new Vector3(0, 0, 0.12f) : new Vector3(0.12f, 0, 0)), c, 0.05f, false);
+        foreach (int s in new[] { -1, 1 }) Ball(h, P(o.c + s * (o.w / 2 + 0.06f), o.y1 + 0.06f), Vector3.one * 0.24f, c, 10);   // v0.5 soft corner rosettes
         if (arch)
         {   // scalloped crown over arches
             var r = Ring(h, P(o.c, o.y1 + 0.06f), o.ax ? Quaternion.identity : Quaternion.Euler(0, 90, 0), o.w * 0.3f, 0.07f, c, 22);
@@ -189,6 +191,11 @@ public static partial class LevelGen
             // (v0.4.2: split around every opening on that wall instead of running through doorways)
             Band(h, false, r.x0, r.x0 + 0.17f, r.z0 + 0.15f, r.z1 - 0.15f, 1.0f, r.trim, ops);
             Band(h, false, r.x1, r.x1 - 0.17f, r.z0 + 0.15f, r.z1 - 0.15f, 1.0f, r.trim, ops);
+            // v0.5 baseboards (split around doorways like the wainscot)
+            Band(h, false, r.x0, r.x0 + 0.17f, r.z0 + 0.15f, r.z1 - 0.15f, 0.07f, new Color(r.trim.r * 0.9f, r.trim.g * 0.9f, r.trim.b * 0.9f, 1), ops);
+            Band(h, false, r.x1, r.x1 - 0.17f, r.z0 + 0.15f, r.z1 - 0.15f, 0.07f, new Color(r.trim.r * 0.9f, r.trim.g * 0.9f, r.trim.b * 0.9f, 1), ops);
+            Band(h, true, r.z0, r.z0 + 0.17f, r.x0 + 0.15f, r.x1 - 0.15f, 0.07f, new Color(r.trim.r * 0.9f, r.trim.g * 0.9f, r.trim.b * 0.9f, 1), ops);
+            Band(h, true, r.z1, r.z1 - 0.17f, r.x0 + 0.15f, r.x1 - 0.15f, 0.07f, new Color(r.trim.r * 0.9f, r.trim.g * 0.9f, r.trim.b * 0.9f, 1), ops);
         }
         foreach (var o in ops) Trim(h, o, trim, o.y0 == 0 && o.w < 2);
         foreach (var o in ops)
@@ -262,9 +269,9 @@ public static partial class LevelGen
         SoftProps.Cone(h, new Vector3(-3.6f, FY, 0.6f));
         SoftProps.WaterJar(h, new Vector3(-5.2f, FY, 5.5f), Butter);
         // ---- LIVING
-        SoftProps.Rug(h, new Vector3(0, FY + 0.004f, 3.2f), 1.5f, Lite(Pink, 0.2f), White);
+        SoftProps.Rug(h, new Vector3(0, FY + 0.004f, 3.2f), 1.1f, Lite(Pink, 0.2f), White); Ring(h, new Vector3(0, FY + 0.03f, 3.2f), Quaternion.Euler(90, 0, 0), 1.12f, 0.05f, Rose, 40);
         SoftProps.Sofa(h, new Vector3(-2.35f, FY, 4.0f), 90, Rose, Mint);
-        SoftProps.RoundTable(h, new Vector3(0, FY, 3.2f), 0.55f, 0.45f, White, WoodD);
+        SoftProps.RoundTable(h, new Vector3(0, FY, 3.2f), 0.55f, 0.45f, White, WoodD); Cyl(h, new Vector3(0, FY + 0.22f, 3.2f), 0.14f, 0.42f, WoodD, 0.05f, null, 16); Cyl(h, new Vector3(0, FY + 0.05f, 3.2f), 0.34f, 0.1f, WoodD, 0.05f, null, 20); // chunky pedestal
         Ball(h, new Vector3(0, FY + 0.5f, 3.2f), new Vector3(0.36f, 0.12f, 0.36f), Butter, 12);
         Ball(h, new Vector3(0.08f, FY + 0.6f, 3.2f), Vector3.one * 0.16f, Coral, 10); Ball(h, new Vector3(-0.08f, FY + 0.6f, 3.25f), Vector3.one * 0.15f, ButterD, 10);
         SCont(h, "drawer", new Vector3(2.5f, FY, 4.0f), -90, Wood, "電視櫃");
@@ -276,6 +283,9 @@ public static partial class LevelGen
         SoftProps.Plant(h, new Vector3(2.45f, FY, 0.5f));
         SoftProps.Clock(h, new Vector3(0.4f, FY + 2.7f, 5.82f), 180);
         SoftProps.Frame(h, new Vector3(-2.82f, FY + 2.0f, 4.0f), 90, 1.1f, 0.8f, ButterD, Sky);
+        { var mr = Ring(h, new Vector3(-2.8f, FY + 2.15f, 5.05f), Quaternion.Euler(0, 90, 0), 0.32f, 0.07f, Coral, 24); Ball(h, new Vector3(-2.83f, FY + 2.15f, 5.05f), new Vector3(0.04f, 0.6f, 0.6f), Lite(Sky, 0.5f), 14); Ball(h, new Vector3(-2.79f, FY + 2.25f, 4.97f), new Vector3(0.02f, 0.12f, 0.08f), White, 6); // round mirror
+          Block(h, new Vector3(-2.7f, FY + 1.95f, 2.85f), new Vector3(0.3f, 0.1f, 0.9f), Lite(Wood, 0.2f), 0.05f, false); foreach (int sx in new[] { -1, 1 }) Ball(h, new Vector3(-2.76f, FY + 1.85f, 2.85f + sx * 0.35f), new Vector3(0.1f, 0.14f, 0.1f), WoodD, 6);
+          Cyl(h, new Vector3(-2.7f, FY + 2.12f, 2.6f), 0.09f, 0.22f, Lite(Mint, 0.2f), 0.04f, null, 12); Ball(h, new Vector3(-2.7f, FY + 2.28f, 2.6f), new Vector3(0.2f, 0.16f, 0.2f), Leaf, 8); Ball(h, new Vector3(-2.7f, FY + 2.08f, 3.05f), Vector3.one * 0.18f, Rose, 8); Ball(h, new Vector3(-2.7f, FY + 2.06f, 3.25f), Vector3.one * 0.14f, ButterD, 8); } // little wall shelf
         // ---- KITCHEN
         SCont(h, "fridge", new Vector3(8.45f, FY, 5.35f), -90, Sky, "冰箱");
         SoftProps.Counter(h, new Vector3(8.5f, FY, 3.0f), -90, 1.8f, Lite(Mint, 0.1f), White, "sink");
@@ -325,11 +335,17 @@ public static partial class LevelGen
         var up = Group(g, "upper", Vector3.zero);
         Block(up, new Vector3(0, FY + 3.6f, 3), new Vector3(9.5f, 0.3f, 6.5f), Cream, 0.1f, true);
         Block(up, new Vector3(0, FY + 5.2f, 3.1f), new Vector3(9.2f, 3.0f, 6.2f), Mint, 0.3f, true, 0, 0.04f);
-        var hump = Cyl(up, new Vector3(0, FY + 6.7f, 3.1f), 4.7f, 6.4f, MintD, 0.3f, Quaternion.Euler(90, 0, 0), 30); hump.transform.localScale = new Vector3(1, 1, 0.45f);
+        var hump = Cyl(up, new Vector3(0, FY + 6.7f, 3.1f), 4.7f, 6.4f, Lite(Pink, 0.1f), 0.3f, Quaternion.Euler(90, 0, 0), 30); hump.transform.localScale = new Vector3(1, 1, 0.45f);
         var capc = Cyl(up, new Vector3(0, FY + 6.7f, -0.05f), 4.3f, 0.2f, Mint, 0.1f, Quaternion.Euler(90, 0, 0), 30); capc.transform.localScale = new Vector3(1, 1, 0.42f);
         SoftProps.RoundWin(up, new Vector3(0, FY + 7.2f, -0.2f), 0.5f, White, true);
-        SoftProps.Win(up, new Vector3(-2.3f, FY + 5.2f, -0.05f), 1.4f, 1.4f, White, true, Rose, true);
-        SoftProps.Win(up, new Vector3(2.3f, FY + 5.2f, -0.05f), 1.4f, 1.4f, White, true, ButterD, true);
+        foreach (int s in new[] { -1, 1 })
+        {   // candy-jar display windows instead of ring grilles (shop motif differs from homes)
+            Block(up, new Vector3(s * 2.3f, FY + 5.2f, -0.05f), new Vector3(1.7f, 1.6f, 0.2f), White, 0.2f, false);
+            Block(up, new Vector3(s * 2.3f, FY + 5.2f, -0.12f), new Vector3(1.4f, 1.3f, 0.1f), Lite(Sky, 0.3f), 0.15f, false);
+            Block(up, new Vector3(s * 2.3f, FY + 4.45f, -0.3f), new Vector3(1.8f, 0.14f, 0.45f), Coral, 0.06f, false);
+            for (int j = -1; j <= 1; j++) { var jc = j == 0 ? Rose : (j < 0 ? ButterD : MintD); Cyl(up, new Vector3(s * 2.3f + j * 0.42f, FY + 4.72f, -0.32f), 0.16f, 0.4f, Lite(jc, 0.45f), 0.08f, null, 14); Ball(up, new Vector3(s * 2.3f + j * 0.42f, FY + 4.68f, -0.32f), Vector3.one * 0.2f, jc, 8); Cyl(up, new Vector3(s * 2.3f + j * 0.42f, FY + 4.96f, -0.32f), 0.13f, 0.08f, Coral, 0.03f, null, 12); }
+        }
+        for (int j = -2; j <= 2; j++) Ball(up, new Vector3(j * 1.6f, FY + 8.25f - Mathf.Abs(j) * 0.35f, 3.1f), new Vector3(0.5f, 0.3f, 0.5f), j % 2 == 0 ? Butter : Cream, 10); // dome skylight bumps
         NoShadow(up.gameObject);
         SoftProps.Awning(g, new Vector3(0, FY + 2.8f, -0.2f), 9.4f, 1.3f, Mint, White);
         var sg = Group(g, "shop_sign", new Vector3(0, FY + 3.75f, -0.35f));
@@ -414,6 +430,9 @@ public static partial class LevelGen
         Field(root, new Vector3(0, 0.12f, 6.5f), 130, 5f, 1f, tiles, true, "sidewalk");
         Field(root, new Vector3(0, 0.12f, -6.75f), 130, 5.5f, 1f, tiles, true, "sidewalk");
         foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.08f, s * 4.06f), new Vector3(130, 0.17f, 0.24f), Lav, 0.06f, false, 0, 0.01f);
+        foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.035f, s * 3.5f), new Vector3(130, 0.04f, 0.9f), H("bfb2d6"), 0.015f, false, 0, 0);   // v0.5 gutter band
+        for (float x = -54; x < 58; x += 18) { Cyl(root, new Vector3(x + 3, 0.05f, 1.9f), 0.6f, 0.08f, H("a597bd"), 0.035f, null, 24); Ring(root, new Vector3(x + 3, 0.095f, 1.9f), Quaternion.Euler(90, 0, 0), 0.38f, 0.04f, H("8f80ab"), 24); Ball(root, new Vector3(x + 3, 0.095f, 1.9f), new Vector3(0.22f, 0.04f, 0.22f), H("8f80ab"), 12); }   // manhole covers
+        for (float x = -57; x < 58; x += 12) foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(x, 0.04f, s * 3.62f), new Vector3(0.8f, 0.05f, 0.5f), H("8f80ab"), 0.01f, false, 0, 0);   // drain grates
         foreach (var (p, s) in new[] { (new Vector3(0, 2, 60), new Vector3(130, 6, 1)), (new Vector3(0, 2, -60), new Vector3(130, 6, 1)), (new Vector3(60, 2, 0), new Vector3(1, 6, 130)), (new Vector3(-60, 2, 0), new Vector3(1, 6, 130)) })
         { var b = new GameObject("bound"); b.transform.SetParent(root, false); b.transform.localPosition = p; b.AddComponent<BoxCollider>().size = s; }
 
@@ -440,6 +459,10 @@ public static partial class LevelGen
 
         // street furniture
         for (float x = -50; x <= 50; x += 16) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, 4.6f), 180);
+        for (float x = -46; x <= 46; x += 16) foreach (int sd in new[] { -1, 1 }) { if (sd < 0 && x > 25 && x < 43) continue; float px = x + (sd < 0 ? 4 : 0); if (px > 6 && px < 13) continue; if (sd > 0 && (Mathf.Abs(px + 47.5f) < 3 || Mathf.Abs(px + 13.5f) < 3)) continue;   // sidewalk planters
+            Block(root, new Vector3(px, 0.42f, sd * 4.75f), new Vector3(0.9f, 0.6f, 0.6f), sd > 0 ? Coral : Lite(Sky, 0.1f), 0.2f);
+            for (int kk = -1; kk <= 1; kk++) Ball(root, new Vector3(px + kk * 0.27f, 0.88f + (kk == 0 ? 0.12f : 0), sd * 4.75f), Vector3.one * (kk == 0 ? 0.5f : 0.4f), kk == 0 ? MintD : Leaf, 10);
+            Ball(root, new Vector3(px + 0.1f, 1.2f, sd * 4.75f - sd * 0.15f), Vector3.one * 0.14f, k2c(px), 8); }
         for (float x = -42; x <= 50; x += 16) if (x < 27 || x > 41) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, -4.6f), 0);
         Color[] sc = { Mint, Pink, Butter, Sky, Lav, Coral };
         for (int i = 0; i < 4; i++) SoftProps.Scooter(root, new Vector3(8.5f + i * 1.0f, 0.12f, 5.35f), 180 + (i % 2) * 8, sc[i]);
