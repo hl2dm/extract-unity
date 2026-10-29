@@ -4,8 +4,8 @@ Shader "Casual/PastelSky"
     Properties
     {
         _Top ("Top", Color) = (0.62,0.8,0.98,1)
-        _Mid ("Mid", Color) = (0.82,0.76,0.96,1)
-        _Horizon ("Horizon", Color) = (1,0.84,0.8,1)
+        _Mid ("Mid", Color) = (0.78,0.87,0.94,1)
+        _Horizon ("Horizon", Color) = (1,0.94,0.84,1)
         _Ground ("Ground", Color) = (0.95,0.88,0.8,1)
         _Cloud ("Cloud", Color) = (1,0.98,0.96,1)
     }

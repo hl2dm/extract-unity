@@ -8,9 +8,9 @@ public static class SoftKit
 {
     public static Color H(string s) => Data.H(s);
     // ---- palette (art bible §3)
-    public static readonly Color Pink = H("ffc4d2"), PinkD = H("f49ab3"), Rose = H("ff8fab"), Mint = H("b8e9d0"), MintD = H("82d0aa"), Butter = H("ffe9a3"), ButterD = H("ffd06a"),
-        Lav = H("cdbff2"), LavD = H("a895e0"), Sky = H("b8e2ff"), SkyD = H("85c6f0"), Peach = H("ffd5b8"), Coral = H("ff9d8c"), Cream = H("fff3df"), White = H("fffaf2"),
-        Wood = H("f2c995"), WoodD = H("cf9a68"), Leaf = H("a6db7c"), LeafD = H("78c25e"), Plum = H("6e4d5e"), Grey = H("d3cce0"), GreyD = H("a79fb8"), Roof = H("f08a74"), Teal = H("8fd8cf");
+    public static readonly Color Pink = H("f3e3d0"), PinkD = H("dfb596"), Rose = H("e8a294"), Mint = H("c8ddc0"), MintD = H("98b98e"), Butter = H("ffe9a3"), ButterD = H("ffd06a"),
+        Lav = H("d2e2ea"), LavD = H("b4c6a6"), Sky = H("c6e0f0"), SkyD = H("85c6f0"), Peach = H("ffd5b8"), Coral = H("ff9d8c"), Cream = H("fff3df"), White = H("fffaf2"),
+        Wood = H("f2c995"), WoodD = H("cf9a68"), Leaf = H("a6db7c"), LeafD = H("78c25e"), Plum = H("6e4d5e"), Grey = H("ddd6ca"), GreyD = H("b3a998"), Roof = H("d9876a"), Teal = H("8fd8cf");
 
     // ---- materials
     static readonly Dictionary<int, Material> mats = new Dictionary<int, Material>();
@@ -22,7 +22,7 @@ public static class SoftKit
         else
         {
             m = new Material(sh); m.SetColor("_BaseColor", Color.white); m.SetFloat("_UseVC", 1); m.SetFloat("_UseAvg", 0); m.SetFloat("_TexAmt", 0); m.SetFloat("_PaletteAmt", 0);
-            m.SetFloat("_OutlineWidth", outline); m.SetColor("_ShadeColor", new Color(0.8f, 0.72f, 0.88f)); // v0.5: lighter warm lilac shade so north-facing facades stay pastel m.SetColor("_OutlineColor", new Color(0.42f, 0.29f, 0.32f));
+            m.SetFloat("_OutlineWidth", outline); m.SetColor("_ShadeColor", new Color(0.82f, 0.78f, 0.72f)); // v0.5: lighter warm lilac shade so north-facing facades stay pastel m.SetColor("_OutlineColor", new Color(0.42f, 0.29f, 0.32f));
         }
         m.name = "SoftKit_" + k; m.enableInstancing = true; mats[k] = m; return m;
     }
@@ -45,7 +45,7 @@ public static class SoftKit
     /// inflated wall panel in XY, back at z=0, bulging toward -Z by b
     public static Mesh PillowMesh(float w, float h, float b, Color c, int seed)
     {
-        var mb = new MB(); int nx = 22, ny = 18; float e = 0.002f;
+        var mb = new MB(); int nx = GeoQ.Seg(22), ny = GeoQ.Seg(18); float e = 0.002f;
         System.Func<float, float, Vector3> P = (u, v) => new Vector3(u * w / 2, v * h / 2, -b * PF(u) * PF(v));
         for (int j = 0; j <= ny; j++) for (int i = 0; i <= nx; i++)
         {
@@ -83,9 +83,10 @@ public static class SoftKit
     static float[] Axis(float hh, float r, int mid)
     {
         var l = new List<float>(); float t22 = 0.41421356f; l.Add(-hh);
-        if (r > 0.004f) { l.Add(-hh + r * (1 - t22)); l.Add(-hh + r); }
+        int bs = GeoQ.Bev; // v0.8: bevel steps per 45° (low 2 = v0.7)
+        if (r > 0.004f) for (int k = 1; k <= bs; k++) l.Add(-hh + r * (1 - (k == bs ? 0 : (bs == 2 ? t22 : Mathf.Tan(Mathf.PI / 4 * (1 - k / (float)bs))))));
         for (int i = 1; i < mid; i++) l.Add(Mathf.Lerp(-hh + r, hh - r, i / (float)mid));
-        if (r > 0.004f) { l.Add(hh - r); l.Add(hh - r * (1 - t22)); }
+        if (r > 0.004f) for (int k = bs; k >= 1; k--) l.Add(hh - r * (1 - (k == bs ? 0 : (bs == 2 ? t22 : Mathf.Tan(Mathf.PI / 4 * (1 - k / (float)bs))))));
         l.Add(hh); return l.ToArray();
     }
     /// Rounded box centred at origin. taper: top shrinks by this fraction. top: optional top-face colour.
@@ -118,7 +119,7 @@ public static class SoftKit
     /// Surface of revolution around Y from a (radius, y) profile listed bottom -> top. Normals from the profile tangent (soft).
     public static Mesh Lathe(IList<Vector2> prof, Color c, int seg, float wob, int seed, IList<Color> ringCols = null)
     {
-        var mb = new MB(); int n = prof.Count; float span = 0; for (int i = 0; i < n; i++) span = Mathf.Max(span, prof[i].x);
+        seg = GeoQ.Seg(seg); var mb = new MB(); int n = prof.Count; float span = 0; for (int i = 0; i < n; i++) span = Mathf.Max(span, prof[i].x);
         float freq = 1f / Mathf.Max(0.3f, span * 1.2f);
         for (int k = 0; k < n; k++)
         {
@@ -139,15 +140,16 @@ public static class SoftKit
     {
         var l = new List<Vector2>(); r = Mathf.Min(r, Mathf.Min(R, Hh / 2) * 0.98f); float y0 = -Hh / 2, y1 = Hh / 2;
         l.Add(new Vector2(0, y0));
-        for (int i = 0; i <= 3; i++) { float a = Mathf.Deg2Rad * (-90 + 30 * i); l.Add(new Vector2(R - r + r * Mathf.Cos(a), y0 + r + r * Mathf.Sin(a))); }
-        for (int i = 0; i <= 3; i++) { float a = Mathf.Deg2Rad * (30 * i); l.Add(new Vector2(R - r + r * Mathf.Cos(a), y1 - r + r * Mathf.Sin(a))); }
+        int ar = GeoQ.Arc; float da = 90f / ar;
+        for (int i = 0; i <= ar; i++) { float a = Mathf.Deg2Rad * (-90 + da * i); l.Add(new Vector2(R - r + r * Mathf.Cos(a), y0 + r + r * Mathf.Sin(a))); }
+        for (int i = 0; i <= ar; i++) { float a = Mathf.Deg2Rad * (da * i); l.Add(new Vector2(R - r + r * Mathf.Cos(a), y1 - r + r * Mathf.Sin(a))); }
         l.Add(new Vector2(0, y1)); return l;
     }
     public static List<Vector2> SphereProf(float R, int st = 10) { var l = new List<Vector2>(); for (int i = 0; i <= st; i++) { float a = Mathf.PI * (-0.5f + i / (float)st); l.Add(new Vector2(R * Mathf.Cos(a), R * Mathf.Sin(a))); } l[0] = new Vector2(0, -R); l[st] = new Vector2(0, R); return l; }
     /// Torus in the XY plane (axis = Z).
     public static Mesh Torus(float R, float r, Color c, int su, int sv, int seed)
     {
-        var mb = new MB();
+        su = GeoQ.Seg(su); sv = GeoQ.Seg(sv); var mb = new MB();
         for (int i = 0; i <= su; i++) for (int j = 0; j <= sv; j++)
         {
             float u = i * Mathf.PI * 2 / su, v = j * Mathf.PI * 2 / sv;
@@ -182,7 +184,7 @@ public static class SoftKit
     }
     public static GameObject Ball(Transform p, Vector3 pos, Vector3 size, Color c, int seg = 16, bool col = false, Quaternion? rot = null, string name = "sk_ball", float wob = 0.05f)
     {
-        int seed = Seed(pos, size) + GlobalSeed; var g = Obj(p, name, Lathe(SphereProf(0.5f, Mathf.Max(6, seg / 2)), c, seg, wob, seed), pos, rot ?? Quaternion.identity, OL(Mathf.Max(size.x, Mathf.Max(size.y, size.z))));
+        int seed = Seed(pos, size) + GlobalSeed; var g = Obj(p, name, Lathe(SphereProf(0.5f, Mathf.Max(6, GeoQ.Seg(seg) / 2)), c, seg, wob, seed), pos, rot ?? Quaternion.identity, OL(Mathf.Max(size.x, Mathf.Max(size.y, size.z))));
         g.transform.localScale = size; if (col) g.AddComponent<SphereCollider>().radius = 0.5f; return g;
     }
     public static GameObject Lath(Transform p, Vector3 pos, IList<Vector2> prof, Color c, int seg = 20, bool col = false, Quaternion? rot = null, string name = "sk_lathe", IList<Color> ringCols = null)
@@ -220,4 +222,26 @@ public static class SoftKit
     public static Quaternion FaceZ => Quaternion.identity;
     public static Quaternion AxisX => Quaternion.Euler(0, 0, 90);
     public static Quaternion AxisZ => Quaternion.Euler(90, 0, 0);
+}
+
+/// v0.8 geometry tiers (低/中/高) for SoftKit tessellation. Tied to the F8 quality level (AAQuality, applied on next map build)
+/// and capped by platform: Windows 高, WebGL 中, mobile 低. "-geo N" overrides (autotest before/after). Low = v0.7 geometry.
+public static class GeoQ
+{
+    public static int Force = -1;
+    public static int Tier
+    {
+        get
+        {
+            if (Force >= 0) return Mathf.Clamp(Force, 0, 2);
+            int cap = Application.isMobilePlatform ? 0 : (Application.platform == RuntimePlatform.WebGLPlayer ? 1 : 2);
+            int lv = AAQuality.Level >= 0 ? AAQuality.Level : PlayerPrefs.GetInt("aa", cap);
+            return Mathf.Clamp(Mathf.Min(cap, lv), 0, 2);
+        }
+    }
+    static readonly float[] Mul = { 1f, 1.6f, 2.2f };
+    static readonly int[] Bevs = { 2, 3, 5 }, Arcs = { 3, 5, 8 };
+    public static int Seg(int s) => Mathf.Max(3, Mathf.RoundToInt(s * Mul[Tier]));
+    public static int Bev => Bevs[Tier];
+    public static int Arc => Arcs[Tier];
 }

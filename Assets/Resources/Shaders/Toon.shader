@@ -43,7 +43,11 @@ Shader "Casual/Toon"
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
+            #pragma multi_compile _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile_fragment _ _SCREEN_SPACE_OCCLUSION
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
+            // v0.8 lighting globals (0 = v0.7 look): x fill, y AO, z lamp pools, w rim boost
+            float4 _ToonLight; float4 _ToonFillCol; float4 _ToonFillDir; float4 _ToonSkyCol;
             struct A { float4 pos:POSITION; float3 n:NORMAL; float2 uv:TEXCOORD0; float4 vc:COLOR; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct V { float4 cs:SV_POSITION; float2 uv:TEXCOORD0; float3 ws:TEXCOORD1; float3 nw:TEXCOORD2; float fog:TEXCOORD3; float4 vc:TEXCOORD4; UNITY_VERTEX_INPUT_INSTANCE_ID };
             V vert(A i) { V o; UNITY_SETUP_INSTANCE_ID(i); UNITY_TRANSFER_INSTANCE_ID(i, o);
@@ -107,7 +111,33 @@ Shader "Casual/Toon"
                 col *= lerp(1, 0.97 + 0.03 * vn(ws * 20), felt);
                 
                 float rim = smoothstep(0.62, 0.95, 1 - saturate(dot(n, vd))) * (0.22 + 0.25 * felt + 0.1 * gl);
-                col += _RimColor.rgb * rim;
+                // v0.8: cool sky fill (wraps into the shade side), sky bounce from above, lamp/window light pools, SSAO, sun-aligned rim
+                float fl = saturate(dot(n, _ToonFillDir.xyz) * 0.6 + 0.4) * (1 - band * 0.9);
+                col += alb * _ToonFillCol.rgb * fl * _ToonLight.x;
+                col -= col * _ToonSkyCol.rgb * saturate(-n.y * 0.5 + 0.2) * _ToonLight.x;   // darker undersides = grounded contact
+                #if defined(_ADDITIONAL_LIGHTS)
+                if (_ToonLight.z > 0)
+                {
+                    float3 pool = 0; uint lc = GetAdditionalLightsCount();
+                    for (uint li = 0u; li < lc; ++li)
+                    {
+                        Light A = GetAdditionalLight(li, ws);
+                        float an2 = saturate(dot(n, A.direction) * 0.5 + 0.5);
+                        pool += A.color * min(A.distanceAttenuation, 1.0) * smoothstep(0.25, 0.8, an2);
+                    }
+                    col += alb * min(pool * 0.5, 0.55) * _ToonLight.z;   // soft capped warm pool, never blows out the pastel
+                }
+                #endif
+                #if defined(_SCREEN_SPACE_OCCLUSION)
+                if (_ToonLight.y > 0)
+                {
+                    AmbientOcclusionFactor ao = GetScreenSpaceAmbientOcclusion(GetNormalizedScreenSpaceUV(i.cs));
+                    col *= lerp(1, lerp(0.45, 1, ao.indirectAmbientOcclusion), _ToonLight.y);
+                }
+                #endif
+                float sunSide = saturate(dot(normalize(cross(cross(vd, L.direction), vd) + 1e-4), n) * 0.5 + 0.5);
+                rim *= 1 + _ToonLight.w * (0.6 + sunSide);
+                col += _RimColor.rgb * rim * lerp(1, L.color.rgb / max(1, max(L.color.r, max(L.color.g, L.color.b))), _ToonLight.w * 0.5);
                 col = MixFog(col, i.fog);
                 return half4(col, 1);
             }
@@ -154,6 +184,20 @@ Shader "Casual/Toon"
                 #endif
                 return cs; }
             half4 frag() : SV_Target { return 0; }
+            ENDHLSL
+        }
+        Pass
+        {
+            Name "DepthNormals" Tags { "LightMode"="DepthNormals" }
+            ZWrite On Cull Back
+            HLSLPROGRAM
+            #pragma vertex vert
+            #pragma fragment frag
+            #pragma multi_compile_instancing
+            struct A { float4 pos:POSITION; float3 n:NORMAL; UNITY_VERTEX_INPUT_INSTANCE_ID };
+            struct V { float4 cs:SV_POSITION; float3 nw:TEXCOORD0; };
+            V vert(A i) { V o; UNITY_SETUP_INSTANCE_ID(i); o.cs = TransformObjectToHClip(i.pos.xyz); o.nw = TransformObjectToWorldNormal(i.n); return o; }
+            half4 frag(V i) : SV_Target { return half4(NormalizeNormalPerPixel(i.nw), 0); }
             ENDHLSL
         }
         Pass

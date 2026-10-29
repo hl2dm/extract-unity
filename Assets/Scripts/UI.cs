@@ -10,7 +10,7 @@ public class UI : MonoBehaviour
     Image promptBox, promptKey; Outline promptEdge; string lastPrompt; Text promptKeyT;
     Image hpBar, hpBarLag, hitM, dmgDir, crossH; float hitT, dmgT, hpLag = 1;
     public bool ModalOpen => modal && modal.gameObject.activeSelf; public bool LootOpen => lootP && lootP.gameObject.activeSelf; public bool EndOpen => endP && endP.gameObject.activeSelf;
-    static readonly Color Panel = new Color(0.2f, 0.24f, 0.42f, 0.93f), Panel2 = new Color(0.3f, 0.36f, 0.58f, 0.96f), Accent = Data.H("ffb347"), Good = Data.H("7dffa0"), Bad = Data.H("ff6a5a"), Dim = new Color(1, 1, 1, 0.6f);
+    static readonly Color Panel = new Color(0.3f, 0.26f, 0.22f, 0.92f), Panel2 = new Color(0.42f, 0.37f, 0.31f, 0.95f), Accent = Data.H("ffb347"), Good = Data.H("7dffa0"), Bad = Data.H("ff6a5a"), Dim = new Color(1, 1, 1, 0.6f);
 
     public void Build()
     {

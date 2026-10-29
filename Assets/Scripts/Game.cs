@@ -12,7 +12,7 @@ public class Game : MonoBehaviour
     public List<Item> bag = new List<Item>(); public int keys; public float runT; public int searched, caughtRun, luresRun; bool warn60, warn20;
     LootContainer openC; Interactable focus; float tickT;
     public const float RaidTime = Data.RaidTime;
-    public bool autoshots, doorOnly, gallery, scaleOnly; string shotDir;
+    public bool autoshots, doorOnly, gallery, scaleOnly, polyOnly; string shotDir;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot() { if (I) return; var g = new GameObject("Game"); DontDestroyOnLoad(g); g.AddComponent<Game>(); }
@@ -22,7 +22,11 @@ public class Game : MonoBehaviour
         I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
-        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; }
+        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; if (a == "-polyonly") polyOnly = true; }
+        { var u0 = Application.absoluteURL ?? ""; int gi = u0.IndexOf("geo="); if (gi >= 0 && gi + 4 < u0.Length) GeoQ.Force = u0[gi + 4] - '0'; }
+        for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-lite" && args[i + 1] == "0") LightQ.Legacy = true;
+        if ((Application.absoluteURL ?? "").Contains("lite=0")) LightQ.Legacy = true;
+        for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-geo") int.TryParse(args[i + 1], out GeoQ.Force);
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>();
         SaveSys.Load();
@@ -57,7 +61,7 @@ public class Game : MonoBehaviour
         state = St.Base; if (level != null) { Destroy(level.root.gameObject); level = null; }
         Pet.All.Clear(); foreach (var l in Lure.All.ToList()) if (l) Destroy(l.gameObject);
         if (baseRoot) Destroy(baseRoot.gameObject);
-        baseRoot = BaseHub.Build(out var sp, out var yaw); EnvBase();
+        baseRoot = BaseHub.Build(out var sp, out var yaw); EnvBase(); LightQ.Apply(baseRoot);
         player.inRaid = false; player.alive = true; player.hp = 100; player.controlEnabled = true; player.enabled = true; player.cryT = 0;
         ReattachCam(); player.Equip(SaveSys.S.shoes); player.Teleport(sp, yaw);
         Sfx.Engine(0); ui.CloseEnd(); ui.Cine(false); ui.CloseLoot(); ui.CloseModal();
@@ -85,7 +89,7 @@ public class Game : MonoBehaviour
         if (baseRoot) Destroy(baseRoot.gameObject); Interactable.All.RemoveAll(x => x == null);
         int seed = SaveSys.S.seedN * 7919 + 17;
         Pet.All.Clear();
-        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th);
+        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); LightQ.Apply(level.root);
         bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; warn60 = warn20 = false;
         player.Equip(SaveSys.S.shoes); player.hp = 100; player.alive = true; player.inRaid = true; player.caught = 0; player.cryT = 0; player.Teleport(level.spawn, level.spawnYaw);
         state = St.Raid; deploying = false;
@@ -452,6 +456,12 @@ public class Game : MonoBehaviour
             yield return ScaleShots();
             Debug.Log("[casual] scaleOnly done errors " + errs + " scaleFails " + sf); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
         }
+        if (polyOnly)
+        {   // v0.8: triangle counts + frame time + close-up shaded/wireframe shots
+            Deploy(0); for (float w = 0; w < 8 && state != St.Raid; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(2.5f); Pet.FreezeAll = 999;
+            yield return PolyShots();
+            Debug.Log("[casual] polyOnly done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
+        }
         if (doorOnly)
         {   // before/after doorway trim shots (run once with -legacytrim for "before")
             Deploy(0); yield return new WaitForSeconds(3.0f); Pet.FreezeAll = 999;
@@ -633,6 +643,7 @@ public class Game : MonoBehaviour
         if (url.Contains("demo=loot")) { var box = FindObjectsByType<LootContainer>(FindObjectsSortMode.None).Where(c => c.isActiveAndEnabled).OrderBy(c => (c.transform.position - player.transform.position).sqrMagnitude).FirstOrDefault(); if (box) { player.Teleport(box.transform.position + box.transform.forward * 1.6f + Vector3.up * 0.15f, box.transform.eulerAngles.y + 180); yield return null; OpenLoot(box); } }
         else if (url.Contains("demo=ride")) { var moto = level.root.GetComponentsInChildren<Moto>().FirstOrDefault(); if (moto) { moto.Use(); yield return null; moto.SetHeading(90); player.Teleport(new Vector3(-30, 0.15f, 1.5f), 90); } }
         else if (url.Contains("demo=shop")) { player.Teleport(new Vector3(-23.6f, 0.15f, -1.2f), 180); }
+        if (url.Contains("perf")) { long sk; long tri = SceneTris(out sk); Debug.Log("[poly] tier " + GeoQ.Tier + " scene_tris " + tri + " softkit_tris " + sk); yield return FrameTime("web"); }
         Debug.Log("[webdemo] ready");
     }
     IEnumerator TouchTest()
@@ -695,6 +706,56 @@ public class Game : MonoBehaviour
             var side = sc.right; var fw = sc.forward; var eyeP = sc.position + side * 2.4f - fw * 1.2f; eyeP.y = sc.position.y + E;
             yield return Aim(eyeP, sc.position + Vector3.up * 0.6f); yield return new WaitForSeconds(0.5f); yield return Shot(nm == "sk_scooter" ? "scale_scooter_fp" : "scale_ride_fp");
         }
+    }
+    static bool wire;
+    static void WireOn(UnityEngine.Rendering.ScriptableRenderContext c, Camera k) { GL.wireframe = wire; }
+    static void WireOff(UnityEngine.Rendering.ScriptableRenderContext c, Camera k) { GL.wireframe = false; }
+    public static long SceneTris(out long sk)
+    {
+        long t = 0; sk = 0;
+        foreach (var mf in FindObjectsByType<MeshFilter>(FindObjectsSortMode.None))
+        {
+            var r = mf.GetComponent<MeshRenderer>(); var m = mf.sharedMesh; if (!r || !r.enabled || !mf.gameObject.activeInHierarchy || !m) continue;
+            long n = 0; for (int i = 0; i < m.subMeshCount; i++) n += m.GetIndexCount(i) / 3; t += n; if (m.name.StartsWith("sk_")) sk += n;
+        }
+        foreach (var sr in FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None)) if (sr.enabled && sr.sharedMesh) { var m = sr.sharedMesh; for (int i = 0; i < m.subMeshCount; i++) t += m.GetIndexCount(i) / 3; }
+        return t;
+    }
+    IEnumerator FrameTime(string tag, float secs = 3f)
+    {
+        int vs = QualitySettings.vSyncCount, tf = Application.targetFrameRate; QualitySettings.vSyncCount = 0; Application.targetFrameRate = -1;
+        yield return new WaitForSeconds(0.5f); var l = new List<float>(); float t0 = Time.realtimeSinceStartup;
+        while (Time.realtimeSinceStartup - t0 < secs) { yield return null; l.Add(Time.unscaledDeltaTime * 1000f); }
+        l.Sort(); float avg = l.Average(); float p95 = l[Mathf.Min(l.Count - 1, (int)(l.Count * 0.95f))];
+        Debug.Log("[perf] " + tag + " tier " + GeoQ.Tier + " frames " + l.Count + " avg_ms " + avg.ToString("0.00") + " fps " + (1000f / avg).ToString("0") + " p95_ms " + p95.ToString("0.00"));
+        QualitySettings.vSyncCount = vs; Application.targetFrameRate = tf;
+    }
+    IEnumerator PolyPair(Vector3 eye, Vector3 at, string name)
+    {
+        yield return CamShot(eye, at, "poly_" + name, 0.5f);
+        wire = true; yield return CamShot(eye, at, "poly_" + name + "_wire", 0.2f); wire = false;
+    }
+    IEnumerator PolyShots()
+    {
+        long sk; long tri = SceneTris(out sk); Debug.Log("[poly] tier " + GeoQ.Tier + " scene_tris " + tri + " softkit_tris " + sk);
+        var c0 = new Vector3(-20f, 0.12f, 0f); float E = player.camRig.localPosition.y;
+        yield return Aim(new Vector3(-24f, 0.12f + E, -1.5f), new Vector3(-8f, 1.8f, 1.5f)); yield return FrameTime("street"); yield return Shot("light_street");
+        var hs = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "House").FirstOrDefault(t => t.GetComponentsInChildren<Transform>().Any(c => c.name == "sk_sofa"));
+        if (hs) { yield return Aim(hs.TransformPoint(new Vector3(2.6f, 0.12f + E, 1.2f)), hs.TransformPoint(new Vector3(-2.35f, 0.7f, 4.0f))); yield return FrameTime("living"); yield return Shot("light_living"); yield return Aim(hs.TransformPoint(new Vector3(3.6f, 0.12f + E, 8.4f)), hs.TransformPoint(new Vector3(7.8f, 0.5f, 9.6f))); yield return new WaitForSeconds(0.4f); yield return Shot("light_bedroom"); }
+        UnityEngine.Rendering.RenderPipelineManager.beginCameraRendering += WireOn; UnityEngine.Rendering.RenderPipelineManager.endCameraRendering += WireOff;
+        var cat = Pet.All.FirstOrDefault(x => x.name == "Cat"); var dog = Pet.All.FirstOrDefault(x => x.name == "Dog");
+        foreach (var (pt, off) in new[] { (cat, new Vector3(2.4f, 0, -0.5f)), (dog, new Vector3(2.4f, 0, 0.7f)) })
+            if (pt) { pt.enabled = false; var rb = pt.GetComponent<Rigidbody>(); if (rb) rb.isKinematic = true; pt.transform.position = c0 + off; pt.transform.rotation = Quaternion.Euler(0, -90, 0); }
+        yield return PolyPair(c0 + new Vector3(3.6f, 0.6f, -1.2f), c0 + new Vector3(2.4f, 0.35f, 0.1f), "pets");
+        foreach (var nm in new[] { "sk_scooter", "RideScooter", "sk_sofa", "sk_tree", "sk_lamp", "slide", "sk_hydrant" })
+        {
+            var tr = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == nm).OrderBy(t => (t.position - c0).sqrMagnitude).FirstOrDefault(); if (!tr) continue;
+            var b = Art.RenderBounds(tr.gameObject); float d = Mathf.Clamp(b.extents.magnitude * 2.0f, 1.2f, 9f);
+            var dir = (tr.right * 0.8f - tr.forward * 1.0f + Vector3.up * 0.35f).normalized; if (nm == "sk_sofa") dir = (tr.forward * 1.0f + tr.right * 0.5f + Vector3.up * 0.4f).normalized;
+            yield return PolyPair(b.center + dir * d, b.center, nm);
+        }
+        if (hs) { var hb = Art.RenderBounds(hs.gameObject); yield return PolyPair(hb.center + new Vector3(-0.6f, 0.3f, -0.9f).normalized * hb.extents.magnitude * 1.3f + Vector3.up * 2f, hb.center + Vector3.up * 1.5f, "house"); }
+        UnityEngine.Rendering.RenderPipelineManager.beginCameraRendering -= WireOn; UnityEngine.Rendering.RenderPipelineManager.endCameraRendering -= WireOff;
     }
     IEnumerator MotoTest()
     {

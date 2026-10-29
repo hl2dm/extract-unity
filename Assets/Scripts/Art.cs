@@ -97,18 +97,18 @@ public static class Art
     public static Color PaletteFor(string tn)
     {
         tn = tn.ToLower(); int hsh = Mathf.Abs(tn.GetHashCode());
-        Color[] walls = { Data.H("ffc7d6"), Data.H("c9b8f2"), Data.H("ffe9a3"), Data.H("aee0ff"), Data.H("b8ecd0"), Data.H("ffd0b0") };
+        Color[] walls = { Data.H("f1e2cf"), Data.H("cfe0d0"), Data.H("ffe9a3"), Data.H("aee0ff"), Data.H("b8ecd0"), Data.H("ffd0b0") };
         if (tn.Contains("brick") || tn.Contains("plaster") || tn.Contains("wall") || tn.Contains("concrete") || tn.Contains("corrugated") || tn.Contains("container")) return walls[hsh % walls.Length];
-        if (tn.Contains("asphalt") || tn.Contains("road")) return Data.H("c8c0d8");
+        if (tn.Contains("asphalt") || tn.Contains("road")) return Data.H("cfc8bc");
         if (tn.Contains("grass")) return Data.H("bfe8a0");
         if (tn.Contains("dirt") || tn.Contains("sand") || tn.Contains("gravel")) return Data.H("f2dcb8");
         if (tn.Contains("wood") || tn.Contains("plank") || tn.Contains("floor")) return Data.H("f7d9a8");
-        if (tn.Contains("carpet") || tn.Contains("fabric")) return Data.H("f6c2dc");
-        if (tn.Contains("metal") || tn.Contains("steel")) return Data.H("c6d6ee");
+        if (tn.Contains("carpet") || tn.Contains("fabric")) return Data.H("e8c9b0");
+        if (tn.Contains("metal") || tn.Contains("steel")) return Data.H("cbd8de");
         if (tn.Contains("tile") || tn.Contains("roof")) return Data.H("f5a9a0");
         return new Color(0, 0, 0, 0);
     }
-    public static readonly Color PastelShade = new Color(0.66f, 0.58f, 0.86f);
+    public static readonly Color PastelShade = new Color(0.74f, 0.7f, 0.66f);
     /// warm dark brown-plum crayon line, faintly tinted by the fill colour (never pure black)
     public static Color WarmLine(Color c) => Color.Lerp(new Color(0.38f, 0.25f, 0.28f), c * 0.45f, 0.18f);
     public static Material Toon(Color c, Texture tex = null, float outline = 0.012f)
@@ -380,16 +380,16 @@ public static class Art
         if (Casual)
         {   // pastel crayon grade: soft bloom, low contrast, warm white balance, faint lilac vignette, lighter purple-ish shadows
             Sun.shadowStrength = 0.4f; Sun.color = Color.Lerp(sunC, new Color(1f, 0.93f, 0.84f), 0.5f);
-            bl.threshold.Override(1.0f); bl.scatter.Override(0.75f); bl.intensity.Override(0.25f); bl.tint.Override(new Color(1f, 0.9f, 0.95f));
+            bl.threshold.Override(1.0f); bl.scatter.Override(0.75f); bl.intensity.Override(0.25f); bl.tint.Override(new Color(1f, 0.95f, 0.88f));
             c.contrast.Override(14f); c.saturation.Override(24f); c.postExposure.Override(-0.05f);
-            baseVig = 0.16f; v.intensity.Override(baseVig); v.color.Override(new Color(0.35f, 0.25f, 0.45f));
-            if (prof.TryGet<WhiteBalance>(out var wb)) { wb.temperature.Override(8f); wb.tint.Override(4f); }
-            if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) smh.shadows.Override(new Vector4(0.95f, 0.88f, 1.08f, -0.02f));
-            RenderSettings.ambientSkyColor = new Color(0.72f, 0.7f, 0.86f); RenderSettings.ambientEquatorColor = new Color(0.8f, 0.72f, 0.74f); RenderSettings.ambientGroundColor = new Color(0.6f, 0.56f, 0.66f);
-            RenderSettings.fogColor = new Color(0.98f, 0.9f, 0.92f); RenderSettings.fogDensity *= 0.3f; Sun.intensity *= 0.85f;
+            baseVig = 0.16f; v.intensity.Override(baseVig); v.color.Override(new Color(0.36f, 0.3f, 0.24f));
+            if (prof.TryGet<WhiteBalance>(out var wb)) { wb.temperature.Override(8f); wb.tint.Override(-2f); }
+            if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) smh.shadows.Override(new Vector4(0.96f, 0.98f, 1.02f, -0.02f));
+            RenderSettings.ambientSkyColor = new Color(0.76f, 0.8f, 0.84f); RenderSettings.ambientEquatorColor = new Color(0.84f, 0.8f, 0.72f); RenderSettings.ambientGroundColor = new Color(0.62f, 0.6f, 0.54f);
+            RenderSettings.fogColor = new Color(0.97f, 0.94f, 0.88f); RenderSettings.fogDensity *= 0.3f; Sun.intensity *= 0.85f;
         }
     }
-    public static void Hurt(float k) { if (prof && prof.TryGet<Vignette>(out var v)) { v.color.Override(Color.Lerp(Casual ? new Color(0.35f, 0.25f, 0.45f) : Color.black, new Color(0.15f, 0.35f, 0.9f), k)); v.intensity.Override(Mathf.Max(baseVig, k * 0.55f)); } }
+    public static void Hurt(float k) { if (prof && prof.TryGet<Vignette>(out var v)) { v.color.Override(Color.Lerp(Casual ? new Color(0.36f, 0.3f, 0.24f) : Color.black, new Color(0.15f, 0.35f, 0.9f), k)); v.intensity.Override(Mathf.Max(baseVig, k * 0.55f)); } }
 }
 
 public class ProbeKick : MonoBehaviour

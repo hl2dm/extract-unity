@@ -423,7 +423,7 @@ public static partial class LevelGen
         var root = L.root; blocks.Clear(); var deco = new System.Random(20260424);   // fixed layout; loot varies by seed
         // ---- ground, road, sidewalks
         Field(root, Vector3.zero, 130, 130, 2f, (x, z) => Color.Lerp(H("c4ec9f"), H("ade08c"), VN(new Vector3(x * 0.06f, 0, z * 0.06f), 9)), true, "grass_ground");
-        Field(root, new Vector3(0, 0.02f, 0), 130, 8, 1f, (x, z) => Color.Lerp(H("dcd4e8"), H("cdc3dd"), VN(new Vector3(x * 0.3f, 0, z * 0.3f), 5)), false, "road");
+        Field(root, new Vector3(0, 0.02f, 0), 130, 8, 1f, (x, z) => Color.Lerp(H("dcd8d0"), H("ccc7bd"), VN(new Vector3(x * 0.3f, 0, z * 0.3f), 5)), false, "road");
         for (float x = -60; x < 60; x += 6) if (Mathf.Abs(x + 6) > 3) Block(root, new Vector3(x, 0.035f, 0), new Vector3(2.5f, 0.03f, 0.22f), ButterD, 0.01f, false, 0, 0);
         for (float z = -3.3f; z <= 3.31f; z += 0.85f) Block(root, new Vector3(-6, 0.035f, z), new Vector3(2.8f, 0.03f, 0.45f), White, 0.01f, false, 0, 0);
         System.Func<float, float, Color> tiles = (x, z) => ((Mathf.FloorToInt(x) + Mathf.FloorToInt(z)) & 1) == 0 ? Cream : Color.Lerp(Cream, Lite(Pink, 0.45f), 0.5f);
