@@ -49,9 +49,9 @@ public class TouchIn : MonoBehaviour
         cv = UiKit.MakeCanvas("TouchUI", 30); root = (RectTransform)cv.transform; cv.gameObject.AddComponent<AdaptiveScaler>(); DontDestroyOnLoad(cv.gameObject);
         safe = UiKit.Node(root, "safe").Fill(); safe.gameObject.AddComponent<SafeArea>();
         // joystick (bottom-left)
-        stickBase = UiKit.Img(safe, new Color(1f, 0.97f, 0.92f, 0.38f), Art.Disc, "stickBase").rectTransform; stickBase.At(new Vector2(0, 0), new Vector2(70, 150), new Vector2(StickR * 2, StickR * 2));
+        stickBase = UiKit.Img(safe, new Color(1f, 0.97f, 0.92f, 0.5f), KnitKit.Disc, "stickBase").rectTransform; stickBase.At(new Vector2(0, 0), new Vector2(70, 150), new Vector2(StickR * 2, StickR * 2));
         var ring = UiKit.Img(stickBase, new Color(0.42f, 0.29f, 0.36f, 0.5f), Art.Ring, "ring"); ring.rectTransform.Fill();
-        stickKnob = UiKit.Img(stickBase, new Color(1f, 0.83f, 0.55f, 0.9f), Art.Disc, "knob").rectTransform; stickKnob.At(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(96, 96)); stickKnob.pivot = new Vector2(0.5f, 0.5f);
+        stickKnob = UiKit.Img(stickBase, new Color(1f, 0.83f, 0.55f, 0.95f), KnitKit.Disc, "knob").rectTransform; stickKnob.At(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(96, 96)); stickKnob.pivot = new Vector2(0.5f, 0.5f);
         // right-side buttons (bottom-right cluster), ctx: f=on foot, r=riding, a=always
         AddBtn("互動", KeyCode.E, false, false, "fr", new Vector2(-36, 150), 136, new Color(1f, 0.83f, 0.42f));
         AddBtn("丟", KeyCode.Mouse0, false, false, "f", new Vector2(-40, 316), 108, new Color(1f, 0.62f, 0.62f));
@@ -69,7 +69,7 @@ public class TouchIn : MonoBehaviour
     void AddBtn(string label, KeyCode k, bool hold, bool toggle, string ctx, Vector2 pos, float size, Color c)
     {
         var b = new B { key = k, hold = hold, toggle = toggle, ctx = ctx };
-        b.img = UiKit.Img(safe, new Color(c.r, c.g, c.b, 0.82f), Art.Disc, "tbtn:" + label); b.rt = b.img.rectTransform; b.rt.At(new Vector2(1, 0), pos, new Vector2(size, size)); b.rt.pivot = new Vector2(1, 0); b.rt.anchoredPosition = pos;
+        b.img = UiKit.Img(safe, new Color(c.r, c.g, c.b, 0.9f), KnitKit.Disc, "tbtn:" + label); b.rt = b.img.rectTransform; b.rt.At(new Vector2(1, 0), pos, new Vector2(size, size)); b.rt.pivot = new Vector2(1, 0); b.rt.anchoredPosition = pos;
         var ring = UiKit.Img(b.rt, new Color(0.42f, 0.29f, 0.36f, 0.6f), Art.Ring, "ring"); ring.rectTransform.Fill();
         b.t = UiKit.Txt(b.rt, label, size > 110 ? 28 : 24, new Color(0.3f, 0.2f, 0.26f), TextAnchor.MiddleCenter, true); b.t.rectTransform.Fill(); b.t.lineSpacing = 0.85f;
         btns.Add(b);

@@ -32,7 +32,7 @@ public class InkText : Text
         for (int i = stack.Count - 1; i >= 0; i--) { var c = stack[i].color; b = Color.Lerp(b, new Color(c.r, c.g, c.b), c.a); cover = 1 - (1 - cover) * (1 - c.a); }
         if (cover >= 0.5f) { bg = b; hasBg = true; }
     }
-    static bool Solid(Image im) => im.color.a >= 0.05f && !(im.sprite && (im.sprite == Art.Ring || im.sprite == Art.Soft)) && im.type != Image.Type.Filled;
+    static bool Solid(Image im) => im.color.a >= 0.05f && !(im.sprite && (im.sprite == Art.Ring || im.sprite == Art.Soft || KnitKit.IsLine(im.sprite))) && im.type != Image.Type.Filled;
     Color Map(Color c)
     {
         if (!hasBg || GetComponent<Shadow>()) return c;

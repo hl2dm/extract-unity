@@ -17,6 +17,8 @@ public static class UiKit
     public static Image Img(Transform parent, Color c, Sprite s = null, string name = "img")
     {
         var r = Node(parent, name); var i = r.gameObject.AddComponent<Image>(); i.color = Art.Casual && !name.Contains("fade") ? PanelCol(c) : c; i.sprite = s; if (s && s.border != Vector4.zero) i.type = Image.Type.Sliced; i.raycastTarget = false;
+        if (Art.Casual && name == "dim") { i.color = new Color(KnitKit.Scrim.r, KnitKit.Scrim.g, KnitKit.Scrim.b, Mathf.Clamp(c.a, 0.52f, 0.6f)); r.gameObject.AddComponent<BlurWhileActive>(); return i; }   // v0.9: dim + blur, never whitewash
+        if (Art.Casual && s == Art.Rounded && (name == "panel" || name == "bag" || name == "card" || name == "toast" || name == "portraitTip" || name == "promptBox" || name.StartsWith("btn:"))) { if (name.StartsWith("btn:")) i.color = KnitKit.BtnFill(c); KnitKit.AsFelt(i); return i; }   // v0.9 felt patches
         if (Art.Casual && s && s == Art.Rounded && c.a > 0.3f) { var o = r.gameObject.AddComponent<Outline>(); o.effectColor = new Color(0.45f, 0.3f, 0.36f, 0.55f); o.effectDistance = new Vector2(2.5f, -2.5f); }
         return i;
     }
@@ -32,7 +34,7 @@ public static class UiKit
         var img = Img(parent, bg, Art.Rounded, "btn:" + label); img.raycastTarget = true;
         var b = img.gameObject.AddComponent<Button>(); var cb = b.colors; cb.highlightedColor = new Color(1.15f, 1.15f, 1.15f); cb.pressedColor = new Color(0.8f, 0.8f, 0.8f); cb.fadeDuration = 0.06f; b.colors = cb;
         b.onClick.AddListener(() => { Sfx.Play("click_002", 0.5f); onClick?.Invoke(); });
-        var t = Txt(img.transform, label, size, fg ?? Color.white, TextAnchor.MiddleCenter, true); if (Art.Casual && SoftProps.Contrast(t.color, img.color) < 4.5f) t.color = SoftProps.Readable(t.color, img.color); t.rectTransform.Fill(6); if (Art.Casual) { var ol = t.gameObject.AddComponent<Outline>(); ol.effectColor = new Color(0.42f, 0.29f, 0.32f, 0.35f); ol.effectDistance = new Vector2(1.5f, -1.5f); }
+        var t = Txt(img.transform, label, size, fg ?? Color.white, TextAnchor.MiddleCenter, true); if (Art.Casual && SoftProps.Contrast(t.color, img.color) < 4.5f) t.color = SoftProps.Readable(t.color, img.color); t.rectTransform.Fill(6); if (Art.Casual && fg == null) { ((InkText)t).Bg = img.color; t.color = KnitKit.BtnInk(img.color); } if (false) { var ol = t.gameObject.AddComponent<Outline>(); ol.effectColor = new Color(0.42f, 0.29f, 0.32f, 0.35f); ol.effectDistance = new Vector2(1.5f, -1.5f); }
         return b;
     }
     /// pastel crayon UI: dark neutral panels -> cream paper, saturated fills -> soft pastel. Pure white (icons) untouched.

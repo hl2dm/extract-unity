@@ -402,6 +402,13 @@ public static class Art
             RenderSettings.fogColor = new Color(0.97f, 0.94f, 0.88f); RenderSettings.fogDensity *= 0.3f; Sun.intensity *= 0.85f;
         }
     }
+    /// v0.9 knit UI: blur the world behind modal panels (URP Gaussian DoF, WebGL-safe), instead of a cream whitewash
+    public static void UiBlur(bool on)
+    {
+        if (!prof) return;
+        if (!prof.TryGet<DepthOfField>(out var d)) { d = prof.Add<DepthOfField>(true); d.mode.Override(DepthOfFieldMode.Gaussian); d.gaussianStart.Override(0f); d.gaussianEnd.Override(0.6f); d.gaussianMaxRadius.Override(1.5f); d.highQualitySampling.Override(true); }
+        d.active = on;
+    }
     public static void Hurt(float k) { if (prof && prof.TryGet<Vignette>(out var v)) { v.color.Override(Color.Lerp(Casual ? new Color(0.36f, 0.3f, 0.24f) : Color.black, new Color(0.15f, 0.35f, 0.9f), k)); v.intensity.Override(Mathf.Max(baseVig, k * 0.55f)); } }
 }
 

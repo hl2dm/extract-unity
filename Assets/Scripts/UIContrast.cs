@@ -20,7 +20,7 @@ public class UIContrast : MonoBehaviour
     static bool Fill(Graphic g)
     {
         if (!(g is Image im) || !g.isActiveAndEnabled || g.color.a < 0.05f) return false;
-        if (im.sprite && Art.Casual && (im.sprite == Art.Ring || im.sprite == Art.Soft)) return false;
+        if (im.sprite && Art.Casual && (im.sprite == Art.Ring || im.sprite == Art.Soft || KnitKit.IsLine(im.sprite))) return false;
         if (im.type == Image.Type.Filled && im.fillAmount < 0.98f) return false;
         return true;
     }

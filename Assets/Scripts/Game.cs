@@ -328,20 +328,35 @@ public class Game : MonoBehaviour
     void MenuStash()
     {
         var S = SaveSys.S; var c = ui.Modal("玩具箱　" + S.stash.Count + "/" + S.StashCap + "　　展示架 " + S.trophies.Count + "/" + Data.Upg[2].eff[S.shelf], 1500, 900);
-        float s = 96, gx = 118, gy = 150; int per = 12;
-        if (S.stash.Count > 48) Toast("只顯示前 48 樣（共 " + S.stash.Count + "），先賣掉一些吧。");
-        for (int i = 0; i < S.stash.Count && i < 48; i++)
+        float s = 112, gx = 134, gy = 176; int per = 10; int shown = Mathf.Min(Mathf.Max(S.StashCap, S.stash.Count), 30);
+        if (S.stash.Count > 30) Toast("只顯示前 30 樣（共 " + S.stash.Count + "），先賣掉一些吧。");
+        for (int i = S.stash.Count; i < shown; i++)
         {
-            var it = S.stash[i]; int idx = i; var pos = new Vector2((i % per) * gx, -(i / per) * gy);
+            var pos = new Vector2((i % per) * gx, -(i / per) * gy - 14);
+            var e = KnitKit.PocketImg(c, KnitKit.SlotEmpty, "empty"); var er = e.rectTransform; er.anchorMin = er.anchorMax = new Vector2(0, 1); er.pivot = new Vector2(0, 1); er.anchoredPosition = pos; er.sizeDelta = new Vector2(s, s);
+            var el = KnitKit.Line(er, KnitKit.SlotEmptyLine, "erim"); el.rectTransform.Fill(-1);
+        }
+        for (int i = 0; i < S.stash.Count && i < 30; i++)
+        {
+            var it = S.stash[i]; int idx = i; var pos = new Vector2((i % per) * gx, -(i / per) * gy - 14);
             ui.ItemIcon(c, it, pos, s);
-            var sell = UiKit.Btn(c, "賣 " + Data.Fmt(it.v), () => { SellAt(idx); }, Data.H("2f5d7d"), 15); var r = (RectTransform)sell.transform; r.anchorMin = r.anchorMax = new Vector2(0, 1); r.pivot = new Vector2(0, 1); r.anchoredPosition = pos + new Vector2(0, -s - 4); r.sizeDelta = new Vector2(it.r >= 3 ? 64 : s, 34);
-            if (it.r >= 3) { var sh = UiKit.Btn(c, "展", () => ShowTrophy(idx), Data.H("6a3d8a"), 16); var r2 = (RectTransform)sh.transform; r2.anchorMin = r2.anchorMax = new Vector2(0, 1); r2.pivot = new Vector2(0, 1); r2.anchoredPosition = pos + new Vector2(68, -s - 4); r2.sizeDelta = new Vector2(28, 34); }
+            var bd = UiKit.Img(c, KnitKit.Rar[it.r], null, "rbadge"); var br = bd.rectTransform; br.anchorMin = br.anchorMax = new Vector2(0, 1); br.pivot = new Vector2(0.5f, 0.5f); br.anchoredPosition = pos + new Vector2(s / 2, 0); br.sizeDelta = new Vector2(60, 24);
+            var bt = UiKit.Txt(br, Data.RarName[it.r], 15, KnitKit.RarInk(it.r)); bt.rectTransform.Fill();
+            var sell = UiKit.Btn(c, "賣 " + Data.Fmt(it.v), () => { SellAt(idx); }, Data.H("2f5d7d"), 15); var r = (RectTransform)sell.transform; r.anchorMin = r.anchorMax = new Vector2(0, 1); r.pivot = new Vector2(0, 1); r.anchoredPosition = pos + new Vector2(0, -s - 4); r.sizeDelta = new Vector2(it.r >= 3 ? s - 36 : s, 34);
+            if (it.r >= 3) { var sh = UiKit.Btn(c, "展", () => ShowTrophy(idx), Data.H("6a3d8a"), 16); var r2 = (RectTransform)sh.transform; r2.anchorMin = r2.anchorMax = new Vector2(0, 1); r2.pivot = new Vector2(0, 1); r2.anchoredPosition = pos + new Vector2(s - 32, -s - 4); r2.sizeDelta = new Vector2(32, 34); }
+        }
+        int cap = (int)Data.Upg[2].eff[S.shelf];
+        var sl = UiKit.Txt(c, "展示架（放喜歡的寶物）", 20, KnitKit.Ink2, TextAnchor.MiddleLeft); sl.rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 170), new Vector2(400, 200));
+        for (int k = 0; k < cap && k < 10; k++)
+        {
+            var d = UiKit.Img(c, k < S.trophies.Count ? KnitKit.SlotFill : KnitKit.SlotEmpty, KnitKit.Disc, "shelf"); d.rectTransform.Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(k * 96, 76), new Vector2(k * 96 + 84, 160));
+            if (k < S.trophies.Count) { var ti = UiKit.Img(d.rectTransform, Color.white, ItemArt.Pic(S.trophies[k]), "icon"); ti.rectTransform.Fill(12); ti.preserveAspect = true; }
+            else { var st = UiKit.Txt(d.rectTransform, "★", 30, KnitKit.Ink2); st.rectTransform.Fill(); }
         }
         if (S.stash.Count == 0) UiKit.Txt(c, "玩具箱空空的，出去找寶貝吧！", 30, Dim).rectTransform.Fill();
         long cv = S.stash.Where(i => i.r <= 1).Sum(i => (long)i.v);
         var b = UiKit.Btn(c, "賣掉普通/不錯的（" + Data.Fmt(cv) + "）", () => { var S2 = SaveSys.S; long v = S2.stash.Where(i => i.r <= 1).Sum(i => (long)i.v); S2.stash.RemoveAll(i => i.r <= 1); S2.money += v; SaveSys.Save(); if (v > 0) Sfx.Play("cash"); MenuStash(); }, Data.H("2f7d4a"), 24);
-        ((RectTransform)b.transform).Place(new Vector2(0, 0), new Vector2(0, 0), new Vector2(0, 0), new Vector2(520, 60));
-        var tl = UiKit.Txt(c, "展示架：" + (S.trophies.Count == 0 ? "（空）" : string.Join("、", S.trophies.Select(t => t.name))), 22, Data.H("c9a6ff"), TextAnchor.MiddleLeft); tl.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(560, 0), new Vector2(0, 60));
+        ((RectTransform)b.transform).Place(new Vector2(1, 0), new Vector2(1, 0), new Vector2(-520, 0), new Vector2(0, 60));
     }
     void SellAt(int i) { var S = SaveSys.S; if (i >= S.stash.Count) return; S.money += S.stash[i].v; S.stash.RemoveAt(i); SaveSys.Save(); Sfx.Play("cash", 0.7f); MenuStash(); }
     void ShowTrophy(int i)
