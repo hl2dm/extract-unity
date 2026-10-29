@@ -16,7 +16,7 @@ public class UIContrast : MonoBehaviour
     static readonly Vector3[] wc = new Vector3[4];
     public static void Ensure() { if (!inst) { var g = new GameObject("UIContrast"); DontDestroyOnLoad(g); inst = g.AddComponent<UIContrast>(); } }
     public static void PassNow() { if (inst) inst.Pass(); }
-    void LateUpdate() { t -= Time.unscaledDeltaTime; if (t > 0) return; t = 0.2f; Pass(); }
+    // v0.8.2: no runtime pass any more. Contrast is applied at assignment by InkText; this class only AUDITS (never writes to a Text).
     static bool Fill(Graphic g)
     {
         if (!(g is Image im) || !g.isActiveAndEnabled || g.color.a < 0.05f) return false;
@@ -25,6 +25,7 @@ public class UIContrast : MonoBehaviour
         return true;
     }
     static bool Contains(RectTransform r, Vector3 p) { r.GetWorldCorners(wc); return p.x >= wc[0].x && p.x <= wc[2].x && p.y >= wc[0].y && p.y <= wc[2].y; }
+    static string Path(Transform t) { string p = t.name; for (int i = 0; i < 3 && t.parent; i++) { t = t.parent; p = t.name + "/" + p; } return p; }
     static Color Fix(Color c, Color bg, ref bool changed)
     {
         if (SoftProps.Contrast(c, bg) >= Ratio) return c;
@@ -53,20 +54,8 @@ public class UIContrast : MonoBehaviour
         foreach (var g in fills) if (Contains(g.rectTransform, p)) { var c = g.color; bg = Color.Lerp(bg, new Color(c.r, c.g, c.b), c.a); cover = 1 - (1 - cover) * (1 - c.a); }
         if (cover < 0.5f) return;   // floats over the 3D view: HUD text carries its own outline/shadow
         if (tx.GetComponent<Shadow>()) return;   // v0.8.1: outlined HUD text (timer etc.) is legible by itself; recolouring it every 0.2 s while UI.Update restores it each frame made it flicker
-        if (!map.TryGetValue(tx, out var s)) { s = new S(); map[tx] = s; }
-        if (tx.text != s.outStr) { s.src = tx.text; s.srcCol = tx.color; } else if (tx.color != s.outCol) s.srcCol = tx.color;
-        Checked++; bool ch = false;
-        var col = Fix(s.srcCol, bg, ref ch); col.a = s.srcCol.a;
-        bool bad = SoftProps.Contrast(col, bg) < Ratio;
-        string str = rx.Replace(s.src, m =>
-        {
-            ColorUtility.TryParseHtmlString("#" + m.Groups[1].Value, out var cc); var r = Fix(cc, bg, ref ch);
-            if (SoftProps.Contrast(r, bg) < Ratio) bad = true;
-            return "<color=#" + ColorUtility.ToHtmlStringRGB(r) + m.Groups[2].Value + ">";
-        });
-        if (ch) Fixed++;
-        if (bad) { Fails++; if (logged.Add(tx.name + s.src)) Debug.Log("[contrast-ui] FAIL '" + s.src + "' on " + ColorUtility.ToHtmlStringRGB(bg)); }
-        if (tx.color != col) tx.color = col; if (tx.text != str) tx.text = str;
-        s.outStr = tx.text; s.outCol = tx.color;
+        Checked++; bool bad = SoftProps.Contrast(tx.color, bg) < Ratio; string why = bad ? "colour " + ColorUtility.ToHtmlStringRGB(tx.color) : "";
+        foreach (Match m in rx.Matches(tx.text)) { ColorUtility.TryParseHtmlString("#" + m.Groups[1].Value, out var cc); if (SoftProps.Contrast(cc, bg) < Ratio) { bad = true; why += " tag " + m.Groups[1].Value; } }
+        if (bad) { Fails++; if (logged.Add(tx.name + tx.text)) Debug.Log("[contrast-ui] FAIL '" + tx.text + "' (" + why + ") on " + ColorUtility.ToHtmlStringRGB(bg) + " path " + Path(tx.transform)); }
     }
 }

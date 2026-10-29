@@ -22,7 +22,7 @@ public static class UiKit
     }
     public static Text Txt(Transform parent, string t, int size, Color c, TextAnchor al = TextAnchor.MiddleCenter, bool bold = false, string name = "txt")
     {
-        var r = Node(parent, name); var x = r.gameObject.AddComponent<Text>(); x.font = bold ? Art.FontBold : Art.Font; x.text = t; x.fontSize = size; x.color = Art.Casual ? Ink(c) : c; x.alignment = al;
+        var r = Node(parent, name); var x = r.gameObject.AddComponent<InkText>(); x.font = bold ? Art.FontBold : Art.Font; x.text = t; x.fontSize = size; x.color = Art.Casual ? Ink(c) : c; x.alignment = al;
         x.horizontalOverflow = HorizontalWrapMode.Wrap; x.verticalOverflow = VerticalWrapMode.Overflow; x.raycastTarget = false; x.supportRichText = true; x.lineSpacing = 1.05f;
         return x;
     }

@@ -30,7 +30,7 @@ public class Game : MonoBehaviour
         if ((Application.absoluteURL ?? "").Contains("soft=0")) LightQ.NoSoft = true;
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-geo") int.TryParse(args[i + 1], out GeoQ.Force);
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
-        Art.Init(); gameObject.AddComponent<Sfx>();
+        Art.Init(); gameObject.AddComponent<Sfx>(); gameObject.AddComponent<Bgm>();
         SaveSys.Load();
         ui = gameObject.AddComponent<UI>(); ui.Build(); TouchIn.Ensure();
         player = Player.Create();
@@ -540,9 +540,12 @@ public class Game : MonoBehaviour
                 var b = c.WorldBounds; var room = level.spots.OrderBy(s => (s - b.center).sqrMagnitude).First(); var dir = room - b.center; dir.y = 0; if (dir.sqrMagnitude < 0.3f) dir = c.transform.forward; dir.Normalize();
                 var eye = b.center + dir * 1.7f; eye.y = b.min.y + Player.Eye; yield return Aim(eye, b.center); yield return new WaitForSeconds(0.6f);
                 if (run == 0) yield return Shot("oneMap_container_prompt");
+                if (run == 0) yield return TextStability("hud_prompt", 60, false);
                 OpenLoot(c); yield return new WaitForSeconds(0.5f); if (run == 0) yield return Shot("oneMap_loot_spin");
+                if (run == 0) yield return TextStability("loot_searching", 45, false); if (run == 0) Check(Bgm.I && Bgm.I.Playing && Mathf.Abs(Bgm.I.Volume - Bgm.Default) < 0.01f, "BGM playing (vol " + (Bgm.I ? Bgm.I.Volume : -1) + ", searching duck " + ui.LootSearching + ")");
                 for (float w = 0; w < 15 && c.slots.Any(s => s.state < 2); w += Time.deltaTime) yield return null; yield return new WaitForSeconds(0.3f);
                 UIContrast.PassNow(); Debug.Log("[contrast-ui] checked " + UIContrast.Checked + " fixed " + UIContrast.Fixed + " fails " + UIContrast.Fails); Check(UIContrast.Fails == 0, "UI text contrast >= 4.5 (fails " + UIContrast.Fails + ")");
+                if (run == 0) yield return TextStability("loot_done", 90, true);
                 yield return Shot("oneMap_" + tn + "_loot_" + run); LootAll(); yield return new WaitForSeconds(0.3f); CloseLoot();
                 Check(bag.Count > 0, tn + " looted " + bag.Count);
             }
@@ -571,6 +574,7 @@ public class Game : MonoBehaviour
                     for (float w = 0; w < 6 && Lure.All.Count > 0; w += Time.deltaTime) yield return null; Check(Lure.All.Count == 0, "lure expires");
                 }
                 // natural bus schedule
+                Debug.Log("[bus] before schedule test state " + level.bus.state + " runT " + runT.ToString("0.0")); if (level.bus.state != Bus.BS.Waiting) { level.bus.state = Bus.BS.Away; level.bus.bus.gameObject.SetActive(false); level.bus.nextArrive = Data.BusFirst; }   // v0.8.2: the new text-stability probes take a few seconds, so re-arm the first bus
                 runT = Data.BusFirst - 1; for (float w = 0; w < 9 && !level.bus.CanBoard; w += Time.deltaTime) yield return null;
                 Check(level.bus.CanBoard, "bus arrives on schedule");
                 for (float w = 0; w < 10 && level.bus.CanBoard; w += Time.deltaTime) yield return null;
@@ -595,7 +599,7 @@ public class Game : MonoBehaviour
             Check(state == St.End, tn + " extract"); yield return Shot("oneMap_" + tn + "_results");
         }
         Pet.FreezeAll = 0; BackToBase(); yield return new WaitForSeconds(2f);
-        OpenStation("stash"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_stash"); CloseModal();
+        OpenStation("stash"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_stash"); yield return TextStability("inventory", 60, true); CloseModal();
         OpenStation("quest"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_quest"); CloseModal();
         UIContrast.PassNow(); Check(UIContrast.Fails == 0, "UI contrast across all screens (checked " + UIContrast.Checked + ", fixed " + UIContrast.Fixed + ")");
         Debug.Log("[casual] errors " + errs + (errList.Count > 0 ? " :: " + string.Join(" || ", errList) : "") + " checks failed " + fails);
@@ -865,6 +869,36 @@ public class Game : MonoBehaviour
                 yield return CamShot(eye, Art.RenderBounds(sg.gameObject).center, "sign_" + (nm == "花店" ? "flower" : "ice") + k + "_after", 0.3f); k++;
             }
         }
+    }
+    /// v0.8.2: per-frame log of every visible UI Text (colour, alpha, effect colours, string). Colour must not change frame-to-frame;
+    /// on a static screen the string must not change either (each change = mesh rebuild = visible shimmer).
+    IEnumerator TextStability(string label, int frames, bool statik)
+    {
+        var last = new Dictionary<UnityEngine.UI.Text, (Color c, Color e, string s)>(); int colCh = 0, txtCh = 0, n = 0; float maxD = 0; var bad = new Dictionary<string, int>();
+        for (int f = 0; f < frames; f++)
+        {
+            yield return new WaitForEndOfFrame();
+            foreach (var cv in FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+            {
+                if (!cv.isRootCanvas || !cv.isActiveAndEnabled) continue;
+                foreach (var tx in cv.GetComponentsInChildren<UnityEngine.UI.Text>(false))
+                {
+                    if (!tx.isActiveAndEnabled) continue; var ef = tx.GetComponent<UnityEngine.UI.Shadow>(); var cur = (tx.color, ef ? ef.effectColor : Color.clear, tx.text);
+                    if (last.TryGetValue(tx, out var pv))
+                    {
+                        n++; float d = Mathf.Max(Mathf.Max(Mathf.Abs(cur.Item1.r - pv.c.r), Mathf.Abs(cur.Item1.g - pv.c.g)), Mathf.Max(Mathf.Abs(cur.Item1.b - pv.c.b), Mathf.Abs(cur.Item1.a - pv.c.a)));
+                        d = Mathf.Max(d, Mathf.Abs(cur.Item2.a - pv.e.a), Mathf.Abs(cur.Item2.r - pv.e.r)); maxD = Mathf.Max(maxD, d);
+                        string key = tx.name + "'" + (tx.text.Length > 24 ? tx.text.Substring(0, 24) : tx.text) + "'";
+                        if (d > 0.5f / 255f) { colCh++; bad[key + " colour"] = bad.TryGetValue(key + " colour", out var k1) ? k1 + 1 : 1; }
+                        if (cur.Item3 != pv.s && !(tx.rectTransform == ui.TimerRect && pv.c == cur.Item1)) { txtCh++; if (statik) bad[key + " text"] = bad.TryGetValue(key + " text", out var k2) ? k2 + 1 : 1; }
+                    }
+                    last[tx] = cur;
+                }
+            }
+        }
+        foreach (var kv in bad) Debug.Log("[textwatch] " + label + " changed " + kv.Value + "x: " + kv.Key);
+        Debug.Log("[textwatch] " + label + " texts " + last.Count + " samples " + n + " colour_changes " + colCh + " max_delta " + maxD.ToString("0.0000") + " text_changes " + txtCh);
+        Check(colCh == 0 && (!statik || txtCh == 0), "UI text stable frame-to-frame: " + label + " (" + last.Count + " texts, colour changes " + colCh + ", max delta " + maxD.ToString("0.0000") + ", text changes " + txtCh + (statik ? "" : " allowed") + ")");
     }
     IEnumerator TextFlicker()
     {

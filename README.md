@@ -7,6 +7,16 @@
 
 Windows 版下載：見 [Releases](https://github.com/hl2dm/extract-unity/releases)。
 
+## v0.8.2 更新：字體不再閃爍 + 搜刮格重新配色 + 背景音樂
+![v0.8.2 compare](v082_compare.jpg)
+- 閃爍根因：遊戲每幀用原始顏色重寫文字，UIContrast 每 0.2 秒又改回高對比色，兩者互相覆蓋。改為建立文字時一次套用對比 (InkText)，UIContrast 只做檢查不再改字
+- 移除文字/格子/光圈的呼吸、閃爍動畫
+- 搜刮格改為奶油色底 + 深色字，稀有度以邊框與小徽章表示 (對比 ≥ 4.5:1)
+- 新測試：開啟搜刮容器與背包時逐幀量測每個文字的顏色變化 = 0
+- 背景音樂：循環 + 交叉淡入淡出、搜刮時自動降低音量、M 鍵靜音、右上角「音樂」按鈕切換音量；網頁版在第一次操作後才開始播放
+
+Background music: *Sunday Tea in the Orchard* — generated with Google Gemini.
+
 ## v0.8.1 更新：柔光 + 建築細節 + 不再閃爍
 ![v0.8.1 compare](v081_compare.jpg)
 - 柔光：更寬的明暗過渡、更柔更暗的高光、太陽陰影強度 0.55 → 0.30、bloom 降低；道具底下加柔邊接觸陰影 (92 個)

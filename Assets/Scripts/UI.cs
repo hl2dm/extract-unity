@@ -64,7 +64,7 @@ public class UI : MonoBehaviour
         {
             promptBox.gameObject.SetActive(true);
             if (prompt != lastPrompt) { lastPrompt = prompt; promptKeyT.text = TouchIn.Active ? "點" : "E"; promptKeyT.fontSize = TouchIn.Active ? 22 : 26; promptT.text = prompt.Replace("[E] ", "").Replace("　[E]", "").Replace("[E]", "").Trim(); promptBox.rectTransform.sizeDelta = new Vector2(Mathf.Clamp(promptT.preferredWidth + 84, 160, 1100), 54); }
-            float a = 0.45f + 0.25f * Mathf.Sin(Time.time * 5); promptEdge.effectColor = new Color(1f, 0.83f, 0.3f, a);
+            promptEdge.effectColor = new Color(1f, 0.83f, 0.3f, 0.6f);   // v0.8.2: steady, no pulse
         }
         if (!raid) return;
         // mood bar: full = happy, drains while crying
@@ -75,7 +75,7 @@ public class UI : MonoBehaviour
         if (ammoTouch != TouchIn.Active) { ammoTouch = TouchIn.Active; if (ammoTouch) ammoT.rectTransform.At(new Vector2(1, 1), new Vector2(-36, -96), new Vector2(560, 60)); else ammoT.rectTransform.At(new Vector2(1, 0), new Vector2(-40, 34), new Vector2(700, 100)); ammoT.alignment = ammoTouch ? TextAnchor.UpperRight : TextAnchor.LowerRight; }
         ammoT.text = (p.sel == 0 ? "<color=#c98a1a>▶罐頭 ×" : "<color=#5c3d4a>罐頭 ×") + SaveSys.S.cans + "</color>　" + (p.sel == 1 ? "<color=#c98a1a>▶肉肉 ×" : "<color=#5c3d4a>肉肉 ×") + SaveSys.S.meats + "</color>" + (TouchIn.Active ? "" : "<size=20>\n[1][2] 切換　左鍵 丟出去</size>");
         int m = Mathf.Max(0, Mathf.CeilToInt(timeLeft)); timerT.text = "<size=24>媽媽叫你回家　</size>" + (m / 60) + ":" + (m % 60).ToString("00"); if (!Calm.On) timerT.color = timeLeft <= 60 ? (Mathf.Repeat(Time.time, 1) < 0.5f ? Bad : Color.white) : Color.white;
-        else { float u = Mathf.Clamp01((75f - timeLeft) / 30f); timerT.color = Color.Lerp(Color.white, new Color(1f, 0.72f, 0.28f), u * (0.85f + 0.15f * Mathf.Sin(Time.unscaledTime * 1.6f))); }   // v0.8.1: gentle warm-up, no blinking
+        else { float u = Mathf.Clamp01((75f - timeLeft) / 30f); u = Mathf.Round(u * 8) / 8f; var tc = Color.Lerp(Color.white, new Color(1f, 0.72f, 0.28f), u); if (timerT.color != tc) timerT.color = tc; }   // v0.8.2: stepped warm-up, no sine, no blinking
         objT.text = obj; long v = 0; int n = 0; foreach (var it in bag) if (!it.key) { v += it.v; n++; }
         bagT.text = "袋子 " + n + "/" + cap + "　<color=#c98a1a>" + Data.Fmt(v) + "</color>" + (Game.I.keys > 0 ? "　<size=20>鑰匙 ×" + Game.I.keys + "</size>" : "");
         hitT -= Time.deltaTime; hitM.enabled = hitT > 0; dmgT -= Time.deltaTime; dmgDir.enabled = false;
@@ -102,6 +102,9 @@ public class UI : MonoBehaviour
     // ---------- loot (STEP6: web-style container grid + backpack panel) ----------
     class LCell { public RectTransform root, content; public Image bg, glow, ring, spin, icon, bar, flash, chip; public Text name, val, chipT, q; public Outline edge; }
     LootContainer lc; readonly List<LCell> cells = new List<LCell>(); Text lootTitle, lootInfo, bagHead, bagTotal; RectTransform bagGrid; int bagSig = -1; public bool autoTake;
+    // v0.8.2 comfortable loot cells: warm cream card + dark ink; rarity = coloured border + badge (all >= 4.5:1)
+    static readonly Color CellCream = Data.H("fff6e6"), CellIdle = Data.H("f4ead8"), CellTaken = Data.H("ebe3d6"), InkDark = Data.H("3a2a26"), InkMid = Data.H("6a5560"), InkPrice = Data.H("7a4a0c");
+    static Color RarEdge(int r) { var c = Data.RarCol[r]; return r == 0 ? new Color(0.55f, 0.5f, 0.52f, 1f) : new Color(c.r * 0.85f, c.g * 0.85f, c.b * 0.85f, 1f); }
     const float CW = 136, CH = 170, CG = 12, BW = 84, BG = 8;
     int bCols = 5, bRows = 5;
     public void OpenLoot(LootContainer c)
@@ -126,18 +129,18 @@ public class UI : MonoBehaviour
             L.root = UiKit.Node(pt, "cell"); L.root.anchorMin = L.root.anchorMax = new Vector2(0, 1); L.root.pivot = new Vector2(0.5f, 0.5f); L.root.sizeDelta = new Vector2(CW, CH); L.root.anchoredPosition = new Vector2(gx + col * (CW + CG) + CW / 2, gy - r * (CH + CG) - CH / 2);
             L.glow = UiKit.Img(L.root, new Color(1, 1, 1, 0), Art.Soft, "glow"); L.glow.rectTransform.At(new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(CW * 1.7f, CH * 1.55f));
             L.content = UiKit.Node(L.root, "content").Fill();
-            L.bg = UiKit.Img(L.content, Panel2, Art.Rounded, "bg"); L.bg.rectTransform.Fill(); L.bg.raycastTarget = true; L.bg.type = Image.Type.Sliced;
+            L.bg = UiKit.Img(L.content, CellCream, Art.Rounded, "bg"); L.bg.color = CellCream; L.bg.rectTransform.Fill(); L.bg.raycastTarget = true; L.bg.type = Image.Type.Sliced;
             L.edge = L.bg.gameObject.AddComponent<Outline>(); L.edge.effectDistance = new Vector2(3, -3); L.edge.effectColor = new Color(0, 0, 0, 0);
             var b = L.bg.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None; b.onClick.AddListener(() => Game.I.TakeSlot(idx));
             L.ring = UiKit.Img(L.content, new Color(1, 1, 1, 0.08f), Art.Ring, "ring"); L.ring.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -12), new Vector2(98, 98));
             L.spin = UiKit.Img(L.ring.transform, Color.white, Art.Ring, "spin"); L.spin.rectTransform.Fill(); L.spin.type = Image.Type.Filled; L.spin.fillMethod = Image.FillMethod.Radial360; L.spin.fillAmount = 0.28f;
-            L.q = UiKit.Txt(L.ring.transform, "?", 46, new Color(1, 1, 1, 0.25f), TextAnchor.MiddleCenter, true); L.q.rectTransform.Fill();
+            L.q = UiKit.Txt(L.ring.transform, "?", 46, InkMid, TextAnchor.MiddleCenter, true); L.q.rectTransform.Fill(); ((InkText)L.q).Bg = CellCream; L.q.color = InkMid;
             L.icon = UiKit.Img(L.content, Color.white, null, "icon"); L.icon.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -10), new Vector2(102, 102)); L.icon.preserveAspect = true;
-            L.name = UiKit.Txt(L.content, "", 19, Color.white, TextAnchor.MiddleCenter, true); L.name.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(6, 30), new Vector2(-6, 58)); L.name.horizontalOverflow = HorizontalWrapMode.Wrap; L.name.resizeTextForBestFit = true; L.name.resizeTextMinSize = 13; L.name.resizeTextMaxSize = 19;
-            L.val = UiKit.Txt(L.content, "", 19, Accent, TextAnchor.MiddleCenter, true); L.val.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(6, 6), new Vector2(-6, 32));
+            L.name = UiKit.Txt(L.content, "", 19, Color.white, TextAnchor.MiddleCenter, true); L.name.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(6, 30), new Vector2(-6, 58)); L.name.horizontalOverflow = HorizontalWrapMode.Wrap; L.name.resizeTextForBestFit = true; L.name.resizeTextMinSize = 13; L.name.resizeTextMaxSize = 19; ((InkText)L.name).Bg = CellCream; L.name.color = InkDark;
+            L.val = UiKit.Txt(L.content, "", 19, Accent, TextAnchor.MiddleCenter, true); L.val.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(6, 6), new Vector2(-6, 32)); ((InkText)L.val).Bg = CellCream; L.val.color = InkPrice;
             L.bar = UiKit.Img(L.content, Color.white, Art.Rounded, "bar"); L.bar.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(14, 14), new Vector2(-14, 22)); L.bar.type = Image.Type.Filled; L.bar.fillMethod = Image.FillMethod.Horizontal;
             L.chip = UiKit.Img(L.content, Color.white, Art.Rounded, "chip"); L.chip.rectTransform.At(new Vector2(0, 1), new Vector2(6, -6), new Vector2(46, 22));
-            L.chipT = UiKit.Txt(L.chip.transform, "", 14, Color.black, TextAnchor.MiddleCenter, true); L.chipT.rectTransform.Fill();
+            L.chipT = UiKit.Txt(L.chip.transform, "", 14, InkDark, TextAnchor.MiddleCenter, true); L.chipT.rectTransform.Fill(); L.chip.rectTransform.sizeDelta = new Vector2(50, 24);
             L.flash = UiKit.Img(L.content, new Color(1, 1, 1, 0), Art.Rounded, "flash"); L.flash.rectTransform.Fill(); L.flash.raycastTarget = false;
             cells.Add(L);
         }
@@ -154,27 +157,28 @@ public class UI : MonoBehaviour
         var tb = UiKit.Img(qt, new Color(1, 1, 1, 0.05f), Art.Rounded, "tot"); tb.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(14, 22), new Vector2(-14, 82));
         bagTotal = UiKit.Txt(tb.transform, "", 28, Accent, TextAnchor.MiddleCenter, true); bagTotal.rectTransform.Fill();
     }
+    public bool LootSearching { get { if (lc == null) return false; foreach (var s in lc.slots) if (s.state == 1) return true; return false; } }
     public void CloseLoot() { lootP.gameObject.SetActive(false); lc = null; }
     static float Pop(float x) { if (x >= 1) return 1; if (x < 0.55f) return Mathf.Lerp(0.4f, 1.12f, Mathf.SmoothStep(0, 1, x / 0.55f)); return Mathf.Lerp(1.12f, 1f, Mathf.SmoothStep(0, 1, (x - 0.55f) / 0.45f)); }
     public void UpdateLoot(float luckMul, List<Item> bag, int cap)
     {
         if (lc == null) return; float t = Time.time; int left = 0; foreach (var s in lc.slots) if (s.state < 2) left++;
-        lootInfo.text = (autoTake ? "<color=#3f9a6a>自動拿取中…</color>　" : "") + (left > 0 ? "翻找中 " + (lc.slots.Count - left) + "/" + lc.slots.Count : "<color=#3f9a6a>已搜完</color>");
+        lootInfo.text = (autoTake ? "<color=#2c6b47>自動拿取中…</color>　" : "") + (left > 0 ? "翻找中 " + (lc.slots.Count - left) + "/" + lc.slots.Count : "<color=#2c6b47>已搜完</color>");
         for (int i = 0; i < cells.Count && i < lc.slots.Count; i++)
         {
             var s = lc.slots[i]; var c = cells[i]; var rc = Data.RarCol[s.it.r]; string hex = ColorUtility.ToHtmlStringRGB(rc);
             c.content.localScale = Vector3.one; c.flash.color = new Color(1, 1, 1, 0); c.glow.color = new Color(1, 1, 1, 0);
             if (s.state == 0)
             {
-                c.ring.enabled = true; c.ring.color = new Color(1, 1, 1, 0.08f); c.spin.enabled = false; c.q.enabled = true; c.icon.enabled = false; c.chip.enabled = false;
-                c.name.text = "<color=#7a6a78>未搜索</color>"; c.val.text = ""; c.bar.enabled = false; c.bg.color = Panel2; c.edge.effectColor = new Color(1, 1, 1, 0.06f);
+                c.ring.enabled = true; c.ring.color = new Color(0.36f, 0.24f, 0.3f, 0.12f); c.spin.enabled = false; c.q.enabled = true; c.icon.enabled = false; c.chip.enabled = false;
+                c.name.text = "<color=#5e4f58>未搜索</color>"; c.val.text = ""; c.bar.enabled = false; c.bg.color = CellIdle; c.edge.effectColor = new Color(0.45f, 0.3f, 0.36f, 0.35f);
             }
             else if (s.state == 1)
             {
                 float k = Mathf.Clamp01(s.p / Mathf.Max(0.01f, s.dur));
-                c.ring.enabled = true; c.ring.color = new Color(rc.r, rc.g, rc.b, 0.15f); c.spin.enabled = true; c.spin.color = rc; c.spin.transform.localRotation = Quaternion.Euler(0, 0, -t * (360 + 240 * s.it.r)); c.q.enabled = true; c.q.color = new Color(rc.r, rc.g, rc.b, 0.5f + 0.3f * Mathf.Sin(t * 8));
-                c.icon.enabled = false; c.chip.enabled = false; c.name.text = "翻翻翻…"; c.val.text = s.it.paid ? "<color=#c95a5a>已付費</color>" : "";
-                c.bar.enabled = true; c.bar.fillAmount = k; c.bar.color = rc; c.bg.color = Color.Lerp(Panel2, rc * 0.45f, 0.18f + 0.1f * Mathf.Sin(t * 10)); c.edge.effectColor = new Color(rc.r, rc.g, rc.b, 0.5f + 0.4f * Mathf.Sin(t * 10));
+                c.ring.enabled = true; c.ring.color = new Color(rc.r, rc.g, rc.b, 0.15f); c.spin.enabled = true; c.spin.color = rc; c.spin.transform.localRotation = Quaternion.Euler(0, 0, -t * (360 + 240 * s.it.r)); c.q.enabled = true; c.q.color = InkMid;
+                c.icon.enabled = false; c.chip.enabled = false; c.name.text = "翻翻翻…"; c.val.text = s.it.paid ? "<color=#a8322a>已付費</color>" : "";
+                c.bar.enabled = true; c.bar.fillAmount = k; c.bar.color = rc; c.bg.color = CellCream; c.edge.effectColor = new Color(rc.r * 0.8f, rc.g * 0.8f, rc.b * 0.8f, 0.8f);   // v0.8.2: steady, no pulse
                 c.glow.color = new Color(rc.r, rc.g, rc.b, 0.12f + 0.08f * s.it.r * k);
             }
             else
@@ -184,15 +188,15 @@ public class UI : MonoBehaviour
                 {
                     float x = (t - s.p) / 0.42f; c.content.localScale = Vector3.one * Pop(x);
                     c.flash.color = new Color(1, 1, 1, Mathf.Clamp01(1 - (t - s.p) / 0.35f) * (0.35f + 0.12f * s.it.r));
-                    float gl = s.it.r >= 2 ? 0.28f + 0.1f * s.it.r + 0.12f * Mathf.Sin(t * 4) : s.it.r == 1 ? 0.18f : 0.06f; c.glow.color = new Color(rc.r, rc.g, rc.b, gl);
-                    c.bg.color = Color.Lerp(Panel2, rc, 0.2f); c.edge.effectColor = rc; c.icon.color = Color.white;
+                    float gl = s.it.r >= 2 ? 0.25f + 0.08f * s.it.r : s.it.r == 1 ? 0.14f : 0f; c.glow.color = new Color(rc.r, rc.g, rc.b, gl);
+                    c.bg.color = CellCream; c.edge.effectColor = RarEdge(s.it.r); c.edge.effectDistance = new Vector2(4, -4); c.icon.color = Color.white;
                     c.chip.enabled = true; c.chip.color = rc; c.chipT.text = Data.RarName[s.it.r];
-                    c.name.text = "<color=#" + hex + ">" + s.it.name + "</color>"; c.val.text = s.it.key ? "<color=#3a78c9>鑰匙</color>" : Data.Fmt(s.it.v);
+                    c.name.text = s.it.name; c.val.text = s.it.key ? "<color=#245a9e>鑰匙</color>" : Data.Fmt(s.it.v);
                 }
                 else
                 {
-                    c.bg.color = new Color(0.16f, 0.19f, 0.34f, 0.9f); c.edge.effectColor = new Color(0, 0, 0, 0); c.chip.enabled = false; c.icon.color = new Color(1, 1, 1, 0.16f);
-                    c.name.text = "<color=#6b737b>已拿取</color>"; c.val.text = "";
+                    c.bg.color = CellTaken; c.edge.effectColor = new Color(0.45f, 0.3f, 0.36f, 0.25f); c.edge.effectDistance = new Vector2(3, -3); c.chip.enabled = false; c.icon.color = new Color(1, 1, 1, 0.3f);
+                    c.name.text = "<color=#5e4f58>已拿取</color>"; c.val.text = "";
                 }
             }
         }

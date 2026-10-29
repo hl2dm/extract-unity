@@ -14,3 +14,4 @@ All town, house, furniture, bus and bedroom geometry is procedural (SoftKit/Soft
 - Audio/*.ogg: Kenney (Impact Sounds, Interface Sounds), CC0. Audio/*.wav: procedurally synthesised.
 - ItemPics/: item illustrations generated for this project (not third-party stock).
 - Unused realistic assets (Poly Haven models, soldier, guns, Quaternius UAL animations, helicopter, car) were removed from this repository and from the casual build.
+- Audio/bgm_tea.ogg: background music "Sunday Tea in the Orchard", generated with Google Gemini.
