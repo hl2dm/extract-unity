@@ -13,13 +13,14 @@ public class Player : MonoBehaviour
     float bobT, stepT, vy, shake, throwT, throwAnim, noiseT; int handSel = -1;
     public float Sens = 2.0f;
 
+    public static float Walk = 3.5f, Run = 5.6f, Eye = 1.15f, Fov = 70f;
     public static Player Create()
     {
         var g = new GameObject("Player"); var p = g.AddComponent<Player>(); I = p;
-        p.cc = g.AddComponent<CharacterController>(); p.cc.height = 1.35f; p.cc.radius = 0.3f; p.cc.center = new Vector3(0, 0.675f, 0); p.cc.stepOffset = 0.35f; p.cc.slopeLimit = 50;
-        p.camRig = new GameObject("CamRig").transform; p.camRig.SetParent(g.transform, false); p.camRig.localPosition = new Vector3(0, 1.25f, 0);
+        p.cc = g.AddComponent<CharacterController>(); p.cc.height = 1.30f; p.cc.radius = 0.28f; p.cc.center = new Vector3(0, 0.65f, 0); p.cc.stepOffset = 0.35f; p.cc.slopeLimit = 50;
+        p.camRig = new GameObject("CamRig").transform; p.camRig.SetParent(g.transform, false); p.camRig.localPosition = new Vector3(0, Eye, 0);
         var cg = new GameObject("MainCamera"); cg.tag = "MainCamera"; cg.transform.SetParent(p.camRig, false); p.cam = cg.AddComponent<Camera>(); cg.AddComponent<AudioListener>();
-        p.cam.fieldOfView = 75; p.cam.nearClipPlane = 0.05f; p.cam.farClipPlane = 400; p.cam.cullingMask = ~(1 << Art.VMLayer);
+        p.cam.fieldOfView = Fov; p.cam.nearClipPlane = 0.05f; p.cam.farClipPlane = 400; p.cam.cullingMask = ~(1 << Art.VMLayer);
         var cd = p.cam.GetUniversalAdditionalCameraData(); cd.renderPostProcessing = true; AAQuality.Apply(p.cam); cd.renderShadows = true;
         var vg = new GameObject("VMCamera"); vg.transform.SetParent(cg.transform, false); p.vmCam = vg.AddComponent<Camera>(); p.vmCam.cullingMask = 1 << Art.VMLayer; p.vmCam.fieldOfView = 55; p.vmCam.nearClipPlane = 0.01f; p.vmCam.farClipPlane = 5;
         var vd = p.vmCam.GetUniversalAdditionalCameraData(); vd.renderType = CameraRenderType.Overlay; vd.renderShadows = false; cd.cameraStack.Add(p.vmCam);
@@ -64,7 +65,7 @@ public class Player : MonoBehaviour
             sprint = TouchIn.Held(KeyCode.LeftShift) && mv.z > 0.1f && !Crying;
         }
         Sprinting = sprint && mv.sqrMagnitude > 0.1f;
-        float spd = (sprint ? 6.4f : 4.1f) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1);
+        float spd = (sprint ? Run : Walk) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1);
         var vel = transform.TransformDirection(mv) * spd;
         if (cc.isGrounded) { vy = -1f; if (canAct && TouchIn.Down(KeyCode.Space)) vy = 4.4f; } else vy -= 14f * dt;
         vel.y = vy; cc.Move(vel * dt);
@@ -78,9 +79,9 @@ public class Player : MonoBehaviour
         else bobT = Mathf.Lerp(bobT, Mathf.Round(bobT / Mathf.PI) * Mathf.PI, dt * 5);
         float bob = Mathf.Sin(bobT * 2) * 0.04f * Mathf.Clamp01(hs / 4), bobX = Mathf.Cos(bobT) * 0.03f * Mathf.Clamp01(hs / 4);
         float cry = Crying ? Mathf.Sin(Time.time * 9) * 0.6f : 0;
-        camRig.localPosition = new Vector3(bobX * 0.4f, 1.25f + bob, 0);
+        camRig.localPosition = new Vector3(bobX * 0.4f, Eye + bob, 0);
         camRig.localRotation = Quaternion.Euler(pitch + sy + cry, sx, Mathf.Sin(bobT) * 0.5f * Mathf.Clamp01(hs / 4) + cry);
-        cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, 75 + (sprint ? 5 : 0), dt * 10);
+        cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, Fov + (sprint ? 5 : 0), dt * 10);
         // hand / throw
         if (canAct)
         {

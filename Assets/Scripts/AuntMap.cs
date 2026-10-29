@@ -7,7 +7,7 @@ using static SoftKit;
 public static partial class LevelGen
 {
     struct Op { public bool ax; public float fc, c, w, y0, y1; }
-    const float AWH = 3.5f, AWT = 0.24f, FY = 0.12f;
+    public const float AWH = 3.0f, AWT = 0.24f, FY = 0.12f;
     static Color Lite(Color c, float k) => Color.Lerp(c, Color.white, k);
     static Color k2c(float x) => new[] { Rose, ButterD, Coral }[Mathf.Abs(Mathf.RoundToInt(x)) % 3];
     static void NoShadow(GameObject g) { foreach (var r in g.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.Off; }
@@ -145,13 +145,13 @@ public static partial class LevelGen
         rooms.Add(new ARoom { name = "aunt", x0 = 3, x1 = 9, z0 = 6, z1 = 12, wall = Lite(Pink, 0.35f), trim = PinkD, floor = Tiles(Lav, Lite(Lav, 0.5f)) });
 
         // ---- openings
-        ops.Add(new Op { ax = true, fc = 0, c = -6, w = 4.4f, y0 = 0, y1 = 2.7f });            // garage mouth
-        ops.Add(new Op { ax = true, fc = 0, c = 0, w = 1.6f, y0 = 0, y1 = 2.75f });            // front door
-        ops.Add(new Op { ax = false, fc = -3, c = 1.6f, w = 1.6f, y0 = 0, y1 = 2.6f });         // garage<->living
-        ops.Add(new Op { ax = false, fc = 3, c = 1.6f, w = 1.6f, y0 = 0, y1 = 2.6f });          // living<->kitchen
-        ops.Add(new Op { ax = true, fc = 6, c = -6, w = 1.4f, y0 = 0, y1 = 2.6f });            // garage->bath
-        ops.Add(new Op { ax = true, fc = 6, c = 1.8f, w = 1.6f, y0 = 0, y1 = 2.6f });          // living->bedroom
-        ops.Add(new Op { ax = true, fc = 6, c = 6, w = 1.6f, y0 = 0, y1 = 2.6f });             // kitchen->aunt (locked)
+        ops.Add(new Op { ax = true, fc = 0, c = -6, w = 4.4f, y0 = 0, y1 = 2.5f });            // garage mouth
+        ops.Add(new Op { ax = true, fc = 0, c = 0, w = 1.3f, y0 = 0, y1 = 2.4f });            // front door
+        ops.Add(new Op { ax = false, fc = -3, c = 1.6f, w = 1.3f, y0 = 0, y1 = 2.3f });         // garage<->living
+        ops.Add(new Op { ax = false, fc = 3, c = 1.6f, w = 1.3f, y0 = 0, y1 = 2.3f });          // living<->kitchen
+        ops.Add(new Op { ax = true, fc = 6, c = -6, w = 1.4f, y0 = 0, y1 = 2.3f });            // garage->bath
+        ops.Add(new Op { ax = true, fc = 6, c = 1.8f, w = 1.3f, y0 = 0, y1 = 2.3f });          // living->bedroom
+        ops.Add(new Op { ax = true, fc = 6, c = 6, w = 1.3f, y0 = 0, y1 = 2.3f });             // kitchen->aunt (locked)
         Window(h, ops, true, 0, 6, 2.0f, 1.0f, 2.4f, 0, Vector3.back, PinkD, true);            // kitchen front
         Window(h, ops, true, 12, -6, 1.2f, 1.6f, 2.5f, 180, Vector3.forward, Sky, false);       // bath back
         Window(h, ops, true, 12, 0, 2.0f, 1.0f, 2.4f, 180, Vector3.forward, Pink, false);       // bedroom back
@@ -206,8 +206,8 @@ public static partial class LevelGen
         }
 
         // ---- doors
-        SDoor(h, 0, 0, 1.6f, 2.75f, Mint, trim, false);
-        SDoor(h, 6, 6, 1.6f, 2.6f, Lav, trim, true);
+        SDoor(h, 0, 0, 1.3f, 2.4f, Mint, trim, false);
+        SDoor(h, 6, 6, 1.3f, 2.3f, Lav, trim, true);
 
         // ---- upper storeys (dollhouse shell: no shadows so rooms get sun)
         var up = Group(h, "upper", Vector3.zero);
@@ -291,7 +291,7 @@ public static partial class LevelGen
         SoftProps.Counter(h, new Vector3(8.5f, FY, 3.0f), -90, 1.8f, Lite(Mint, 0.1f), White, "sink");
         SoftProps.Counter(h, new Vector3(7.6f, FY, 0.5f), 0, 1.4f, Lite(Mint, 0.1f), White, "stove");
         SCont(h, "drawer", new Vector3(3.55f, FY, 4.6f), 90, Mint, "碗櫃");
-        SoftProps.RoundTable(h, new Vector3(5.6f, FY, 3.0f), 0.75f, 0.75f, Butter, WoodD);
+        SoftProps.RoundTable(h, new Vector3(5.6f, FY, 3.0f), 0.62f, 0.75f, Butter, WoodD);
         for (int i = 0; i < 3; i++) { float a = i * 2.1f + 0.4f; SoftProps.Stool(h, new Vector3(5.6f + Mathf.Cos(a) * 1.05f, FY, 3.0f + Mathf.Sin(a) * 1.05f), i == 0 ? Rose : i == 1 ? Mint : Lav); }
         Ball(h, new Vector3(5.6f, FY + 0.83f, 3.0f), new Vector3(0.45f, 0.14f, 0.45f), White, 12);
         for (int i = 0; i < 3; i++) Ball(h, new Vector3(5.5f + i * 0.1f, FY + 0.93f, 3.0f + (i % 2) * 0.1f), Vector3.one * 0.15f, i == 1 ? ButterD : Coral, 10);

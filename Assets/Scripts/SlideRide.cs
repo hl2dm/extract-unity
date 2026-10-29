@@ -39,7 +39,7 @@ public class SlideRide : Interactable
     {
         bool sit = pitch > 15; // seated on the chute: lower eye so the chute fills the bottom of the view
         p.transform.position = pos; p.yaw = yaw; p.pitch = pitch; p.transform.rotation = Quaternion.Euler(0, yaw, 0);
-        p.camRig.localPosition = new Vector3(0, sit ? 0.8f : 1.25f, 0); p.camRig.localRotation = Quaternion.Euler(pitch, 0, roll);
+        p.camRig.localPosition = new Vector3(0, sit ? 0.8f : Player.Eye, 0); p.camRig.localRotation = Quaternion.Euler(pitch, 0, roll);
         if (p.cam) p.cam.fieldOfView = fov;
     }
     void OnDisable() { if (Busy) { Busy = false; Player.Riding = false; if (Player.I) Player.I.cc.enabled = true; } }

@@ -12,7 +12,7 @@ public class Game : MonoBehaviour
     public List<Item> bag = new List<Item>(); public int keys; public float runT; public int searched, caughtRun, luresRun; bool warn60, warn20;
     LootContainer openC; Interactable focus; float tickT;
     public const float RaidTime = Data.RaidTime;
-    public bool autoshots, doorOnly, gallery; string shotDir;
+    public bool autoshots, doorOnly, gallery, scaleOnly; string shotDir;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot() { if (I) return; var g = new GameObject("Game"); DontDestroyOnLoad(g); g.AddComponent<Game>(); }
@@ -22,7 +22,7 @@ public class Game : MonoBehaviour
         I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
-        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; }
+        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; }
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>();
         SaveSys.Load();
@@ -65,8 +65,8 @@ public class Game : MonoBehaviour
     }
     void ReattachCam()
     {
-        var c = player.cam.transform; c.SetParent(player.camRig, false); c.localPosition = Vector3.zero; c.localRotation = Quaternion.identity; player.cam.fieldOfView = 75; player.vmCam.enabled = true;
-        player.camRig.localPosition = new Vector3(0, 1.25f, 0);
+        var c = player.cam.transform; c.SetParent(player.camRig, false); c.localPosition = Vector3.zero; c.localRotation = Quaternion.identity; player.cam.fieldOfView = Player.Fov; player.vmCam.enabled = true;
+        player.camRig.localPosition = new Vector3(0, Player.Eye, 0);
     }
 
     // ---------- deploy ----------
@@ -416,7 +416,7 @@ public class Game : MonoBehaviour
     IEnumerator Aim(Vector3 eye, Vector3 target)
     {
         var d = target - eye; var hd = new Vector3(d.x, 0, d.z); if (hd.sqrMagnitude < 0.001f) hd = Vector3.forward;
-        player.Teleport(eye - Vector3.up * 1.25f, Quaternion.LookRotation(hd).eulerAngles.y); player.pitch = -Mathf.Atan2(d.y, hd.magnitude) * Mathf.Rad2Deg; yield return null; yield return null;
+        player.Teleport(eye - Vector3.up * player.camRig.localPosition.y, Quaternion.LookRotation(hd).eulerAngles.y); player.pitch = -Mathf.Atan2(d.y, hd.magnitude) * Mathf.Rad2Deg; yield return null; yield return null;
     }
     IEnumerator CamShot(Vector3 from, Vector3 at, string name, float wait = 0.4f)
     {
@@ -443,6 +443,15 @@ public class Game : MonoBehaviour
         Application.logMessageReceived += OnLog; Time.timeScale = 1; yield return new WaitForSeconds(2.5f);
         var S0 = SaveSys.S; S0.money += 20000;
         if (gallery) { yield return Gallery(); yield break; }
+        if (scaleOnly)
+        {   // v0.7: scale audit + fixed scale camera views only
+            Debug.Log("[scale] --- base ---"); ScaleAudit.Run(baseRoot, player);
+            yield return ScaleShotBase();
+            Deploy(0); for (float w = 0; w < 8 && state != St.Raid; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(2.5f); Pet.FreezeAll = 999;
+            Debug.Log("[scale] --- raid ---"); int sf = ScaleAudit.Run(level.root, player);
+            yield return ScaleShots();
+            Debug.Log("[casual] scaleOnly done errors " + errs + " scaleFails " + sf); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
+        }
         if (doorOnly)
         {   // before/after doorway trim shots (run once with -legacytrim for "before")
             Deploy(0); yield return new WaitForSeconds(3.0f); Pet.FreezeAll = 999;
@@ -484,6 +493,7 @@ public class Game : MonoBehaviour
                 }
                 yield return MotoTest();
                 yield return TouchTest();
+                { int sf = ScaleAudit.Run(level.root, player); Check(sf == 0, "scale audit vs scale bible (" + sf + " out of range)"); yield return ScaleShots(); }
                 var slide = FindFirstObjectByType<SlideRide>(); Check(slide, "slide is interactable");
                 if (slide)
                 {
@@ -514,7 +524,7 @@ public class Game : MonoBehaviour
             if (c)
             {
                 var b = c.WorldBounds; var room = level.spots.OrderBy(s => (s - b.center).sqrMagnitude).First(); var dir = room - b.center; dir.y = 0; if (dir.sqrMagnitude < 0.3f) dir = c.transform.forward; dir.Normalize();
-                var eye = b.center + dir * 1.7f; eye.y = b.min.y + 1.25f; yield return Aim(eye, b.center); yield return new WaitForSeconds(0.6f);
+                var eye = b.center + dir * 1.7f; eye.y = b.min.y + Player.Eye; yield return Aim(eye, b.center); yield return new WaitForSeconds(0.6f);
                 if (run == 0) yield return Shot("oneMap_container_prompt");
                 OpenLoot(c); yield return new WaitForSeconds(0.5f); if (run == 0) yield return Shot("oneMap_loot_spin");
                 for (float w = 0; w < 15 && c.slots.Any(s => s.state < 2); w += Time.deltaTime) yield return null; yield return new WaitForSeconds(0.3f);
@@ -652,6 +662,39 @@ public class Game : MonoBehaviour
             Check(miss == 0, "no missing CJK glyphs in on-screen text (" + miss + " " + bad + ")");
         }
         TouchIn.Set(false); yield return null; Check(!TouchIn.UIVisible, "touch controls hidden on desktop");
+    }
+
+    IEnumerator ScaleShotBase()
+    {
+        var bc0 = baseRoot.position; float E = player.camRig.localPosition.y;
+        yield return Aim(bc0 + new Vector3(2.2f, E, 2.0f), bc0 + new Vector3(-1.5f, 0.6f, -2f)); yield return new WaitForSeconds(0.5f); yield return Shot("scale_fp_base");
+    }
+    IEnumerator ScaleShots()
+    {
+        float E = player.camRig.localPosition.y;
+        var hs = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "House").FirstOrDefault(t => t.GetComponentsInChildren<Transform>().Any(c => c.name == "sk_sofa"));
+        if (hs)
+        {
+            System.Func<float, float, float, Vector3> H = (x, y, z) => hs.TransformPoint(new Vector3(x, y, z));
+            yield return Aim(H(2.6f, 0.12f + E, 1.2f), H(-2.35f, 0.7f, 4.0f)); yield return new WaitForSeconds(0.5f); yield return Shot("scale_fp_living");
+            yield return Aim(H(4.0f, 0.12f + E, 1.2f), H(8.2f, 0.9f, 2.4f)); yield return new WaitForSeconds(0.5f); yield return Shot("scale_fp_kitchen");
+            yield return Aim(H(3.6f, 0.12f + E, 8.4f), H(7.8f, 0.5f, 9.6f)); yield return new WaitForSeconds(0.5f); yield return Shot("scale_fp_bedroom");
+            yield return CamShot(H(-6f, 2.2f, -4.5f), H(0f, 1.6f, 0.5f), "scale_house_front");
+        }
+        yield return Aim(new Vector3(-24f, 0.12f + E, -1.5f), new Vector3(-8f, 1.8f, 1.5f)); yield return new WaitForSeconds(0.6f); yield return Shot("scale_fp_street");
+        var c0 = new Vector3(-20f, 0.12f, 0f);
+        var cat = Pet.All.FirstOrDefault(x => x.name == "Cat"); var dog = Pet.All.FirstOrDefault(x => x.name == "Dog");
+        foreach (var (pt, off) in new[] { (cat, new Vector3(2.4f, 0, -0.7f)), (dog, new Vector3(2.4f, 0, 0.8f)) })
+            if (pt) { pt.enabled = false; var rb = pt.GetComponent<Rigidbody>(); if (rb) rb.isKinematic = true; pt.transform.position = c0 + off; pt.transform.rotation = Quaternion.Euler(0, -90, 0); }
+        yield return Aim(c0 + Vector3.up * E, c0 + new Vector3(2.4f, 0.35f, 0)); yield return new WaitForSeconds(0.6f); yield return Shot("scale_pets_fp");
+        yield return CamShot(c0 + new Vector3(4.6f, 1.2f, -3.6f), c0 + new Vector3(2.0f, 0.5f, 0), "scale_pets_side");
+        foreach (var pt in new[] { cat, dog }) if (pt) pt.enabled = true;
+        foreach (var nm in new[] { "sk_scooter", "RideScooter" })
+        {
+            var sc = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == nm).OrderBy(t => (t.position - c0).sqrMagnitude).FirstOrDefault(); if (!sc) continue;
+            var side = sc.right; var fw = sc.forward; var eyeP = sc.position + side * 2.4f - fw * 1.2f; eyeP.y = sc.position.y + E;
+            yield return Aim(eyeP, sc.position + Vector3.up * 0.6f); yield return new WaitForSeconds(0.5f); yield return Shot(nm == "sk_scooter" ? "scale_scooter_fp" : "scale_ride_fp");
+        }
     }
     IEnumerator MotoTest()
     {

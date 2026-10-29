@@ -7,6 +7,7 @@ public class Moto : Interactable
 {
     public static Moto Cur; public static int Mounts, Escapes; public static float AutoThrottle, AutoSteer; public static bool Auto, FirstPerson, CamFree;
     public const float MaxSpd = 9.5f;
+    public const float S = 0.8f; // v0.7 scale bible: toy scooter + rider shrunk to kid scale
     public float speed; Transform model, rider, riderHead; BoxCollider box; float escT, yaw, vy, steerVis, noiseT, toastT, putT, origR; Color col;
     public bool Riding => Cur == this;
     public override string Prompt => Riding ? "[E] 下車（下車可以翻東西）" + (TouchIn.Active ? "" : "　V 換視角") : "[E] 騎上小機車";
@@ -23,7 +24,7 @@ public class Moto : Interactable
     public static Moto Build(Transform root, Vector3 pos, float yaw, Color c)
     {
         var g = Group(root, "RideScooter", pos, yaw); var m = g.gameObject.AddComponent<Moto>(); m.col = c; m.reach = 2.6f;
-        var md = Group(g, "model", Vector3.zero); m.model = md; var dark = Plum;
+        var md = Group(g, "model", Vector3.zero); m.model = md; md.localScale = Vector3.one * S; var dark = Plum;
         // chunky toy proportions: fat wheels, bubble body, big round headlight face
         foreach (float z in new[] { -0.7f, 0.72f }) { Cyl(md, new Vector3(0, 0.34f, z), 0.34f, 0.26f, Dk(dark), 0.12f, Q(0, 0, 90), 20); Cyl(md, new Vector3(0, 0.34f, z), 0.15f, 0.3f, Butter, 0.06f, Q(0, 0, 90), 14); }
         Block(md, new Vector3(0, 0.5f, 0.02f), new Vector3(0.48f, 0.2f, 1.0f), c, 0.1f, false);                 // floor board
@@ -104,7 +105,7 @@ public class Moto : Interactable
         Ball(head, new Vector3(0, -0.04f, 0.27f), Vector3.one * 0.03f, H("f0a08a"), 6); Ring(head, new Vector3(0, -0.1f, 0.25f), Q(0, 0, 0), 0.045f, 0.013f, H("c95468"), 14).transform.localScale = new Vector3(1, 0.7f, 1); Ball(head, new Vector3(0, -0.125f, 0.25f), new Vector3(0.06f, 0.03f, 0.02f), H("d9667a"), 8); // open smile
         foreach (int s in new[] { -1, 1 }) Ball(head, new Vector3(s * 0.105f, 0.075f, 0.25f), new Vector3(0.07f, 0.018f, 0.02f), H("7a5040"), 6, false, Q(0, 0, s * -10)); // brows            // smile
         rd.localScale = Vector3.zero;
-        m.box = g.gameObject.AddComponent<BoxCollider>(); m.box.size = new Vector3(0.8f, 1.5f, 2.1f); m.box.center = new Vector3(0, 0.75f, 0);
+        m.box = g.gameObject.AddComponent<BoxCollider>(); m.box.size = new Vector3(0.8f, 1.5f, 2.1f) * S; m.box.center = new Vector3(0, 0.75f, 0) * S;
         return m;
     }
 
@@ -114,7 +115,7 @@ public class Moto : Interactable
         if (Riding) { Dismount(); return; }
         if (Cur || SlideRide.Busy || Player.Riding) return;
         Cur = this; Mounts++; speed = 0; vy = 0; yaw = transform.eulerAngles.y;
-        box.enabled = false; rider.localScale = Vector3.one;
+        box.enabled = false; rider.localScale = Vector3.one * S;
         origR = p.cc.radius; p.Teleport(new Vector3(transform.position.x, transform.position.y + 0.08f, transform.position.z), yaw);
         p.cc.radius = 0.55f; Player.Riding = true; if (p.hand) p.hand.gameObject.SetActive(false);
         Sfx.Play("confirmation_001", 0.5f, 1.3f); Pet.Noise(transform.position, 6f);
@@ -137,7 +138,7 @@ public class Moto : Interactable
         Cur = null; p.cc.radius = origR > 0 ? origR : 0.3f; p.cc.enabled = true; p.Teleport(spot, yaw); ResetCam(p); Player.Riding = false;
         Sfx.Play("impactSoft_heavy_000", 0.4f, 1.4f);
     }
-    static void ResetCam(Player p) { p.camRig.localPosition = new Vector3(0, 1.25f, 0); p.camRig.localRotation = Quaternion.identity; if (p.cam) { p.cam.transform.localPosition = Vector3.zero; p.cam.transform.localRotation = Quaternion.identity; p.cam.fieldOfView = 75; } }
+    static void ResetCam(Player p) { p.camRig.localPosition = new Vector3(0, Player.Eye, 0); p.camRig.localRotation = Quaternion.identity; if (p.cam) { p.cam.transform.localPosition = Vector3.zero; p.cam.transform.localRotation = Quaternion.identity; p.cam.fieldOfView = Player.Fov; } }
     public static bool InNoRide(Vector3 w) { foreach (var b in LevelGen.NoRide) if (b.Contains(new Vector3(w.x, b.center.y, w.z))) return true; return false; }
 
     void Update()
@@ -181,13 +182,13 @@ public class Moto : Interactable
         if (!Riding) return; var p = Player.I; if (!p) return;
         transform.position = p.transform.position - Vector3.up * 0.08f; transform.rotation = Quaternion.Euler(0, yaw, 0);
         model.localRotation = Quaternion.Euler(0, 0, -steerVis * 12f); rider.localRotation = model.localRotation;
-        rider.localScale = Vector3.one; riderHead.localScale = FirstPerson ? Vector3.zero : Vector3.one;
+        rider.localScale = Vector3.one * S; riderHead.localScale = FirstPerson ? Vector3.zero : Vector3.one;
         if (CamFree) return;
         var cam = p.cam; float sp01 = Mathf.Clamp01(Mathf.Abs(speed) / MaxSpd);
         cam.transform.localPosition = Vector3.zero; cam.transform.localRotation = Quaternion.identity;
         if (FirstPerson)
         {
-            p.camRig.localPosition = new Vector3(0, 2.0f, -0.25f); p.camRig.localRotation = Quaternion.Euler(p.pitch + 6, 0, -steerVis * 6);
+            p.camRig.localPosition = new Vector3(0, 2.0f * S, -0.25f * S); p.camRig.localRotation = Quaternion.Euler(p.pitch + 6, 0, -steerVis * 6);
         }
         else
         {   // chase cam behind + above; pulled in if a wall is in the way
@@ -196,7 +197,7 @@ public class Moto : Interactable
             if (Physics.SphereCast(piv, 0.22f, d.normalized, out var h, dist, Art.ShotMask, QueryTriggerInteraction.Ignore) && !h.collider.transform.IsChildOf(transform) && !h.collider.transform.IsChildOf(p.transform)) dist = Mathf.Max(0.4f, h.distance - 0.1f);
             p.camRig.position = piv + d.normalized * dist; p.camRig.rotation = Quaternion.LookRotation(piv + rot * Vector3.forward * 2f - p.camRig.position);
         }
-        cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, 72 + sp01 * 14, Time.deltaTime * 5);
+        cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, Player.Fov + sp01 * 12, Time.deltaTime * 5);
     }
 
     protected override void OnDisable()

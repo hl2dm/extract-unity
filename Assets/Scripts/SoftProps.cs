@@ -60,7 +60,7 @@ public static class SoftProps
     }
     public static Transform Scooter(Transform p, Vector3 pos, float yaw, Color c)
     {
-        var g = Group(p, "sk_scooter", pos, yaw); g.localScale = new Vector3(1.25f, 1.12f, 1.12f); var dark = Plum; var hub = Grey;
+        var g = Group(p, "sk_scooter", pos, yaw); g.localScale = new Vector3(1.0f, 0.88f, 0.88f); var dark = Plum; var hub = Grey;
         foreach (float z in new[] { -0.62f, 0.62f }) { Cyl(g, new Vector3(0, 0.3f, z), 0.3f, 0.16f, Dk(dark, 1.1f), 0.07f, Q(0, 0, 90), 18); Cyl(g, new Vector3(0, 0.3f, z), 0.13f, 0.2f, hub, 0.04f, Q(0, 0, 90), 12); }
         Block(g, new Vector3(0, 0.42f, 0.02f), new Vector3(0.36f, 0.16f, 0.9f), c, 0.07f, false);        // floor board
         Block(g, new Vector3(0, 0.62f, -0.48f), new Vector3(0.5f, 0.5f, 0.75f), c, 0.22f, false, 0, -1, 0.15f); // rear body
@@ -266,11 +266,11 @@ public static class SoftProps
         else if (gt == 1)
         {   // rolling shutter + side door
             Shutter(fr, new Vector3(-w * 0.15f, 1.15f, -0.05f), w * 0.5f, 2.1f, Lt(acc, 0.4f));
-            DoorVisual(fr, new Vector3(w * 0.3f, 0, -0.07f), 1.6f, 2.95f, acc, trim);
+            DoorVisual(fr, new Vector3(w * 0.3f, 0, -0.07f), 1.2f, 2.2f, acc, trim);
         }
         else
         {   // arched door + window with grille
-            DoorVisual(fr, new Vector3(-w * 0.2f, 0, -0.07f), 1.8f, 3.0f, acc, trim);
+            DoorVisual(fr, new Vector3(-w * 0.2f, 0, -0.07f), 1.3f, 2.25f, acc, trim);
             Win(fr, new Vector3(w * 0.2f, 1.55f, -0.05f), 2.0f, 1.8f, trim, true, PinkD, true);
         }
         // upper floors
@@ -395,12 +395,12 @@ public static class SoftProps
     {
         var g = Group(p, "sk_sofa", pos, yaw);
         Block(g, new Vector3(0, 0.25f, 0), new Vector3(2.2f, 0.42f, 0.95f), Dk(c, 0.92f), 0.18f, false);
-        Block(g, new Vector3(0, 0.75f, -0.35f), new Vector3(2.2f, 0.8f, 0.32f), c, 0.16f, false);
+        Block(g, new Vector3(0, 0.66f, -0.35f), new Vector3(2.2f, 0.62f, 0.32f), c, 0.16f, false);
         foreach (int s in new[] { -1, 1 }) Block(g, new Vector3(s * 1.0f, 0.55f, 0), new Vector3(0.32f, 0.5f, 0.95f), c, 0.15f, false);
         foreach (int s in new[] { -1, 1 }) Block(g, new Vector3(s * 0.43f, 0.53f, 0.08f), new Vector3(0.82f, 0.2f, 0.72f), Lt(c, 0.2f), 0.09f, false);
-        Block(g, new Vector3(-0.55f, 0.82f, -0.12f), new Vector3(0.5f, 0.42f, 0.18f), cushion, 0.12f, false).transform.localRotation = Q(-10, 8, 6);
-        Block(g, new Vector3(0.55f, 0.82f, -0.12f), new Vector3(0.48f, 0.42f, 0.18f), Butter, 0.12f, false).transform.localRotation = Q(-10, -8, -5);
-        var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(2.2f, 1.1f, 0.95f); bc.center = new Vector3(0, 0.55f, 0); return g;
+        Block(g, new Vector3(-0.55f, 0.72f, -0.12f), new Vector3(0.5f, 0.42f, 0.18f), cushion, 0.12f, false).transform.localRotation = Q(-10, 8, 6);
+        Block(g, new Vector3(0.55f, 0.72f, -0.12f), new Vector3(0.48f, 0.42f, 0.18f), Butter, 0.12f, false).transform.localRotation = Q(-10, -8, -5);
+        var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(2.2f, 0.97f, 0.95f); bc.center = new Vector3(0, 0.485f, 0); return g;
     }
     public static Transform RoundTable(Transform p, Vector3 pos, float R, float h, Color top, Color leg, bool col = true)
     {
@@ -426,12 +426,12 @@ public static class SoftProps
     public static Transform TVStand(Transform p, Vector3 pos, float yaw)
     {
         var g = Group(p, "sk_tv", pos, yaw); var om = PushM(0.5f);
-        Block(g, new Vector3(0, 0.98f, -0.05f), new Vector3(1.25f, 0.92f, 0.5f), Lav, 0.34f, false);                    // chunky rounded bezel body
-        Block(g, new Vector3(0, 1.0f, 0.12f), new Vector3(0.95f, 0.64f, 0.1f), Dk(SkyD, 0.75f), 0.16f, false);           // screen
-        Ball(g, new Vector3(-0.25f, 1.15f, 0.17f), new Vector3(0.28f, 0.12f, 0.03f), Lt(Sky, 0.4f), 10, false, Q(0, 0, -20)); // screen glint
-        foreach (int s in new[] { -1, 1 }) { Cyl(g, new Vector3(s * 0.2f, 1.53f, -0.05f), 0.065f, 0.26f, LavD, 0.03f, Q(0, 0, s * 25), 10); Ball(g, new Vector3(s * 0.27f, 1.7f, -0.05f), Vector3.one * 0.17f, s < 0 ? Coral : ButterD, 10); } // stubby ball-tipped antennae
-        foreach (int s in new[] { -1, 1 }) Ball(g, new Vector3(s * 0.4f, 0.55f, -0.05f), new Vector3(0.18f, 0.12f, 0.18f), LavD, 10);   // round feet
-        Ball(g, new Vector3(0.5f, 0.68f, 0.15f), Vector3.one * 0.09f, Coral, 8); Ball(g, new Vector3(0.36f, 0.68f, 0.15f), Vector3.one * 0.07f, Mint, 8);   // knobs
+        Block(g, new Vector3(0, 0.73f, -0.05f), new Vector3(1.25f, 0.92f, 0.5f), Lav, 0.34f, false);                    // chunky rounded bezel body
+        Block(g, new Vector3(0, 0.75f, 0.12f), new Vector3(0.95f, 0.64f, 0.1f), Dk(SkyD, 0.75f), 0.16f, false);           // screen
+        Ball(g, new Vector3(-0.25f, 0.90f, 0.17f), new Vector3(0.28f, 0.12f, 0.03f), Lt(Sky, 0.4f), 10, false, Q(0, 0, -20)); // screen glint
+        foreach (int s in new[] { -1, 1 }) { Cyl(g, new Vector3(s * 0.2f, 1.28f, -0.05f), 0.065f, 0.26f, LavD, 0.03f, Q(0, 0, s * 25), 10); Ball(g, new Vector3(s * 0.27f, 1.45f, -0.05f), Vector3.one * 0.17f, s < 0 ? Coral : ButterD, 10); } // stubby ball-tipped antennae
+        foreach (int s in new[] { -1, 1 }) Ball(g, new Vector3(s * 0.4f, 0.30f, -0.05f), new Vector3(0.18f, 0.12f, 0.18f), LavD, 10);   // round feet
+        Ball(g, new Vector3(0.5f, 0.43f, 0.15f), Vector3.one * 0.09f, Coral, 8); Ball(g, new Vector3(0.36f, 0.43f, 0.15f), Vector3.one * 0.07f, Mint, 8);   // knobs
         MatA = om;
         return g;
     }
@@ -442,7 +442,7 @@ public static class SoftProps
         Block(g, new Vector3(0, 0.5f, 0.05f), new Vector3(w - 0.1f, 0.28f, L - 0.15f), White, 0.12f, false);
         Block(g, new Vector3(0, 0.66f, 0.25f), new Vector3(w + 0.06f, 0.14f, L * 0.7f), quilt, 0.07f, false, 0, 0.02f);
         Block(g, new Vector3(0, 0.66f, -L / 2 + 0.38f), new Vector3(w * 0.75f, 0.2f, 0.45f), Lt(quilt, 0.4f), 0.1f, false);
-        var hb = Cyl(g, new Vector3(0, 0.62f, -L / 2 - 0.03f), w / 2 + 0.05f, 0.14f, frame, 0.06f, Q(90, 0, 0), 22); hb.transform.localScale = new Vector3(1, 1, 0.9f);
+        var hb = Cyl(g, new Vector3(0, 0.45f, -L / 2 - 0.03f), w / 2 + 0.05f, 0.14f, frame, 0.06f, Q(90, 0, 0), 22); hb.transform.localScale = new Vector3(1, 1, 0.9f);
         Block(g, new Vector3(0, 0.35f, L / 2), new Vector3(w + 0.04f, 0.5f, 0.12f), frame, 0.06f, false);
         if (stars) for (int i = 0; i < 7; i++) Ball(g, new Vector3(-w / 2 + 0.25f + (i * 0.37f) % (w - 0.4f), 0.74f, -0.2f + (i * 0.53f) % 1.2f), new Vector3(0.15f, 0.03f, 0.15f), star, 6);
         var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(w, 0.8f, L); bc.center = new Vector3(0, 0.4f, 0); return g;
@@ -459,10 +459,10 @@ public static class SoftProps
     public static Transform Bathtub(Transform p, Vector3 pos, float yaw)
     {
         var g = Group(p, "sk_tub", pos, yaw);
-        Block(g, new Vector3(0, 0.35f, 0), new Vector3(1.7f, 0.6f, 0.85f), White, 0.25f, false);
-        Block(g, new Vector3(0, 0.6f, 0), new Vector3(1.45f, 0.08f, 0.6f), Sky, 0.04f, false);
-        for (int i = 0; i < 4; i++) Ball(g, new Vector3(-0.4f + i * 0.25f, 0.68f, (i % 2) * 0.12f), Vector3.one * 0.14f, White, 8);
-        Ball(g, new Vector3(0.45f, 0.7f, 0.05f), new Vector3(0.18f, 0.15f, 0.2f), ButterD, 8);
+        Block(g, new Vector3(0, 0.3f, 0), new Vector3(1.7f, 0.5f, 0.85f), White, 0.25f, false);
+        Block(g, new Vector3(0, 0.5f, 0), new Vector3(1.45f, 0.08f, 0.6f), Sky, 0.04f, false);
+        for (int i = 0; i < 4; i++) Ball(g, new Vector3(-0.4f + i * 0.25f, 0.58f, (i % 2) * 0.12f), Vector3.one * 0.14f, White, 8);
+        Ball(g, new Vector3(0.45f, 0.6f, 0.05f), new Vector3(0.18f, 0.15f, 0.2f), ButterD, 8);
         foreach (int sx in new[] { -1, 1 }) Ball(g, new Vector3(sx * 0.7f, 0.05f, 0.3f), Vector3.one * 0.12f, ButterD, 6);
         var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(1.7f, 0.7f, 0.85f); bc.center = new Vector3(0, 0.35f, 0); return g;
     }
