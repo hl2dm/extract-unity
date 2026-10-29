@@ -52,6 +52,7 @@ public class UIContrast : MonoBehaviour
         Color bg = new Color(0.85f, 0.85f, 0.9f); float cover = 0;
         foreach (var g in fills) if (Contains(g.rectTransform, p)) { var c = g.color; bg = Color.Lerp(bg, new Color(c.r, c.g, c.b), c.a); cover = 1 - (1 - cover) * (1 - c.a); }
         if (cover < 0.5f) return;   // floats over the 3D view: HUD text carries its own outline/shadow
+        if (tx.GetComponent<Shadow>()) return;   // v0.8.1: outlined HUD text (timer etc.) is legible by itself; recolouring it every 0.2 s while UI.Update restores it each frame made it flicker
         if (!map.TryGetValue(tx, out var s)) { s = new S(); map[tx] = s; }
         if (tx.text != s.outStr) { s.src = tx.text; s.srcCol = tx.color; } else if (tx.color != s.outCol) s.srcCol = tx.color;
         Checked++; bool ch = false;

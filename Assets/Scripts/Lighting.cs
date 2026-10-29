@@ -7,14 +7,15 @@ using UnityEngine.Rendering.Universal;
 /// "-lite 0" (or ?lite=0) keeps the v0.7 lighting for before/after shots.
 public static class LightQ
 {
-    public static bool Legacy;
+    public static bool Legacy, NoSoft;   // NoSoft = v0.8 look (before v0.8.1 softening)
     static Light fill;
     public static void Apply(Transform root)
     {
         int t = GeoQ.Tier; var sun = Art.Sun;
         var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         SetSSAO(urp, Legacy || t >= 1);
-        if (Legacy || !sun) { Shader.SetGlobalVector("_ToonLight", Vector4.zero); return; }
+        if (Legacy || !sun) { Shader.SetGlobalVector("_ToonLight", Vector4.zero); Shader.SetGlobalVector("_ToonSoft", Vector4.zero); return; }
+        float S = NoSoft ? 0f : 1f; Shader.SetGlobalVector("_ToonSoft", new Vector4(S, 0, 0, 0));
         // soft shadows: resolution / cascades / filter quality per tier
         if (urp)
         {
@@ -23,23 +24,25 @@ public static class LightQ
             urp.shadowDistance = t == 2 ? 90 : (t == 1 ? 55 : 35);
         }
         QualitySettings.shadowDistance = t == 2 ? 90 : (t == 1 ? 55 : 35);
-        sun.shadows = LightShadows.Soft; sun.shadowStrength = 0.55f;
+        sun.shadows = LightShadows.Soft; sun.shadowStrength = Mathf.Lerp(0.55f, 0.3f, S); sun.intensity *= Mathf.Lerp(1f, 0.86f, S);
         var ad = sun.GetComponent<UniversalAdditionalLightData>() ?? sun.gameObject.AddComponent<UniversalAdditionalLightData>();
         ad.softShadowQuality = t == 2 ? SoftShadowQuality.High : (t == 1 ? SoftShadowQuality.Medium : SoftShadowQuality.Low);
         // warm key, cool fill (shader-side, no extra light cost), lamp pools, SSAO, rim
         sun.color = new Color(1f, 0.94f, 0.86f); 
         var fd = Quaternion.Euler(25, sun.transform.eulerAngles.y + 160, 0) * Vector3.back;
         Shader.SetGlobalVector("_ToonFillDir", fd.normalized);
-        Shader.SetGlobalColor("_ToonFillCol", new Color(0.16f, 0.21f, 0.28f));
+        Shader.SetGlobalColor("_ToonFillCol", Color.Lerp(new Color(0.16f, 0.21f, 0.28f), new Color(0.22f, 0.24f, 0.26f), S));
+        if (S > 0) { RenderSettings.ambientMode = AmbientMode.Trilight; RenderSettings.ambientSkyColor = Color.Lerp(RenderSettings.ambientSkyColor, new Color(0.9f, 0.92f, 0.94f), 0.5f); RenderSettings.ambientEquatorColor = Color.Lerp(RenderSettings.ambientEquatorColor, new Color(0.92f, 0.88f, 0.8f), 0.5f); RenderSettings.ambientGroundColor = Color.Lerp(RenderSettings.ambientGroundColor, new Color(0.72f, 0.68f, 0.6f), 0.5f); }
         Shader.SetGlobalColor("_ToonSkyCol", new Color(0.08f, 0.08f, 0.07f));
         Shader.SetGlobalVector("_ToonLight", new Vector4(t == 0 ? 0.6f : 1f, t >= 1 ? (t == 2 ? 0.9f : 0.7f) : 0f, t >= 1 ? 1f : 0f, t == 0 ? 0.5f : 1f));
         // gentle bloom + grade + atmosphere
         var prof = Art.Vol ? Art.Vol.sharedProfile : null;
         if (prof)
         {
-            if (prof.TryGet<Bloom>(out var bl)) { bl.active = t >= 1; bl.threshold.Override(1.25f); bl.intensity.Override(t == 2 ? 0.3f : 0.22f); bl.scatter.Override(0.72f); bl.highQualityFiltering.Override(t == 2); }
-            if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) { smh.shadows.Override(new Vector4(0.94f, 0.98f, 1.04f, -0.03f)); smh.highlights.Override(new Vector4(1.03f, 0.99f, 1.0f, 0.03f)); }
-            if (prof.TryGet<ColorAdjustments>(out var c)) { c.contrast.Override(18f); c.postExposure.Override(0f); c.saturation.Override(10f); }
+            if (prof.TryGet<Bloom>(out var bl)) { bl.active = t >= 1; bl.threshold.Override(Mathf.Lerp(1.25f, 0.85f, S)); bl.intensity.Override((t == 2 ? 0.3f : 0.22f) * Mathf.Lerp(1f, 0.45f, S)); bl.scatter.Override(Mathf.Lerp(0.72f, 0.82f, S)); bl.highQualityFiltering.Override(t == 2); }
+            if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) { smh.shadows.Override(new Vector4(0.94f, 0.98f, 1.04f, -0.03f)); smh.highlights.Override(new Vector4(1.03f, 0.99f, 1.0f, Mathf.Lerp(0.03f, -0.06f, S)));
+                if (S > 0) smh.shadows.Override(new Vector4(0.98f, 0.97f, 0.96f, 0.05f)); }
+            if (prof.TryGet<ColorAdjustments>(out var c)) { c.contrast.Override(Mathf.Lerp(18f, 2f, S)); c.postExposure.Override(Mathf.Lerp(0f, 0.04f, S)); c.saturation.Override(10f); }
             if (!prof.TryGet<SplitToning>(out var st)) st = prof.Add<SplitToning>(true);
             st.shadows.Override(new Color(0.62f, 0.72f, 0.76f)); st.highlights.Override(new Color(1f, 0.9f, 0.78f)); st.balance.Override(20f);
         }

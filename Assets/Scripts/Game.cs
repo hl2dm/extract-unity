@@ -26,6 +26,8 @@ public class Game : MonoBehaviour
         { var u0 = Application.absoluteURL ?? ""; int gi = u0.IndexOf("geo="); if (gi >= 0 && gi + 4 < u0.Length) GeoQ.Force = u0[gi + 4] - '0'; }
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-lite" && args[i + 1] == "0") LightQ.Legacy = true;
         if ((Application.absoluteURL ?? "").Contains("lite=0")) LightQ.Legacy = true;
+        for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-soft" && args[i + 1] == "0") LightQ.NoSoft = true;
+        if ((Application.absoluteURL ?? "").Contains("soft=0")) LightQ.NoSoft = true;
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-geo") int.TryParse(args[i + 1], out GeoQ.Force);
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>();
@@ -89,7 +91,7 @@ public class Game : MonoBehaviour
         if (baseRoot) Destroy(baseRoot.gameObject); Interactable.All.RemoveAll(x => x == null);
         int seed = SaveSys.S.seedN * 7919 + 17;
         Pet.All.Clear();
-        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); LightQ.Apply(level.root);
+        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); PlaceAudit.Fix(level.root); PlaceAudit.ContactShadows(level.root); LightQ.Apply(level.root); Art.PrewarmText();
         bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; warn60 = warn20 = false;
         player.Equip(SaveSys.S.shoes); player.hp = 100; player.alive = true; player.inRaid = true; player.caught = 0; player.cryT = 0; player.Teleport(level.spawn, level.spawnYaw);
         state = St.Raid; deploying = false;
@@ -460,6 +462,7 @@ public class Game : MonoBehaviour
         {   // v0.8: triangle counts + frame time + close-up shaded/wireframe shots
             Deploy(0); for (float w = 0; w < 8 && state != St.Raid; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(2.5f); Pet.FreezeAll = 999;
             yield return PolyShots();
+            yield return TextFlicker(); yield return PlaceCheck(); yield return CalmTest(); yield return SignStreetShots();
             Debug.Log("[casual] polyOnly done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
         }
         if (doorOnly)
@@ -503,6 +506,7 @@ public class Game : MonoBehaviour
                 }
                 yield return MotoTest();
                 yield return TouchTest();
+                yield return PlaceCheck();
                 { int sf = ScaleAudit.Run(level.root, player); Check(sf == 0, "scale audit vs scale bible (" + sf + " out of range)"); yield return ScaleShots(); }
                 var slide = FindFirstObjectByType<SlideRide>(); Check(slide, "slide is interactable");
                 if (slide)
@@ -735,6 +739,148 @@ public class Game : MonoBehaviour
         yield return CamShot(eye, at, "poly_" + name, 0.5f);
         wire = true; yield return CamShot(eye, at, "poly_" + name + "_wire", 0.2f); wire = false;
     }
+
+    // v0.8.1: text stability check - slow orbit around a shop sign, camera locked on it; mean frame-to-frame luma diff inside the sign rect (and a static HUD label)
+    static float[] Luma(Texture2D t, RectInt r) { var px = t.GetPixels(r.x, r.y, r.width, r.height); var o = new float[px.Length]; for (int i = 0; i < px.Length; i++) o[i] = px[i].r * 0.3f + px[i].g * 0.59f + px[i].b * 0.11f; return o; }
+    // diff only on glyph-ink pixels (dark in either frame) so world drifting behind a panel-less label doesn't count
+    static float GlyphDiff(float[] a, float[] b) { float d = 0; int m = 0; for (int i = 0; i < a.Length; i++) if (a[i] < 0.42f || b[i] < 0.42f) { d += Mathf.Abs(a[i] - b[i]); m++; } return m > 0 ? d / m : 0f; }
+    IEnumerator FlickerRun(Transform sg, Bounds b, float aa, System.Action<float, float> res)
+    {
+        Shader.SetGlobalFloat("_TextAAOff", 1f - aa); var cm = player.cam.transform; var c = b.center; var fw = sg.forward;
+        float dist = 9f, sumS = 0, sumH = 0; int n = 0; float[] pS = null, pH = null; RectInt rs = default, rh = default;
+        for (int f = 0; f < 40; f++)
+        {
+            float ang = -0.6f + f * 0.03f;   var dir = Quaternion.Euler(0, ang, 0) * (-fw); var eye = c + dir * dist + Vector3.up * 0.4f;
+            cm.position = eye; cm.rotation = Quaternion.LookRotation(c - eye);
+            yield return new WaitForEndOfFrame(); cm.position = eye; cm.rotation = Quaternion.LookRotation(c - eye);
+            var tex = ScreenCapture.CaptureScreenshotAsTexture();
+            if (f == 0)
+            {
+                var k = player.cam; Vector2 mn = new Vector2(1e9f, 1e9f), mx = -mn;
+                foreach (var cx in new[] { -1, 1 }) foreach (var cy in new[] { -1, 1 }) foreach (var cz in new[] { -1, 1 }) { var sp = k.WorldToScreenPoint(c + Vector3.Scale(b.extents, new Vector3(cx, cy, cz))); mn = Vector2.Min(mn, sp); mx = Vector2.Max(mx, sp); }
+                int x0 = Mathf.Clamp((int)mn.x, 0, tex.width - 2), y0 = Mathf.Clamp((int)mn.y, 0, tex.height - 2);
+                rs = new RectInt(x0, y0, Mathf.Clamp((int)(mx.x - mn.x), 1, tex.width - x0), Mathf.Clamp((int)(mx.y - mn.y), 1, tex.height - y0));
+                rh = new RectInt((int)(tex.width * 0.01f), (int)(tex.height * 0.02f), (int)(tex.width * 0.12f), (int)(tex.height * 0.07f));
+                var ut = FindObjectsByType<UnityEngine.UI.Text>(FindObjectsSortMode.None).Where(t => t.isActiveAndEnabled && t.text.Contains("心情")).FirstOrDefault();
+                if (ut) { var wc = new Vector3[4]; ut.rectTransform.GetWorldCorners(wc); int ax = Mathf.Clamp((int)wc[0].x, 0, tex.width - 2), ay = Mathf.Clamp((int)wc[0].y, 0, tex.height - 2); rh = new RectInt(ax, ay, Mathf.Clamp((int)(wc[2].x - wc[0].x), 1, tex.width - ax), Mathf.Clamp((int)(wc[2].y - wc[0].y), 1, tex.height - ay)); Debug.Log("[textflicker] hud label '" + ut.text + "' rect " + rh); }
+            }
+            var lS = Luma(tex, rs); var lH = Luma(tex, rh); Destroy(tex);
+            if (pS != null && f > 3) { sumS += GlyphDiff(lS, pS); sumH += GlyphDiff(lH, pH); n++; }
+            pS = lS; pH = lH;
+        }
+        cm.localPosition = Vector3.zero; cm.localRotation = Quaternion.identity; res(sumS / Mathf.Max(1, n) * 255f, sumH / Mathf.Max(1, n) * 255f);
+    }
+    // v0.8.1: general placement-overlap audit must be clean; before/after shots of re-placed scooter/tree spots and signs
+    bool placeShot;
+    IEnumerator PlaceCheck()
+    {
+        int left = PlaceAudit.Run(level.root, false);
+        Debug.Log("[placeaudit] check before props " + PlaceAudit.BeforeProp + " wall " + PlaceAudit.BeforeWall + " door " + PlaceAudit.BeforeDoor + " signs " + PlaceAudit.BeforeSign + " fixed " + PlaceAudit.Fixed + " hidden " + PlaceAudit.Hidden + " -> after props " + PlaceAudit.PropHits + " wall " + PlaceAudit.WallHits + " door " + PlaceAudit.DoorHits + " signs " + PlaceAudit.SignHits);
+        Check(left == 0, "placement overlap audit clean (" + left + " left)");
+        if (placeShot) yield break; placeShot = true;
+        var pick = new List<PlaceAudit.Move>();
+        pick.AddRange(PlaceAudit.Moves.Where(m => m.t && (m.what == "sk_scooter" || m.what == "RideScooter" || m.what == "sk_tree")).Take(2));
+        pick.AddRange(PlaceAudit.Moves.Where(m => m.t && m.what == "sign").Take(2));
+        if (pick.Count < 3) pick.AddRange(PlaceAudit.Moves.Where(m => m.t && m.what != "sign" && m.what != "hid" && !pick.Contains(m)).Take(3 - pick.Count));
+        int k = 0;
+        foreach (var m in pick)
+        {
+            Vector3 c = m.from + Vector3.up * (m.what == "sign" ? 0 : 0.8f), eye = m.what == "sign" ? c - m.t.forward * 6f + Vector3.up * 0.3f : c + new Vector3(1.2f, 1.6f, -Mathf.Sign(m.from.z) * 4.5f);
+            m.t.position = m.from; m.t.localScale = m.s0; Physics.SyncTransforms(); yield return CamShot(eye, c, "place_" + k + "_" + m.what + "_before", 0.3f);
+            m.t.position = m.to; m.t.localScale = m.s1; Physics.SyncTransforms(); yield return CamShot(eye, c, "place_" + k + "_" + m.what + "_after", 0.3f); k++;
+        }
+    }
+    // v0.8.1: item hint glow / timer must be steady. Static camera, timer frozen at 0:45, ring focused; mean frame diff in each rect, v0.8 mode vs calm mode; film strips saved.
+    static RectInt ScreenRect(Camera k, Bounds b, int W, int H)
+    {
+        Vector2 mn = new Vector2(1e9f, 1e9f), mx = -mn;
+        foreach (var cx in new[] { -1, 1 }) foreach (var cy in new[] { -1, 1 }) foreach (var cz in new[] { -1, 1 }) { var sp = k.WorldToScreenPoint(b.center + Vector3.Scale(b.extents, new Vector3(cx, cy, cz))); mn = Vector2.Min(mn, sp); mx = Vector2.Max(mx, sp); }
+        int x0 = Mathf.Clamp((int)mn.x, 0, W - 2), y0 = Mathf.Clamp((int)mn.y, 0, H - 2); return new RectInt(x0, y0, Mathf.Clamp((int)(mx.x - mn.x), 2, W - x0), Mathf.Clamp((int)(mx.y - mn.y), 2, H - y0));
+    }
+    static float MeanDiff(float[] a, float[] b) { float d = 0; for (int i = 0; i < a.Length; i++) d += Mathf.Abs(a[i] - b[i]); return d / Mathf.Max(1, a.Length) * 255f; }
+    IEnumerator CalmRun(HintRing hr, bool calm, string tag, System.Action<float, float, float, float> res)
+    {
+        Calm.On = calm; var cm = player.cam.transform; var lc = hr.owner; var c = hr.transform.position;
+        var dd = player.transform.position - c; dd.y = 0; if (dd.sqrMagnitude < 0.01f) dd = Vector3.back; var eye = c + dd.normalized * 2.4f + Vector3.up * 1.5f; var at = c + Vector3.up * 0.35f;
+        var b = new Bounds(c + Vector3.up * 0.3f, new Vector3(hr.radius * 2.6f, 1.0f, hr.radius * 2.6f));
+        float[] pR = null, pT = null; float sR = 0, sT = 0; int n = 0; float qR = -1, qT = -1, mR = 0, mT = 0; string seq = ""; RectInt rr = default, rt = default; var strip = new List<Texture2D>();
+        for (int f = 0; f < 24; f++)
+        {
+            runT = RaidTime - 45f; yield return null; HintRing.focused = lc; cm.position = eye; cm.rotation = Quaternion.LookRotation(at - eye);
+            yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture();
+            if (f == 0) { rr = ScreenRect(player.cam, b, tex.width, tex.height); var wc = new Vector3[4]; ui.TimerRect.GetWorldCorners(wc); int ax = Mathf.Clamp((int)wc[0].x, 0, tex.width - 2), ay = Mathf.Clamp((int)wc[0].y, 0, tex.height - 2); rt = new RectInt(ax, ay, Mathf.Clamp((int)(wc[2].x - wc[0].x), 2, tex.width - ax), Mathf.Clamp((int)(wc[2].y - wc[0].y), 2, tex.height - ay)); }
+            var lR = Luma(tex, rr); var lT = Luma(tex, rt);
+            float cR = hr.Level, cT = ui.TimerColor.grayscale;   // source signals: ring emission level, timer text colour luma
+            if (pR != null && f > 4) { sR += MeanDiff(lR, pR); sT += MeanDiff(lT, pT); n++; mR = Mathf.Max(mR, Mathf.Abs(cR - qR)); mT = Mathf.Max(mT, Mathf.Abs(cT - qT)); }
+            qR = cR; qT = cT; seq += cT.ToString("0.00") + "/" + Mathf.CeilToInt(RaidTime - runT) + " ";
+            pR = lR; pT = lT;
+            if (f % 3 == 0 && strip.Count < 8) strip.Add(tex); else Destroy(tex);
+            yield return new WaitForSeconds(0.06f);
+        }
+        // film strips: 8 frames ~0.25 s apart, ring crop row + timer crop row
+        int cw = 200, ch = 150, tw = 300, th = 60; var o = new Texture2D(Mathf.Max(cw, tw) * strip.Count, ch + th, TextureFormat.RGB24, false);
+        for (int i = 0; i < strip.Count; i++)
+        {
+            var t = strip[i];
+            for (int y = 0; y < ch; y++) for (int x = 0; x < cw; x++) o.SetPixel(i * Mathf.Max(cw, tw) + x, th + y, t.GetPixel(rr.x + x * rr.width / cw, rr.y + y * rr.height / ch));
+            for (int y = 0; y < th; y++) for (int x = 0; x < tw; x++) o.SetPixel(i * Mathf.Max(cw, tw) + x, y, t.GetPixel(rt.x + x * rt.width / tw, rt.y + y * rt.height / th));
+            Destroy(t);
+        }
+        o.Apply(); System.IO.Directory.CreateDirectory(shotDir); System.IO.File.WriteAllBytes(System.IO.Path.Combine(shotDir, "calm_strip_" + tag + ".png"), o.EncodeToPNG()); Destroy(o);
+        yield return Shot("calm_view_" + tag);
+        cm.localPosition = Vector3.zero; cm.localRotation = Quaternion.identity; Debug.Log("[calm] " + tag + " timer luma/secs " + seq); Calm.On = true; res(sR / Mathf.Max(1, n), sT / Mathf.Max(1, n), mR, mT);
+    }
+    IEnumerator CalmTest()
+    {
+        var c0 = player.transform.position;
+        var hr = FindObjectsByType<HintRing>(FindObjectsSortMode.None).Where(h => h.owner && h.owner is LootContainer l && !l.Empty).OrderBy(h => (h.transform.position - c0).sqrMagnitude).FirstOrDefault();
+        if (!hr) { Check(false, "calm test: no hint ring"); yield break; }
+        float r0 = 0, t0 = 0, r1 = 0, t1 = 0, a0 = 0, b0 = 0, a1 = 0, b1 = 0; float keep = runT;
+        yield return CalmRun(hr, false, "before", (a, b, x, y) => { r0 = a; t0 = b; a0 = x; b0 = y; });
+        yield return CalmRun(hr, true, "after", (a, b, x, y) => { r1 = a; t1 = b; a1 = x; b1 = y; });
+        runT = keep;
+        // pixel diffs are informational (world behind the translucent HUD / pets / clouds move); pass/fail uses the max per-frame jump of the actual source signal
+        Debug.Log("[calm] pixel item_ring v08 " + r0.ToString("0.00") + " calm " + r1.ToString("0.00") + " | timer v08 " + t0.ToString("0.00") + " calm " + t1.ToString("0.00"));
+        Debug.Log("[calm] source max jump/frame ring v08 " + a0.ToString("0.000") + " calm " + a1.ToString("0.000") + " | timer v08 " + b0.ToString("0.000") + " calm " + b1.ToString("0.000"));
+        Check(a1 < 0.05f && a1 <= a0 * 0.5f + 0.01f, "item hint glow steady (max jump " + a0.ToString("0.000") + " -> " + a1.ToString("0.000") + ")");
+        { var bgr = ui.TimerBgColor; var bgc = new Color(bgr.r, bgr.g, bgr.b); float al = bgr.a; Debug.Log("[calm] timer bg actual " + ColorUtility.ToHtmlStringRGBA(bgr)); float worst = 99; foreach (var fc in new[] { Color.white, new Color(1f, 0.72f, 0.28f) }) foreach (var under in new[] { Color.white, new Color(0.55f, 0.75f, 0.95f), Color.black }) worst = Mathf.Min(worst, SoftProps.Contrast(fc, Color.Lerp(under, bgc, al)));
+          Debug.Log("[calm] timer worst contrast " + worst.ToString("0.0")); Check(worst >= 4.5f, "timer text contrast >= 4.5:1 (" + worst.ToString("0.0") + ")"); }
+        Check(b1 < 0.03f, "countdown timer steady at 0:45, no blink (max jump " + b0.ToString("0.000") + " -> " + b1.ToString("0.000") + ")");
+    }
+    // 花店 / 冰店: gameplay-view shots from the street, before = pre-audit placement, after = final
+    IEnumerator SignStreetShots()
+    {
+        float E = player.camRig.localPosition.y;
+        foreach (var nm in new[] { "花店", "冰店" })
+        {
+            var tms = level.root.GetComponentsInChildren<TextMesh>().Where(t => t.text.Replace("\n", "") == nm).Select(t => t.transform.parent).Where(t => t && t.name == "sk_text3d").Distinct().ToList();
+            Debug.Log("[signview] " + nm + " count " + tms.Count);
+            int k = 0;
+            foreach (var sg in tms.Take(2))
+            {
+                var mv = PlaceAudit.Moves.FirstOrDefault(m => m.t == sg); var b = Art.RenderBounds(sg.gameObject);
+                var eye = new Vector3(b.center.x - 3.5f, 0.12f + E, 0f); var at = b.center;
+                Debug.Log("[signview] " + nm + " #" + k + " @" + sg.position.ToString("F1") + (mv != null ? " moved " + (mv.to - mv.from).ToString("F2") + " scale " + (mv.s1.x / mv.s0.x).ToString("0.00") : " not moved"));
+                if (mv != null) { sg.position = mv.from; sg.localScale = mv.s0; yield return CamShot(eye, at, "sign_" + (nm == "花店" ? "flower" : "ice") + k + "_before", 0.3f); sg.position = mv.to; sg.localScale = mv.s1; }
+                yield return CamShot(eye, Art.RenderBounds(sg.gameObject).center, "sign_" + (nm == "花店" ? "flower" : "ice") + k + "_after", 0.3f); k++;
+            }
+        }
+    }
+    IEnumerator TextFlicker()
+    {
+        var c0 = new Vector3(-20f, 0.12f, 0f);
+        var sg = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_text3d").OrderBy(t => (t.position - c0).sqrMagnitude).FirstOrDefault();
+        if (!sg) { Check(false, "text flicker: no sign found"); yield break; }
+        var b = Art.RenderBounds(sg.gameObject); float s0 = 0, h0 = 0, s1 = 0, h1 = 0; int rb0 = Art.AtlasRebuilds;
+        yield return Aim(b.center - sg.forward * 9f, b.center); yield return new WaitForSeconds(0.4f);
+        yield return FlickerRun(sg, b, 0f, (a, h) => { s0 = a; h0 = h; });
+        yield return FlickerRun(sg, b, 1f, (a, h) => { s1 = a; h1 = h; });
+        Shader.SetGlobalFloat("_TextAAOff", 0f);
+        Debug.Log("[textflicker] sign aa_off " + s0.ToString("0.00") + " aa_on " + s1.ToString("0.00") + " hud_off " + h0.ToString("0.00") + " hud_on " + h1.ToString("0.00") + " atlas_rebuilds " + (Art.AtlasRebuilds - rb0));
+        Check(s1 <= s0 * 0.85f + 0.05f, "sign text flicker reduced (" + s0.ToString("0.00") + " -> " + s1.ToString("0.00") + ")");
+        Check(Art.AtlasRebuilds - rb0 == 0 && (h1 < 1.5f || h1 <= h0 + 0.3f), "HUD text stable while camera moves (" + h1.ToString("0.00") + ", no-AA ref " + h0.ToString("0.00") + ", atlas rebuilds " + (Art.AtlasRebuilds - rb0) + ")");   // HUD rect pixel diff includes world seen around glyphs; real text flicker = atlas rebuilds
+        yield return CamShot(b.center - sg.forward * 9f + Vector3.up * 0.4f, b.center, "text_sign", 0.3f);
+    }
     IEnumerator PolyShots()
     {
         long sk; long tri = SceneTris(out sk); Debug.Log("[poly] tier " + GeoQ.Tier + " scene_tris " + tri + " softkit_tris " + sk);
@@ -752,6 +898,7 @@ public class Game : MonoBehaviour
             var tr = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == nm).OrderBy(t => (t.position - c0).sqrMagnitude).FirstOrDefault(); if (!tr) continue;
             var b = Art.RenderBounds(tr.gameObject); float d = Mathf.Clamp(b.extents.magnitude * 2.0f, 1.2f, 9f);
             var dir = (tr.right * 0.8f - tr.forward * 1.0f + Vector3.up * 0.35f).normalized; if (nm == "sk_sofa") dir = (tr.forward * 1.0f + tr.right * 0.5f + Vector3.up * 0.4f).normalized;
+            for (int k = 0; k < 8; k++) { var dk = Quaternion.Euler(0, 45f * k, 0) * dir; var eye = b.center + dk * d; if (!Physics.Linecast(b.center + dk * Mathf.Min(d * 0.5f, b.extents.magnitude + 0.2f), eye) && !Physics.CheckSphere(eye, 0.3f)) { dir = dk; break; } }
             yield return PolyPair(b.center + dir * d, b.center, nm);
         }
         if (hs) { var hb = Art.RenderBounds(hs.gameObject); yield return PolyPair(hb.center + new Vector3(-0.6f, 0.3f, -0.9f).normalized * hb.extents.magnitude * 1.3f + Vector3.up * 2f, hb.center + Vector3.up * 1.5f, "house"); }

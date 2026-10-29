@@ -22,7 +22,7 @@ public class UI : MonoBehaviour
         hpBar = UiKit.Img(hpBg.transform, Good, Art.Rounded, "hp"); hpBar.rectTransform.Fill(3); hpBar.type = Image.Type.Filled; hpBar.fillMethod = Image.FillMethod.Horizontal;
         hpT = UiKit.Shadowed(UiKit.Txt(hud, "100", 28, Color.white, TextAnchor.LowerLeft, true)); hpT.rectTransform.At(new Vector2(0, 0), new Vector2(42, 70), new Vector2(400, 40));
         ammoT = UiKit.Shadowed(UiKit.Txt(hud, "", 36, Color.white, TextAnchor.LowerRight, true)); ammoT.rectTransform.At(new Vector2(1, 0), new Vector2(-40, 34), new Vector2(700, 100));
-        { var tb = UiKit.Img(hud, new Color(0.3f, 0.2f, 0.26f, 0.38f), Art.Rounded, "timerBg"); tb.raycastTarget = false; tb.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(380, 62)); tb.rectTransform.pivot = new Vector2(0.5f, 1); }
+        { var tb = UiKit.Img(hud, new Color(0.2f, 0.14f, 0.11f, 0.88f), Art.Rounded, "timerBg"); tb.color = new Color(0.2f, 0.14f, 0.11f, 0.88f); timerBg = tb; tb.raycastTarget = false; tb.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(380, 62)); tb.rectTransform.pivot = new Vector2(0.5f, 1); }
         timerT = UiKit.Shadowed(UiKit.Txt(hud, "4:00", 46, Color.white, TextAnchor.UpperCenter, true)); timerT.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -18), new Vector2(300, 60));
         objT = UiKit.Shadowed(UiKit.Txt(hud, "", 24, new Color(1, 1, 1, 0.9f), TextAnchor.UpperCenter)); objT.rectTransform.Place(new Vector2(0, 1), new Vector2(1, 1), new Vector2(24, -148), new Vector2(-24, -78));
         bagT = UiKit.Shadowed(UiKit.Txt(hud, "", 24, Color.white, TextAnchor.UpperLeft, true)); bagT.rectTransform.At(new Vector2(0, 1), new Vector2(36, -26), new Vector2(700, 80));
@@ -74,13 +74,15 @@ public class UI : MonoBehaviour
         hpT.text = p.Crying ? "<color=#4a7fb5>嗚嗚嗚…哭哭中（跑不快）</color>" : "心情很好！<size=18>　再被抓 " + toCry + " 次會哭哭</size>";
         if (ammoTouch != TouchIn.Active) { ammoTouch = TouchIn.Active; if (ammoTouch) ammoT.rectTransform.At(new Vector2(1, 1), new Vector2(-36, -96), new Vector2(560, 60)); else ammoT.rectTransform.At(new Vector2(1, 0), new Vector2(-40, 34), new Vector2(700, 100)); ammoT.alignment = ammoTouch ? TextAnchor.UpperRight : TextAnchor.LowerRight; }
         ammoT.text = (p.sel == 0 ? "<color=#c98a1a>▶罐頭 ×" : "<color=#5c3d4a>罐頭 ×") + SaveSys.S.cans + "</color>　" + (p.sel == 1 ? "<color=#c98a1a>▶肉肉 ×" : "<color=#5c3d4a>肉肉 ×") + SaveSys.S.meats + "</color>" + (TouchIn.Active ? "" : "<size=20>\n[1][2] 切換　左鍵 丟出去</size>");
-        int m = Mathf.Max(0, Mathf.CeilToInt(timeLeft)); timerT.text = "<size=24>媽媽叫你回家　</size>" + (m / 60) + ":" + (m % 60).ToString("00"); timerT.color = timeLeft <= 60 ? (Mathf.Repeat(Time.time, 1) < 0.5f ? Bad : Color.white) : Color.white;
+        int m = Mathf.Max(0, Mathf.CeilToInt(timeLeft)); timerT.text = "<size=24>媽媽叫你回家　</size>" + (m / 60) + ":" + (m % 60).ToString("00"); if (!Calm.On) timerT.color = timeLeft <= 60 ? (Mathf.Repeat(Time.time, 1) < 0.5f ? Bad : Color.white) : Color.white;
+        else { float u = Mathf.Clamp01((75f - timeLeft) / 30f); timerT.color = Color.Lerp(Color.white, new Color(1f, 0.72f, 0.28f), u * (0.85f + 0.15f * Mathf.Sin(Time.unscaledTime * 1.6f))); }   // v0.8.1: gentle warm-up, no blinking
         objT.text = obj; long v = 0; int n = 0; foreach (var it in bag) if (!it.key) { v += it.v; n++; }
         bagT.text = "袋子 " + n + "/" + cap + "　<color=#c98a1a>" + Data.Fmt(v) + "</color>" + (Game.I.keys > 0 ? "　<size=20>鑰匙 ×" + Game.I.keys + "</size>" : "");
         hitT -= Time.deltaTime; hitM.enabled = hitT > 0; dmgT -= Time.deltaTime; dmgDir.enabled = false;
         crossH.enabled = true;
     }
     bool ammoTouch;
+    public RectTransform TimerRect => timerT.rectTransform; public Color TimerColor => timerT.color; Image timerBg; public Color TimerBgColor => timerBg ? timerBg.color : Color.clear;
     public void HitMarker(bool big) { hitT = 0.15f; hitM.color = big ? Bad : Color.white; hitM.rectTransform.sizeDelta = Vector2.one * (big ? 44 : 30); }
     Vector3 dmgFrom; public void DamageDir(Vector3 from) { dmgFrom = from; dmgT = 1f; }
 

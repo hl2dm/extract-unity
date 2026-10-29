@@ -185,7 +185,9 @@ public static class SoftProps
             var s = Block(g, new Vector3(-w / 2 + (i + 0.5f) * sw, 0, -depth / 2), new Vector3(sw + 0.01f, 0.2f, depth), i % 2 == 0 ? a : b, 0.09f, false, 0, 0.01f);
             s.transform.localRotation = Q(-22, 0, 0);
             Ball(g, new Vector3(-w / 2 + (i + 0.5f) * sw, -depth * 0.37f - 0.08f, -depth * 0.93f), new Vector3(sw, 0.42f, 0.24f), i % 2 == 0 ? a : b, 12);
+            if (GeoQ.Tier > 0) foreach (int k in new[] { -1, 1 }) { var sc = Cyl(g, new Vector3(-w / 2 + (i + 0.5f) * sw + k * sw * 0.25f, -depth * 0.37f - 0.3f, -depth * 0.98f), sw * 0.24f, 0.04f, i % 2 == 0 ? b : a, 0.01f, Q(90, 0, 0), 10); sc.transform.localScale = new Vector3(1, 1, 0.75f); }   // v0.8.1 scallops
         }
+        Block(g, new Vector3(0, -depth * 0.37f + 0.12f, -depth * 0.98f), new Vector3(w + 0.04f, 0.05f, 0.06f), Dk(a, 0.8f), 0.01f, false);   // piping
         MatA = om; return g;
     }
     public static Transform Shutter(Transform p, Vector3 center, float w, float h, Color c)
@@ -219,13 +221,19 @@ public static class SoftProps
         Ring(g, new Vector3(0, h - w / 2, -0.06f), Quaternion.identity, w / 2 + 0.06f, 0.09f, frame, 24);
         foreach (int s in new[] { -1, 1 }) Block(g, new Vector3(s * (w / 2 + 0.06f), (h - w / 2) / 2, -0.06f), new Vector3(0.18f, h - w / 2, 0.16f), frame, 0.06f, false);
         RoundWin(g, new Vector3(0, h * 0.62f, -0.07f), w * 0.17f, frame, true);
-        Ball(g, new Vector3(w * 0.32f, h * 0.42f, -0.1f), Vector3.one * 0.22f, ButterD, 10);
+        // v0.8.1: raised door panels + lever handle with back plate (was a single ball knob)
+        float ph = (h - w / 2) * 0.36f;
+        foreach (int sx in new[] { -1, 1 }) { Block(g, new Vector3(sx * w * 0.22f, ph * 0.62f, -0.08f), new Vector3(w * 0.34f, ph, 0.04f), Lt(c, 0.12f), 0.02f, false); Block(g, new Vector3(sx * w * 0.22f, ph * 0.62f, -0.1f), new Vector3(w * 0.26f, ph - 0.12f, 0.02f), Dk(c, 0.94f), 0.01f, false); }
+        Block(g, new Vector3(w * 0.36f, h * 0.42f, -0.08f), new Vector3(0.08f, 0.3f, 0.03f), ButterD, 0.01f, false);
+        Block(g, new Vector3(w * 0.32f, h * 0.44f, -0.14f), new Vector3(0.18f, 0.04f, 0.04f), ButterD, 0.01f, false);
+        Block(g, new Vector3(w * 0.36f, h * 0.38f, -0.1f), new Vector3(0.03f, 0.05f, 0.02f), GreyD, 0f, false);
         MatA = om; return g;
     }
 
     /// 透天厝 townhouse (solid, not enterable). Front at local z=0 facing -Z, body extends +Z.
     public static Transform TownHouse(Transform p, Vector3 pos, float yaw, float w, float d, int floors, Color wall, Color trim, Color roof, System.Random rng, string shop = null)
     {
+        GeoQ.ArchLow = true;
         var g = Group(p, "TownHouse", pos, yaw); float gh = 3.2f, fh = 2.5f, H = gh + (floors - 1) * fh;
         Block(g, new Vector3(0, H / 2, d / 2), new Vector3(w, H, d), wall, Mathf.Min(1.3f, w * 0.17f), true, 0, 0.06f);
         Block(g, new Vector3(0, 0.3f, d / 2), new Vector3(w + 0.3f, 0.6f, d + 0.3f), Dk(wall, 0.88f), 0.3f, false);
@@ -260,8 +268,11 @@ public static class SoftProps
             Block(fr, new Vector3(0, 1.25f, -0.03f), new Vector3(w * 0.66f, 2.1f, 0.14f), Lt(Sky, 0.3f), 0.5f, false);
             for (int i = 0; i < 3; i++) Block(fr, new Vector3(0, 0.6f + i * 0.6f, -0.2f), new Vector3(w * 0.66f, 0.06f, 0.35f), WoodD, 0.03f, false);
             for (int i = 0; i < 9; i++) Ball(fr, new Vector3(-w * 0.3f + (i % 5) * w * 0.15f, 0.75f + (i / 5) * 0.6f, -0.22f), new Vector3(0.22f, 0.26f, 0.22f), new[] { PinkD, ButterD, MintD, Coral, LavD }[i % 5], 10);
-            Awning(fr, new Vector3(0, 2.5f, -0.05f), w * 0.85f, 1.1f, acc, White);
-            Text3D(fr, new Vector3(0, 3.0f, -1.0f), shop ?? new[] { "早餐", "冰店", "書店", "花店" }[rng.Next(4)], 0.16f, new[] { Rose, Coral, LavD, MintD }[rng.Next(4)]);
+            var awn = Awning(fr, new Vector3(0, 2.5f, -0.05f), w * 0.85f, 1.1f, acc, White);
+            // v0.8.1: sign stands on brackets at the awning's front edge - out in front of balconies/windows, nothing crosses it from the street
+            var ab = Art.RenderBounds(awn.gameObject); float atop = fr.InverseTransformPoint(ab.max).y; float sz = 0.14f, hb = sz * 9f;
+            var st = Text3D(fr, new Vector3(0, atop + 0.12f + hb / 2f, -1.02f), shop ?? new[] { "早餐", "冰店", "書店", "花店" }[rng.Next(4)], sz, new[] { Rose, Coral, LavD, MintD }[rng.Next(4)]);
+            foreach (float bx in new[] { -0.45f, 0.45f }) Block(fr, new Vector3(bx, atop - 0.03f, -0.72f), new Vector3(0.06f, 0.3f, 0.06f), GreyD, 0.015f, false);   // brackets down to the awning
         }
         else if (gt == 1)
         {   // rolling shutter + side door
@@ -277,7 +288,13 @@ public static class SoftProps
         for (int f = 1; f < floors; f++)
         {
             float y = gh + (f - 1) * fh + fh * 0.5f;
-            if (f == 1 && rng.Next(2) == 0)
+            bool bal = f == 1 && rng.Next(2) == 0;
+            if (bal && gt == 0)
+            {   // shops skip the balcony (it boxed the sign) - no extra rng draws so the street layout stays identical to v0.8
+                Win(fr, new Vector3(0, y, -0.05f), Mathf.Min(2.8f, w * 0.48f), 1.75f, trim, false);
+                Block(fr, new Vector3(0, y - 1.05f, -0.2f), new Vector3(Mathf.Min(2.4f, w * 0.42f), 0.16f, 0.42f), White, 0.07f, false);
+            }
+            else if (bal)
             {   // balcony with flower grille railing
                 Block(fr, new Vector3(0, y - 0.95f, -0.6f), new Vector3(w * 0.72f, 0.36f, 1.2f), trim, 0.18f, false);
                 Block(fr, new Vector3(0, y - 0.25f, -1.12f), new Vector3(w * 0.72f, 0.3f, 0.3f), White, 0.15f, false);
@@ -293,6 +310,9 @@ public static class SoftProps
             }
         }
         Craft(g, fr, pos, w, d, H, floors, gh, fh, wall, trim, acc, gt);
+        ArchDetail(g, fr, pos, w, d, H, floors, gh, fh, wall, trim, roof, acc, gt, rs);
+        GeoQ.ArchLow = false;
+        Merge(fr, 0, "sk_house"); Merge(g, 0, "sk_house");   // v0.8.1: static dressing -> few draws
         return g;
     }
 
@@ -357,6 +377,137 @@ public static class SoftProps
         MatA = om;
     }
 
+
+
+    /// v0.8.1: fold freshly-built detail children (index >= from) into one mesh per material, so hundreds of tiles/slats cost one draw
+    public static void Merge(Transform root, int from, string name)
+    {
+        var groups = new Dictionary<Material, List<CombineInstance>>(); var kill = new List<GameObject>();
+        var inv = root.worldToLocalMatrix;
+        for (int i = from; i < root.childCount; i++)
+        {
+            var c = root.GetChild(i);
+            if (c.name == "front" || c.name == "sk_doorvis" || c.name == "sk_text3d" || c.GetComponentInChildren<TextMesh>() || c.GetComponentInChildren<Collider>()) continue;
+            foreach (var mf in c.GetComponentsInChildren<MeshFilter>())
+            {
+                var mr = mf.GetComponent<MeshRenderer>(); if (!mr || !mf.sharedMesh) continue;
+                if (!groups.TryGetValue(mr.sharedMaterial, out var l)) groups[mr.sharedMaterial] = l = new List<CombineInstance>();
+                l.Add(new CombineInstance { mesh = mf.sharedMesh, transform = inv * mf.transform.localToWorldMatrix });
+            }
+            PlaceAudit.Record(root, c); kill.Add(c.gameObject);
+        }
+        foreach (var kv in groups)
+        {
+            var m = new Mesh { name = name, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 }; m.CombineMeshes(kv.Value.ToArray(), true, true); m.RecalculateBounds();
+            var go = new GameObject(name); go.transform.SetParent(root, false); go.AddComponent<MeshFilter>().sharedMesh = m; go.AddComponent<MeshRenderer>().sharedMaterial = kv.Key;
+        }
+        foreach (var k in kill) { k.transform.SetParent(null); Object.Destroy(k); }
+    }
+    /// v0.8.1 architectural detail pass: crisp, low-radius pieces where the eye reads "real building":
+    /// louvred shutters + window reveals, front tiled pent roof with gutter/brackets, corner quoins, shop counter,
+    /// blade-sign bracket, chimney, roof-coping tiles, scalloped awning valance. Own rng -> layout unchanged.
+    static void ArchDetail(Transform g, Transform fr, Vector3 pos, float w, float d, float H, int floors, float gh, float fh, Color wall, Color trim, Color roof, Color acc, int gt, int rs)
+    {
+        var r = new System.Random(Mathf.RoundToInt(pos.x * 51.3f + pos.z * 97.1f) + floors * 13);
+        int T = GeoQ.Tier; var om = PushM(1f);
+        int n0f = fr.childCount, n0g = g.childCount;
+        Color shut = new[] { Data.H("8fae9a"), Data.H("7fa3b8"), Data.H("c99a6a"), Data.H("a7b98a") }[r.Next(4)];
+        // 1) windows: reveals (depth) + louvred shutters + hinges
+        foreach (Transform wn in fr) if (wn.name == "sk_win")
+        {
+            var b = Art.RenderBounds(wn.gameObject); var lc = fr.InverseTransformPoint(b.center); float ww = Mathf.Min(b.size.x, 3.2f) - 0.5f, wh = b.size.y - 0.75f; if (ww < 0.6f || wh < 0.6f) continue;
+            foreach (int s in new[] { -1, 1 }) Block(fr, new Vector3(lc.x + s * (ww / 2 - 0.02f), lc.y, -0.02f), new Vector3(0.08f, wh, 0.22f), Dk(trim, 0.85f), 0.01f, false);   // jamb reveals
+            Block(fr, new Vector3(lc.x, lc.y + wh / 2 - 0.02f, -0.02f), new Vector3(ww, 0.08f, 0.22f), Dk(trim, 0.8f), 0.01f, false);
+            if (T == 0 && r.Next(2) == 0) continue;
+            float sw = Mathf.Min(0.75f, ww * 0.42f);
+            foreach (int s in new[] { -1, 1 })
+            {
+                float sx = lc.x + s * (ww / 2 + 0.32f + sw / 2), sy = lc.y - 0.05f, sh = wh + 0.2f;
+                Block(fr, new Vector3(sx, sy, -0.12f), new Vector3(sw, sh, 0.06f), Dk(shut, 0.9f), 0.015f, false);
+                foreach (int t in new[] { -1, 1 }) Block(fr, new Vector3(sx + t * (sw / 2 - 0.05f), sy, -0.17f), new Vector3(0.09f, sh, 0.07f), shut, 0.015f, false);   // stiles
+                int ns = T == 2 ? 9 : 6;
+                for (int i = 0; i < ns; i++) { var sl = Block(fr, new Vector3(sx, sy - sh / 2 + 0.12f + i * (sh - 0.24f) / (ns - 1), -0.17f), new Vector3(sw - 0.14f, 0.05f, 0.09f), Lt(shut, 0.08f), 0.01f, false); sl.transform.localRotation = Q(28, 0, 0); }
+                Block(fr, new Vector3(sx, sy, -0.18f), new Vector3(sw - 0.1f, 0.08f, 0.08f), shut, 0.01f, false);   // mid rail
+                foreach (int t in new[] { -1, 1 }) Block(fr, new Vector3(sx - s * (sw / 2 + 0.02f), sy + t * sh * 0.32f, -0.15f), new Vector3(0.05f, 0.12f, 0.06f), GreyD, 0.01f, false);   // hinges
+            }
+        }
+        // 2) corner quoins on the pilasters
+        int nq = Mathf.FloorToInt((H - 0.6f) / 0.5f);
+        foreach (int s in new[] { -1, 1 }) for (int i = 0; i < nq; i++)
+        { bool wide = i % 2 == 0; Block(fr, new Vector3(s * (w / 2 - (wide ? 0.2f : 0.14f)), 0.6f + i * 0.5f + 0.24f, 0.2f), new Vector3(wide ? 0.5f : 0.36f, 0.42f, 0.12f), Lt(trim, wide ? 0.25f : 0.1f), 0.02f, false); }
+        // 3) tiled pent roof across the front between ground and first floor (Taiwanese street eave)
+        if (floors > 1 && gt != 0)   // shops keep their awning as the eave: no pent roof crowding the sign
+        {
+            float ey = gh - 0.15f, ed = 0.85f, ew = w - 0.2f; Color tc = Dk(roof, 0.95f);
+            var eb = Block(fr, new Vector3(0, ey, -ed / 2), new Vector3(ew, 0.08f, ed), Dk(roof, 0.75f), 0.01f, false); eb.transform.localRotation = Q(-18, 0, 0);
+            int rows = T == 0 ? 2 : 4; float tw = T == 2 ? 0.3f : 0.42f; int nt = Mathf.Max(4, Mathf.RoundToInt(ew / tw)); tw = ew / nt;
+            for (int rr = 0; rr < rows; rr++)
+            {
+                float zz = -0.12f - rr * (ed - 0.15f) / rows, yy = ey + 0.07f - Mathf.Tan(18f * Mathf.Deg2Rad) * (-zz - ed / 2) - ed / 2 * 0f;
+                yy = ey + 0.06f + Mathf.Tan(18f * Mathf.Deg2Rad) * (zz + ed / 2);
+                for (int i = 0; i < nt; i++)
+                {
+                    float xx = -ew / 2 + (i + 0.5f + (rr % 2) * 0.5f) * tw; if (xx > ew / 2 - tw * 0.3f) continue;
+                    var tl = Block(fr, new Vector3(xx, yy, zz), new Vector3(tw * 0.94f, 0.07f, (ed - 0.1f) / rows + 0.08f), (i + rr) % 5 == 0 ? Lt(tc, 0.12f) : tc, 0.025f, false); tl.transform.localRotation = Q(-18, 0, 0);
+                }
+            }
+            float gyy = ey - Mathf.Tan(18f * Mathf.Deg2Rad) * ed / 2 - 0.02f;
+            Block(fr, new Vector3(0, gyy, -ed - 0.02f), new Vector3(ew + 0.1f, 0.14f, 0.14f), Lt(trim, 0.15f), 0.03f, false);   // gutter
+            Block(fr, new Vector3(0, gyy + 0.08f, -ed - 0.08f), new Vector3(ew + 0.1f, 0.03f, 0.04f), Dk(trim, 0.85f), 0.01f, false);   // gutter lip
+            float px = (r.Next(2) == 0 ? -1 : 1) * (ew / 2 - 0.05f);
+            Block(fr, new Vector3(px, gyy / 2, -ed - 0.02f), new Vector3(0.1f, gyy, 0.1f), Lt(trim, 0.15f), 0.03f, false);   // downpipe
+            for (int i = 1; i <= 2; i++) Block(fr, new Vector3(px, gyy * i / 3f, -ed / 2), new Vector3(0.04f, 0.04f, ed), GreyD, 0.01f, false);   // pipe stays
+            int nb = Mathf.Max(2, Mathf.RoundToInt(ew / 1.6f));
+            for (int i = 0; i <= nb; i++) { var br = Block(fr, new Vector3(-ew / 2 + 0.15f + i * (ew - 0.3f) / nb, ey - 0.28f, -0.25f), new Vector3(0.1f, 0.42f, 0.1f), WoodD, 0.01f, false); br.transform.localRotation = Q(45, 0, 0); }   // eave brackets
+        }
+        // 4) shops: counter with panels + blade sign on an iron bracket
+        if (gt == 0)
+        {
+            float cw = w * 0.6f;
+            Block(fr, new Vector3(0, 0.5f, -0.75f), new Vector3(cw, 1.0f, 0.5f), Lt(acc, 0.2f), 0.03f, false);
+            Block(fr, new Vector3(0, 1.04f, -0.75f), new Vector3(cw + 0.14f, 0.08f, 0.62f), WoodD, 0.02f, false);
+            int np = Mathf.Max(2, Mathf.RoundToInt(cw / 0.8f));
+            for (int i = 0; i < np; i++) Block(fr, new Vector3(-cw / 2 + (i + 0.5f) * cw / np, 0.5f, -1.01f), new Vector3(cw / np - 0.14f, 0.7f, 0.03f), Dk(acc, 0.92f), 0.01f, false);
+            float bx = w / 2 - 0.5f, by = gh + 0.9f;
+            Block(fr, new Vector3(bx, by + 0.55f, -0.55f), new Vector3(0.05f, 0.05f, 1.1f), GreyD, 0.01f, false);
+            var dg = Block(fr, new Vector3(bx, by + 0.3f, -0.35f), new Vector3(0.04f, 0.04f, 0.7f), GreyD, 0.01f, false); dg.transform.localRotation = Q(-40, 0, 0);
+            Ring(fr, new Vector3(bx, by + 0.42f, -0.25f), Q(0, 90, 0), 0.12f, 0.02f, GreyD, 10);
+            Block(fr, new Vector3(bx, by - 0.1f, -0.85f), new Vector3(0.08f, 1.0f, 0.62f), Lt(acc, 0.3f), 0.04f, false);
+            Block(fr, new Vector3(bx, by - 0.1f, -0.85f), new Vector3(0.1f, 0.84f, 0.46f), White, 0.03f, false);
+            foreach (int s in new[] { -1, 1 }) Block(fr, new Vector3(bx, by + 0.45f, -0.85f + s * 0.22f), new Vector3(0.02f, 0.12f, 0.02f), GreyD, 0f, false);
+        }
+        // 5) chimney on the hump roof, tile coping on parapet roofs
+        if (rs == 0 && T > 0)
+        {
+            float cx = w * 0.3f * (r.Next(2) == 0 ? -1 : 1), cz = d * 0.6f;
+            for (int i = 0; i < 6; i++) Block(g, new Vector3(cx, H + 0.2f + i * 0.22f, cz), new Vector3(i % 2 == 0 ? 0.62f : 0.58f, 0.2f, i % 2 == 0 ? 0.62f : 0.58f), i % 2 == 0 ? Lt(trim, 0.1f) : Dk(wall, 0.85f), 0.02f, false);
+            Block(g, new Vector3(cx, H + 1.55f, cz), new Vector3(0.8f, 0.1f, 0.8f), Dk(roof, 0.8f), 0.02f, false);
+            Block(g, new Vector3(cx, H + 1.75f, cz), new Vector3(0.5f, 0.06f, 0.5f), Dk(roof, 0.8f), 0.02f, false);
+        }
+        else if (rs == 1)
+        {
+            int nc = Mathf.RoundToInt((w + 0.2f) / (T == 2 ? 0.35f : 0.5f));
+            for (int i = 0; i < nc; i++) Block(g, new Vector3(-(w + 0.2f) / 2 + (i + 0.5f) * (w + 0.2f) / nc, H + 0.8f, -0.05f), new Vector3((w + 0.2f) / nc * 0.92f, 0.12f, 0.38f), i % 2 == 0 ? roof : Dk(roof, 0.9f), 0.02f, false);
+        }
+        // 6) v0.8.1b: stepped cornice + dentil course under the roof line, string course with dentils between storeys, sills on corbels + keystones on windows
+        {
+            float cy = H - 0.42f;
+            for (int k = 0; k < 3; k++) Block(fr, new Vector3(0, cy + k * 0.11f, -0.12f - k * 0.06f), new Vector3(w - 0.5f + k * 0.12f, 0.1f, 0.2f + k * 0.12f), k == 1 ? Dk(trim, 0.9f) : Lt(trim, 0.2f), 0.02f, false);
+            if (T > 0) { int nd = Mathf.RoundToInt((w - 0.7f) / 0.28f); for (int i = 0; i < nd; i++) Block(fr, new Vector3(-(w - 0.7f) / 2 + (i + 0.5f) * (w - 0.7f) / nd, cy - 0.11f, -0.1f), new Vector3(0.12f, 0.12f, 0.14f), Lt(trim, 0.3f), 0.01f, false); }
+            for (int f = 2; f < floors; f++)
+            {
+                float sy = gh + (f - 1) * fh + 0.05f;
+                Block(fr, new Vector3(0, sy, -0.1f), new Vector3(w - 0.6f, 0.08f, 0.16f), Dk(trim, 0.92f), 0.01f, false);
+            }
+            foreach (Transform wn in fr) if (wn.name == "sk_win")
+            {
+                var b = Art.RenderBounds(wn.gameObject); var lc = fr.InverseTransformPoint(b.center); float ww = Mathf.Min(b.size.x, 3.2f) - 0.5f, wh = b.size.y - 0.75f; if (ww < 0.6f || wh < 0.6f) continue;
+                if (lc.y > gh) foreach (int s in new[] { -1, 1 }) { var co = Block(fr, new Vector3(lc.x + s * (ww / 2 - 0.15f), lc.y - wh / 2 - 0.32f, -0.12f), new Vector3(0.12f, 0.22f, 0.18f), Lt(trim, 0.25f), 0.02f, false); }   // corbels
+                Block(fr, new Vector3(lc.x, lc.y + wh / 2 + 0.1f, -0.12f), new Vector3(0.22f, 0.26f, 0.12f), Lt(trim, 0.35f), 0.02f, false);   // keystone
+            }
+        }
+        MatA = om;
+    }
     /// chunky extruded 3D letters: stacked darker layers behind a bright face, on a puffy pill
     public static float Lum(Color c) { float f(float v) => v <= 0.03928f ? v / 12.92f : Mathf.Pow((v + 0.055f) / 1.055f, 2.4f); return 0.2126f * f(c.r) + 0.7152f * f(c.g) + 0.0722f * f(c.b); }
     public static float Contrast(Color a, Color b) { float x = Lum(a), y = Lum(b); return (Mathf.Max(x, y) + 0.05f) / (Mathf.Min(x, y) + 0.05f); }
@@ -386,7 +537,7 @@ public static class SoftProps
         MatA = om; float cr = Contrast(face, board); SignCount++;
         if (cr < 4.5f) { SignFails++; Debug.Log("[contrast] FAIL sign '" + s + "' ratio " + cr.ToString("0.00")); }
         float cs = em / 8f;
-        for (int k = 4; k >= 0; k--) { var t = Text(g, new Vector3(0, 0, 0.12f - k * 0.03f), Quaternion.identity, txt, cs, k == 0 ? face : (k == 1 ? Lt(face, 0.35f) : Dk(face, 0.7f))); t.lineSpacing = 0.95f; t.GetComponent<MeshRenderer>().sortingOrder = 20 - k * 2; }
+        for (int k = 2; k >= 0; k--) { var t = Text(g, new Vector3(0, 0, 0.12f - k * 0.05f), Quaternion.identity, txt, cs, k == 0 ? face : (k == 1 ? Lt(face, 0.35f) : Dk(face, 0.7f))); t.lineSpacing = 0.95f; t.GetComponent<MeshRenderer>().sortingOrder = 20 - k * 2; }   // v0.8.1: 3 layers, 5 cm apart (was 5 @ 3 cm: sort/z shimmer)
         return g;
     }
 

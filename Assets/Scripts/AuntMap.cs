@@ -426,13 +426,13 @@ public static partial class LevelGen
         Field(root, new Vector3(0, 0.02f, 0), 130, 8, 1f, (x, z) => Color.Lerp(H("dcd8d0"), H("ccc7bd"), VN(new Vector3(x * 0.3f, 0, z * 0.3f), 5)), false, "road");
         for (float x = -60; x < 60; x += 6) if (Mathf.Abs(x + 6) > 3) Block(root, new Vector3(x, 0.035f, 0), new Vector3(2.5f, 0.03f, 0.22f), ButterD, 0.01f, false, 0, 0);
         for (float z = -3.3f; z <= 3.31f; z += 0.85f) Block(root, new Vector3(-6, 0.035f, z), new Vector3(2.8f, 0.03f, 0.45f), White, 0.01f, false, 0, 0);
-        System.Func<float, float, Color> tiles = (x, z) => ((Mathf.FloorToInt(x) + Mathf.FloorToInt(z)) & 1) == 0 ? Cream : Color.Lerp(Cream, Lite(Pink, 0.45f), 0.5f);
+        System.Func<float, float, Color> tiles = (x, z) => ((Mathf.FloorToInt(x) + Mathf.FloorToInt(z)) & 1) == 0 ? Cream : Color.Lerp(Cream, H("e9e2d4"), 0.5f);
         Field(root, new Vector3(0, 0.12f, 6.5f), 130, 5f, 1f, tiles, true, "sidewalk");
         Field(root, new Vector3(0, 0.12f, -6.75f), 130, 5.5f, 1f, tiles, true, "sidewalk");
-        foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.08f, s * 4.06f), new Vector3(130, 0.17f, 0.24f), Lav, 0.06f, false, 0, 0.01f);
-        foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.035f, s * 3.5f), new Vector3(130, 0.04f, 0.9f), H("bfb2d6"), 0.015f, false, 0, 0);   // v0.5 gutter band
-        for (float x = -54; x < 58; x += 18) { Cyl(root, new Vector3(x + 3, 0.05f, 1.9f), 0.6f, 0.08f, H("a597bd"), 0.035f, null, 24); Ring(root, new Vector3(x + 3, 0.095f, 1.9f), Quaternion.Euler(90, 0, 0), 0.38f, 0.04f, H("8f80ab"), 24); Ball(root, new Vector3(x + 3, 0.095f, 1.9f), new Vector3(0.22f, 0.04f, 0.22f), H("8f80ab"), 12); }   // manhole covers
-        for (float x = -57; x < 58; x += 12) foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(x, 0.04f, s * 3.62f), new Vector3(0.8f, 0.05f, 0.5f), H("8f80ab"), 0.01f, false, 0, 0);   // drain grates
+        foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.08f, s * 4.06f), new Vector3(130, 0.17f, 0.24f), H("e4ded2"), 0.06f, false, 0, 0.01f);
+        foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.035f, s * 3.5f), new Vector3(130, 0.04f, 0.9f), H("cfc8bc"), 0.015f, false, 0, 0);   // v0.5 gutter band
+        for (float x = -54; x < 58; x += 18) { Cyl(root, new Vector3(x + 3, 0.05f, 1.9f), 0.6f, 0.08f, H("b3aca0"), 0.035f, null, 24); Ring(root, new Vector3(x + 3, 0.095f, 1.9f), Quaternion.Euler(90, 0, 0), 0.38f, 0.04f, H("9a9488"), 24); Ball(root, new Vector3(x + 3, 0.095f, 1.9f), new Vector3(0.22f, 0.04f, 0.22f), H("8f80ab"), 12); }   // manhole covers
+        for (float x = -57; x < 58; x += 12) foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(x, 0.04f, s * 3.62f), new Vector3(0.8f, 0.05f, 0.5f), H("9a9488"), 0.01f, false, 0, 0);   // drain grates
         foreach (var (p, s) in new[] { (new Vector3(0, 2, 60), new Vector3(130, 6, 1)), (new Vector3(0, 2, -60), new Vector3(130, 6, 1)), (new Vector3(60, 2, 0), new Vector3(1, 6, 130)), (new Vector3(-60, 2, 0), new Vector3(1, 6, 130)) })
         { var b = new GameObject("bound"); b.transform.SetParent(root, false); b.transform.localPosition = p; b.AddComponent<BoxCollider>().size = s; }
 

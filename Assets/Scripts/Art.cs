@@ -13,6 +13,19 @@ public static class Art
     public static Font Font, FontBold;
     static Material wfm;
     /// depth-tested world text (signs, posters): walls occlude it. Font default GUI/Text shader ignores depth.
+    // v0.8.1: dynamic font atlases rebuild (and briefly flash every glyph) when a new char/size is first requested mid-play; request everything up front
+    public static int AtlasRebuilds;
+    static bool rbHook;
+    public static void PrewarmText()
+    {
+        if (!rbHook) { rbHook = true; Font.textureRebuilt += f => AtlasRebuilds++; }
+        const string common = "0123456789:：/%×x+-.,!！?？()（）「」、。 ★♥▶◀▲▼←→ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+        var bySize = new System.Collections.Generic.Dictionary<(Font, int, FontStyle), System.Text.StringBuilder>();
+        void Add(Font f, int sz, FontStyle st, string s) { if (!f || f.dynamic == false || string.IsNullOrEmpty(s)) return; var k = (f, sz, st); if (!bySize.TryGetValue(k, out var sb)) bySize[k] = sb = new System.Text.StringBuilder(common); sb.Append(s); }
+        foreach (var t in Object.FindObjectsByType<UnityEngine.UI.Text>(FindObjectsInactive.Include)) { Add(t.font, t.fontSize, t.fontStyle, t.text); if (t.resizeTextForBestFit) for (int z = t.resizeTextMinSize; z <= t.resizeTextMaxSize; z += 2) Add(t.font, z, t.fontStyle, t.text); }
+        foreach (var t in Object.FindObjectsByType<TextMesh>(FindObjectsInactive.Include)) Add(t.font, t.fontSize, t.fontStyle, t.text);
+        foreach (var kv in bySize) kv.Key.Item1.RequestCharactersInTexture(kv.Value.ToString(), kv.Key.Item2, kv.Key.Item3);
+    }
     public static Material WorldFontMat { get { if (!wfm && FontBold) { var sh = Resources.Load<Shader>("Shaders/WorldText") ?? Shader.Find("Soft/WorldText"); wfm = new Material(FontBold.material); if (sh) wfm.shader = sh; else Debug.LogError("[text] WorldText shader missing"); wfm.mainTexture = FontBold.material.mainTexture; wfm.name = "FontWorld"; Font.textureRebuilt += f => { if (wfm && f == FontBold) wfm.mainTexture = f.material.mainTexture; }; wfm.renderQueue = 3000; } return wfm; } }
     static Material ovl;
     /// world-space label material that draws on top of geometry (no clipping into walls)

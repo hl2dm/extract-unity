@@ -17,14 +17,17 @@ public static class ItemArt
         q.transform.SetParent(root, false); q.transform.localPosition = new Vector3(0, 0.28f, 0); q.transform.localScale = Vector3.one * 0.48f;
         var r = q.GetComponent<Renderer>(); r.sharedMaterial = m; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         q.AddComponent<Billboard>();
-        var sh = Art.Prim(PrimitiveType.Cylinder, root, new Vector3(0, 0.01f, 0), new Vector3(0.3f, 0.005f, 0.3f), Art.Unlit(new Color(0, 0, 0, 0.35f)));
+        var sh = Art.Prim(PrimitiveType.Cylinder, root, new Vector3(0, 0.022f, 0), new Vector3(0.3f, 0.004f, 0.3f), Art.Unlit(new Color(0, 0, 0, 0.35f)));
         return root;
     }
 }
 
+/// v0.8.1: steady, gentle item feedback (off = v0.8 pulsing/blinking, kept for before/after tests)
+public static class Calm { public static bool On = true; }
+
 public class Billboard : MonoBehaviour
 {
-    void LateUpdate() { var c = Camera.main; if (!c) return; var d = transform.position - c.transform.position; d.y = 0; if (d.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.LookRotation(d) ; transform.localPosition = new Vector3(0, 0.28f + 0.05f * Mathf.Sin(Time.time * 3 + transform.parent.GetInstanceID()), 0); }
+    void LateUpdate() { var c = Camera.main; if (!c) return; var d = transform.position - c.transform.position; d.y = 0; if (d.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.LookRotation(d) ; transform.localPosition = new Vector3(0, 0.28f + (Calm.On ? 0.025f * Mathf.Sin(Time.time * 1.6f + transform.parent.GetInstanceID()) : 0.05f * Mathf.Sin(Time.time * 3 + transform.parent.GetInstanceID())), 0); }
 }
 
 /// Glowing floor ring that tells the player "this can be searched". Fades with distance, hides when empty.
@@ -32,7 +35,7 @@ public class HintRing : MonoBehaviour
 {
     public static Interactable focused;
     public Interactable owner; public Color col = new Color(1f, 0.85f, 0.45f); public float radius = 0.6f, aspect = 1f;
-    MeshRenderer mr, mk; Transform marker; MaterialPropertyBlock mpb; float t0; static Mesh ring;
+    public float Level; MeshRenderer mr, mk; Transform marker; float fi; MaterialPropertyBlock mpb; float t0; static Mesh ring;
     static Mesh RingMesh()
     {
         if (ring) return ring; int n = 48; var v = new Vector3[n * 2]; var tr = new int[n * 6];
@@ -81,16 +84,17 @@ public class HintRing : MonoBehaviour
         mr.enabled = vis > 0.01f; float t = Time.time + t0;
         if (mr.enabled)
         {
-            float pulse = 0.75f + 0.25f * Mathf.Sin(t * 3.2f);
-            var c = searched ? Color.Lerp(col, Color.gray, 0.55f) : col; float inten = (foc ? 4.5f : 1.6f) * pulse * vis * (searched ? 0.6f : 1f);
-            mpb.SetColor("_EmissionColor", c * inten); mpb.SetColor("_BaseColor", c * 0.5f * vis); mr.SetPropertyBlock(mpb);
-            float s = foc ? 1.08f + 0.04f * Mathf.Sin(t * 6) : 1f; mr.transform.localScale = new Vector3(radius * s / Mathf.Max(transform.lossyScale.x, 1e-3f), 1, radius * aspect * s / Mathf.Max(transform.lossyScale.z, 1e-3f));
+            float pulse = Calm.On ? 0.92f + 0.08f * Mathf.Sin(t * 1.4f) : 0.75f + 0.25f * Mathf.Sin(t * 3.2f);
+            var c = searched ? Color.Lerp(col, Color.gray, 0.55f) : col; float tgt = (foc ? (Calm.On ? 1.25f : 4.5f) : (Calm.On ? 0.8f : 1.6f)) * pulse * vis * (searched ? 0.6f : 1f);
+            float inten = Calm.On ? (fi = Mathf.MoveTowards(fi, tgt, Time.deltaTime * 3f)) : tgt;   // below bloom threshold, eased focus change
+            Level = c.grayscale * inten; mpb.SetColor("_EmissionColor", c * inten); mpb.SetColor("_BaseColor", c * 0.5f * vis); mr.SetPropertyBlock(mpb);
+            float s = foc ? (Calm.On ? 1.06f : 1.08f + 0.04f * Mathf.Sin(t * 6)) : 1f; mr.transform.localScale = new Vector3(radius * s / Mathf.Max(transform.lossyScale.x, 1e-3f), 1, radius * aspect * s / Mathf.Max(transform.lossyScale.z, 1e-3f));
         }
         mk.enabled = foc && !empty;
         if (mk.enabled)
         {
-            var b = owner.TopPoint; marker.position = b + Vector3.up * (0.28f + 0.06f * Mathf.Sin(t * 4)); marker.rotation = Quaternion.Euler(45, t * 120, 45);
-            mpb.SetColor("_EmissionColor", col * 5f); mpb.SetColor("_BaseColor", col); mk.SetPropertyBlock(mpb);
+            var b = owner.TopPoint; marker.position = b + Vector3.up * (Calm.On ? 0.28f + 0.03f * Mathf.Sin(t * 1.6f) : 0.28f + 0.06f * Mathf.Sin(t * 4)); marker.rotation = Quaternion.Euler(45, t * (Calm.On ? 25 : 120), 45);
+            mpb.SetColor("_EmissionColor", col * (Calm.On ? 1.2f : 5f)); mpb.SetColor("_BaseColor", col); mk.SetPropertyBlock(mpb);
         }
     }
 }

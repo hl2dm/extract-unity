@@ -48,6 +48,7 @@ Shader "Casual/Toon"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             // v0.8 lighting globals (0 = v0.7 look): x fill, y AO, z lamp pools, w rim boost
             float4 _ToonLight; float4 _ToonFillCol; float4 _ToonFillDir; float4 _ToonSkyCol;
+            float4 _ToonSoft;
             struct A { float4 pos:POSITION; float3 n:NORMAL; float2 uv:TEXCOORD0; float4 vc:COLOR; UNITY_VERTEX_INPUT_INSTANCE_ID };
             struct V { float4 cs:SV_POSITION; float2 uv:TEXCOORD0; float3 ws:TEXCOORD1; float3 nw:TEXCOORD2; float fog:TEXCOORD3; float4 vc:TEXCOORD4; UNITY_VERTEX_INPUT_INSTANCE_ID };
             V vert(A i) { V o; UNITY_SETUP_INSTANCE_ID(i); UNITY_TRANSFER_INSTANCE_ID(i, o);
@@ -79,7 +80,8 @@ Shader "Casual/Toon"
                 float3 n = normalize(i.nw); float3 ws = i.ws;
                 float4 sc = TransformWorldToShadowCoord(ws); Light L = GetMainLight(sc);
                 float nl = dot(n, L.direction) * 0.5 + 0.5;
-                float lit = nl * lerp(0.35, 1, L.shadowAttenuation);
+                float S = _ToonSoft.x;   // v0.8.1 softness (0 = v0.8)
+                float lit = nl * lerp(lerp(0.35, 0.62, S), 1, L.shadowAttenuation);
                 // crayon grain: triplanar-ish streaky noise in world space
                 float3 an = abs(n); float3 q = ws * 9.0;
                 float g1 = vn(float3(q.x * 0.35 + q.z * 0.35, q.y * 2.8, q.z * 0.2) );
@@ -87,12 +89,12 @@ Shader "Casual/Toon"
                 float g = saturate(g1 * 0.55 + g2 * 0.45);
                 // wobble the band edges by the grain so they look hand-shaded
                 float lw = lit + (g - 0.5) * 0.12 * grain;
-                float b1 = smoothstep(0.36, 0.46, lw), b2 = smoothstep(0.66, 0.76, lw);
+                float b1 = smoothstep(0.36 - 0.2 * S, 0.46 + 0.2 * S, lw), b2 = smoothstep(0.66 - 0.2 * S, 0.76 + 0.2 * S, lw);
                 float band = b1 * 0.55 + b2 * 0.45;                                          // 0 shade, .55 mid, 1 lit
-                float3 shade = alb * _ShadeColor.rgb;
+                float3 shade = alb * lerp(_ShadeColor.rgb, float3(1, 0.98, 0.95), 0.32 * S);
                 float3 col = lerp(shade, alb, band);
                 col *= lerp(float3(1,1,1), L.color.rgb / max(1, max(L.color.r, max(L.color.g, L.color.b))), 0.35);
-                col += SampleSH(n) * alb * 0.08;
+                col += SampleSH(n) * alb * (0.08 + 0.1 * S);
                 // hatching in shade (diagonal strokes)
                 float hs = frac((ws.x + ws.y * 1.3 - ws.z * 0.7) * 6.0 + vn(ws * 3) * 0.6);
                 float hatch = smoothstep(0.35, 0.5, hs) * smoothstep(0.85, 0.7, hs);
@@ -106,8 +108,8 @@ Shader "Casual/Toon"
                 float ma = lerp(1, i.vc.a, _UseVC);
                 float gl = saturate(1 - abs(ma - 0.5) * 4), felt = saturate((0.3 - ma) * 5), clay = saturate((ma - 0.75) * 4);
                 float3 hv = normalize(L.direction + vd);
-                float sp = smoothstep(0.955, 0.975, dot(n, hv)) * L.shadowAttenuation;
-                col += sp * gl * 0.55;
+                float sp = smoothstep(0.955 - 0.07 * S, 0.975 + 0.02 * S, dot(n, hv)) * L.shadowAttenuation;
+                col += sp * gl * 0.55 * (1 - 0.82 * S);
                 col *= lerp(1, 0.97 + 0.03 * vn(ws * 20), felt);
                 
                 float rim = smoothstep(0.62, 0.95, 1 - saturate(dot(n, vd))) * (0.22 + 0.25 * felt + 0.1 * gl);
@@ -136,8 +138,9 @@ Shader "Casual/Toon"
                 }
                 #endif
                 float sunSide = saturate(dot(normalize(cross(cross(vd, L.direction), vd) + 1e-4), n) * 0.5 + 0.5);
-                rim *= 1 + _ToonLight.w * (0.6 + sunSide);
+                rim *= (1 + _ToonLight.w * (0.6 + sunSide)) * (1 - 0.4 * S);
                 col += _RimColor.rgb * rim * lerp(1, L.color.rgb / max(1, max(L.color.r, max(L.color.g, L.color.b))), _ToonLight.w * 0.5);
+                col = lerp(col, col * 0.93 + float3(0.07, 0.065, 0.055), S);   // lifted blacks, warm
                 col = MixFog(col, i.fog);
                 return half4(col, 1);
             }
