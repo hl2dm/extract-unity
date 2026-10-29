@@ -73,7 +73,7 @@ Shader "Casual/Toon"
                 float3 alb = lerp(float3(1,1,1), avg, _UseAvg) * _BaseColor.rgb * lerp(1, clamp(lt / la, 0.6, 1.4), _TexAmt) * lerp(float3(1,1,1), i.vc.rgb, _UseVC);   // realistic detail reduced to a faint wash
                 // pastelise: gentle saturation lift, then raise value toward paper white, then nudge toward palette
                 float l = dot(alb, float3(.3,.59,.11)); alb = saturate(lerp(l.xxx, alb, 1.15 + 0.25 * _UseVC));
-                alb = lerp(alb, 1, 0.12 * (1 - _UseVC)); alb = max(alb, 0.28);
+                alb = lerp(alb, 1, 0.12 * (1 - _UseVC) * (1 - 0.85 * _ToonSoft.y)); alb = max(alb, 0.28); alb = min(alb, 1 - 0.2 * _ToonSoft.z) * lerp(1, float3(1.0, 0.97, 0.92), _ToonSoft.z * saturate((dot(alb, 0.333) - 0.7) * 3.3));
                 alb = lerp(alb, snapPalette(alb), _PaletteAmt * (1 - _UseVC)) * lerp(0.92, 0.9, _UseVC);
                 float grain = _Grain * lerp(0.12, 0.0, _UseVC);
 
@@ -81,7 +81,9 @@ Shader "Casual/Toon"
                 float4 sc = TransformWorldToShadowCoord(ws); Light L = GetMainLight(sc);
                 float nl = dot(n, L.direction) * 0.5 + 0.5;
                 float S = _ToonSoft.x;   // v0.8.1 softness (0 = v0.8)
-                float lit = nl * lerp(lerp(0.35, 0.62, S), 1, L.shadowAttenuation);
+                float S2 = _ToonSoft.y;  // v0.9.1 overcast softness (0 = v0.9)
+                nl = lerp(nl, nl * 0.45 + 0.55, S2);   // wrapped, flatter overcast key
+                float lit = nl * lerp(lerp(lerp(0.35, 0.62, S), 0.84, S2), 1, L.shadowAttenuation);
                 // crayon grain: triplanar-ish streaky noise in world space
                 float3 an = abs(n); float3 q = ws * 9.0;
                 float g1 = vn(float3(q.x * 0.35 + q.z * 0.35, q.y * 2.8, q.z * 0.2) );
@@ -89,9 +91,9 @@ Shader "Casual/Toon"
                 float g = saturate(g1 * 0.55 + g2 * 0.45);
                 // wobble the band edges by the grain so they look hand-shaded
                 float lw = lit + (g - 0.5) * 0.12 * grain;
-                float b1 = smoothstep(0.36 - 0.2 * S, 0.46 + 0.2 * S, lw), b2 = smoothstep(0.66 - 0.2 * S, 0.76 + 0.2 * S, lw);
+                float b1 = smoothstep(0.36 - 0.2 * S - 0.1 * S2, 0.46 + 0.2 * S + 0.1 * S2, lw), b2 = smoothstep(0.66 - 0.2 * S - 0.1 * S2, 0.76 + 0.2 * S + 0.1 * S2, lw);
                 float band = b1 * 0.55 + b2 * 0.45;                                          // 0 shade, .55 mid, 1 lit
-                float3 shade = alb * lerp(_ShadeColor.rgb, float3(1, 0.98, 0.95), 0.32 * S);
+                float3 shade = alb * lerp(lerp(_ShadeColor.rgb, float3(1, 0.98, 0.95), 0.32 * S), float3(0.86, 0.83, 0.8), S2);
                 float3 col = lerp(shade, alb, band);
                 col *= lerp(float3(1,1,1), L.color.rgb / max(1, max(L.color.r, max(L.color.g, L.color.b))), 0.35);
                 col += SampleSH(n) * alb * (0.08 + 0.1 * S);
@@ -102,14 +104,14 @@ Shader "Casual/Toon"
                 // crayon tooth: grain darkens slightly, paper peeks through in the gaps
                 col *= lerp(0.84, 1.04, g * grain + (1 - grain) * 0.6);
                 float tooth = pow(saturate(1 - g2 * 1.35), 3);
-                col = lerp(col, float3(1, 0.98, 0.94), tooth * 0.22 * grain);
+                col = lerp(col, float3(1, 0.98, 0.94), tooth * 0.22 * grain * (1 - 0.6 * S2));
                 // toy material classes from vertex alpha: 1 matte clay, 0.5 glossy plastic, ~0.1 felt
                 float3 vd = normalize(GetWorldSpaceViewDir(ws));
                 float ma = lerp(1, i.vc.a, _UseVC);
                 float gl = saturate(1 - abs(ma - 0.5) * 4), felt = saturate((0.3 - ma) * 5), clay = saturate((ma - 0.75) * 4);
                 float3 hv = normalize(L.direction + vd);
                 float sp = smoothstep(0.955 - 0.07 * S, 0.975 + 0.02 * S, dot(n, hv)) * L.shadowAttenuation;
-                col += sp * gl * 0.55 * (1 - 0.82 * S);
+                col += sp * gl * 0.55 * (1 - 0.82 * S) * (1 - 0.9 * S2);
                 col *= lerp(1, 0.97 + 0.03 * vn(ws * 20), felt);
                 
                 float rim = smoothstep(0.62, 0.95, 1 - saturate(dot(n, vd))) * (0.22 + 0.25 * felt + 0.1 * gl);
@@ -127,20 +129,22 @@ Shader "Casual/Toon"
                         float an2 = saturate(dot(n, A.direction) * 0.5 + 0.5);
                         pool += A.color * min(A.distanceAttenuation, 1.0) * smoothstep(0.25, 0.8, an2);
                     }
-                    col += alb * min(pool * 0.5, 0.55) * _ToonLight.z;   // soft capped warm pool, never blows out the pastel
+                    col += alb * min(pool * 0.5, lerp(0.55, 0.28, S2)) * _ToonLight.z;   // soft capped warm pool, never blows out the pastel
                 }
                 #endif
                 #if defined(_SCREEN_SPACE_OCCLUSION)
                 if (_ToonLight.y > 0)
                 {
                     AmbientOcclusionFactor ao = GetScreenSpaceAmbientOcclusion(GetNormalizedScreenSpaceUV(i.cs));
-                    col *= lerp(1, lerp(0.45, 1, ao.indirectAmbientOcclusion), _ToonLight.y);
+                    col *= lerp(1, lerp(lerp(0.45, 0.72, S2), 1, ao.indirectAmbientOcclusion), _ToonLight.y);
                 }
                 #endif
                 float sunSide = saturate(dot(normalize(cross(cross(vd, L.direction), vd) + 1e-4), n) * 0.5 + 0.5);
-                rim *= (1 + _ToonLight.w * (0.6 + sunSide)) * (1 - 0.4 * S);
+                rim *= (1 + _ToonLight.w * (0.6 + sunSide)) * (1 - 0.4 * S) * (1 - 0.65 * S2);
                 col += _RimColor.rgb * rim * lerp(1, L.color.rgb / max(1, max(L.color.r, max(L.color.g, L.color.b))), _ToonLight.w * 0.5);
                 col = lerp(col, col * 0.93 + float3(0.07, 0.065, 0.055), S);   // lifted blacks, warm
+                { float3 kn = col > 0.55 ? 0.55 + (col - 0.55) * 0.4 : col;   // v0.9.1 soft knee: whites settle at ~0.78, no paper-white glare
+                  col = lerp(col, kn * 0.96 + float3(0.03, 0.026, 0.018), S2); }
                 col = MixFog(col, i.fog);
                 return half4(col, 1);
             }
@@ -163,7 +167,8 @@ Shader "Casual/Toon"
                 float wob = vn(ws * 3.0 + boil * 1.7);
                 float w = _OutlineWidth * clamp(d * 0.25, 0.4, 3) * lerp(0.9, 1.1, wob);
                 ws += nw * w; o.cs = TransformWorldToHClip(ws); o.fog = ComputeFogFactor(o.cs.z); o.w = wob; return o; }
-            half4 frag(V i) : SV_Target { float3 c = _OutlineColor.rgb * 1.0; return half4(MixFog(c, i.fog), 1); }
+            float4 _ToonSoft;
+            half4 frag(V i) : SV_Target { float3 c = _OutlineColor.rgb * 1.0; c = lerp(c, lerp(c, _BaseColor.rgb * 0.55, 0.3), _ToonSoft.z); return half4(MixFog(c, i.fog), 1); }
             ENDHLSL
         }
         Pass

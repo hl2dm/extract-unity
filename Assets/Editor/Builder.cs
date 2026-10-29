@@ -37,6 +37,17 @@ public static class Builder
             catch (Exception e) { Debug.LogWarning("[setup] SSAO failed: " + e.Message); }
         }
         try
+        {   // v0.9.1: renderer had postProcessData == null -> no post FX ever ran
+            var rdd = AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/Settings/Renderer.asset");
+            if (rdd && rdd.postProcessData == null)
+            {
+                var ppd = AssetDatabase.LoadAssetAtPath<PostProcessData>("Packages/com.unity.render-pipelines.universal/Runtime/Data/PostProcessData.asset");
+                if (ppd) { rdd.postProcessData = ppd; EditorUtility.SetDirty(rdd); AssetDatabase.SaveAssets(); Debug.Log("[setup] postProcessData assigned"); }
+                else Debug.LogWarning("[setup] PostProcessData asset not found");
+            }
+        }
+        catch (Exception e) { Debug.LogWarning("[setup] ppd failed: " + e.Message); }
+        try
         {
             urp.shadowDistance = 75; urp.shadowCascadeCount = 2; urp.supportsHDR = true; urp.msaaSampleCount = 1;
             var so = new SerializedObject(urp);

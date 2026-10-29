@@ -12,7 +12,7 @@ public class Game : MonoBehaviour
     public List<Item> bag = new List<Item>(); public int keys; public float runT; public int searched, caughtRun, luresRun; bool warn60, warn20;
     LootContainer openC; Interactable focus; float tickT;
     public const float RaidTime = Data.RaidTime;
-    public bool autoshots, doorOnly, gallery, scaleOnly, polyOnly; string shotDir;
+    public bool lightOnly; public bool autoshots, doorOnly, gallery, scaleOnly, polyOnly; string shotDir;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot() { if (I) return; var g = new GameObject("Game"); DontDestroyOnLoad(g); g.AddComponent<Game>(); }
@@ -22,12 +22,14 @@ public class Game : MonoBehaviour
         I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
-        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; if (a == "-polyonly") polyOnly = true; }
+        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; if (a == "-polyonly") polyOnly = true; if (a == "-lightonly") lightOnly = true; }
         { var u0 = Application.absoluteURL ?? ""; int gi = u0.IndexOf("geo="); if (gi >= 0 && gi + 4 < u0.Length) GeoQ.Force = u0[gi + 4] - '0'; }
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-lite" && args[i + 1] == "0") LightQ.Legacy = true;
         if ((Application.absoluteURL ?? "").Contains("lite=0")) LightQ.Legacy = true;
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-soft" && args[i + 1] == "0") LightQ.NoSoft = true;
         if ((Application.absoluteURL ?? "").Contains("soft=0")) LightQ.NoSoft = true;
+        for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-soft2" && args[i + 1] == "0") LightQ.NoSoft2 = true;
+        if ((Application.absoluteURL ?? "").Contains("soft2=0")) LightQ.NoSoft2 = true;
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-geo") int.TryParse(args[i + 1], out GeoQ.Force);
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>(); gameObject.AddComponent<Bgm>();
@@ -479,6 +481,21 @@ public class Game : MonoBehaviour
             yield return PolyShots();
             yield return TextFlicker(); yield return PlaceCheck(); yield return CalmTest(); yield return SignStreetShots();
             Debug.Log("[casual] polyOnly done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
+        }
+        if (lightOnly)
+        {   // v0.9.1: fixed camera views for scene-light before/after (-soft2 0 = v0.9 light)
+            { var bc0 = baseRoot.position; yield return CamShot(bc0 + new Vector3(3.6f, 2.6f, 3.4f), bc0 + new Vector3(-1.5f, 0.7f, -2f), "L_bedroom", 0.8f); }
+            Deploy(0); for (float w = 0; w < 8 && state != St.Raid; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(2.5f); Pet.FreezeAll = 999;
+            float E = player.camRig.localPosition.y;
+            yield return Aim(new Vector3(-24f, 0.12f + E, -1.5f), new Vector3(-8f, 1.8f, 1.5f)); yield return new WaitForSeconds(0.6f); yield return Shot("L_street");
+            if (System.Environment.GetCommandLineArgs().Contains("-dbgexp") && Art.Vol && Art.Vol.sharedProfile.TryGet<UnityEngine.Rendering.Universal.ColorAdjustments>(out var dca)) { Debug.Log("[light] dbg exp " + dca.postExposure.value + " ov " + dca.postExposure.overrideState + " active " + dca.active + " vol " + Art.Vol.enabled + " w " + Art.Vol.weight); var e0 = dca.postExposure.value; dca.postExposure.Override(-2f); yield return new WaitForSeconds(0.3f); yield return Shot("L_dbg"); var stk = UnityEngine.Rendering.VolumeManager.instance.stack; var cm = Camera.main; var ucd = cm ? cm.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>() : null; Debug.Log("[light] dbg stack exp " + (stk != null ? stk.GetComponent<UnityEngine.Rendering.Universal.ColorAdjustments>().postExposure.value.ToString() : "null") + " cam " + (cm ? cm.name : "none") + " pp " + (ucd ? ucd.renderPostProcessing.ToString() : "?") + " mask " + (ucd ? ucd.volumeLayerMask.value.ToString() : "?") + " volLayer " + Art.Vol.gameObject.layer + " hdr " + (cm ? cm.allowHDR.ToString() : "?")); Art.Vol.enabled = false; yield return new WaitForSeconds(0.3f); yield return Shot("L_dbgoff"); Art.Vol.enabled = true; dca.postExposure.Override(e0); }
+            var tms = level.root.GetComponentsInChildren<TextMesh>().Where(t => t.text.Replace("\n", "") == "花店").Select(t => t.transform.parent).Where(t => t && t.name == "sk_text3d").ToList();
+            if (tms.Count > 0) { var b = Art.RenderBounds(tms[0].gameObject); yield return CamShot(new Vector3(b.center.x - 4.5f, 0.12f + E, 0f), b.center + Vector3.down * 1.0f, "L_shops", 0.5f); }
+            var hs = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "House").FirstOrDefault(t => t.GetComponentsInChildren<Transform>().Any(c => c.name == "sk_sofa"));
+            if (hs) yield return CamShot(hs.TransformPoint(new Vector3(2.6f, 0.12f + E, 1.2f)), hs.TransformPoint(new Vector3(-2.35f, 0.7f, 4.0f)), "L_interior", 0.5f);
+            { var pp = new Vector3(-14f, 0, 0); yield return CamShot(pp + new Vector3(0, 16f, -3f), pp, "L_topdown", 0.5f); }
+            { var pp = new Vector3(-20f, 0, 0); yield return CamShot(pp + new Vector3(-6f, 9f, -8f), pp + new Vector3(4f, 0, 2f), "L_overview", 0.5f); }
+            Debug.Log("[casual] lightOnly done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
         }
         if (doorOnly)
         {   // before/after doorway trim shots (run once with -legacytrim for "before")
