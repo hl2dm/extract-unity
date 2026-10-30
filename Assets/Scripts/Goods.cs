@@ -17,7 +17,7 @@ public static class Goods
     // ---------- plants ----------
     public static void Blade(Transform p, Vector3 at, float len, float yaw, float tilt, Color c)
     {   // flattened leaf blade, base at 'at', pointing outward/upward
-        var r = Q(tilt, yaw, 0); var g = Ball(p, at + r * new Vector3(0, 0, len * 0.5f), new Vector3(len * 0.34f, len * 0.07f, len), c, 8, false, r, "sk_plant", 0.02f); T(g, MatK.Foliage);
+        var r = Q(tilt, yaw, 0); var g = Ball(p, at + r * new Vector3(0, 0, len * 0.5f), new Vector3(len * 0.4f, len * 0.06f, len), c, 8, false, r, "sk_leaf", 0.02f); T(g, MatK.Foliage);
     }
     public static void Flower(Transform p, Vector3 at, float s, Color petal)
     {
@@ -26,16 +26,26 @@ public static class Goods
     }
     /// leafy shrub: clustered leaf blades around a soft core (no big lump silhouette)
     public static void Shrub(Transform p, Vector3 b, float rad, float h, Color leaf, Color? flower, int seed)
-    {
+    {   // v0.9.6: stems radiate up/out from the crown; every leaf is attached to a stem point (no core blob, no floating cards)
         var rng = new System.Random(seed); float F() => (float)rng.NextDouble();
-        var core = Ball(p, b + Vector3.up * h * 0.4f, new Vector3(rad * 1.2f, h * 0.6f, rad * 1.2f), Dk(leaf, 0.7f), 8, false, null, "sk_plant"); T(core, MatK.Foliage);
-        int n = Lo ? 9 : 18;
-        for (int i = 0; i < n; i++)
+        int ns = Lo ? 5 : 8; float sr = Mathf.Max(0.006f, rad * 0.035f); int fl = 0;
+        for (int s = 0; s < ns; s++)
         {
-            float a = i * 137.5f + F() * 20, ring = i / (float)n; var c = Color.Lerp(leaf, Dk(leaf, 0.82f), F());
-            Blade(p, b + Vector3.up * (h * (0.2f + 0.55f * ring)) + Q(0, a, 0) * new Vector3(0, 0, rad * 0.25f), rad * (0.75f + 0.3f * F()), a, -20 - 45 * ring, c);
+            float a = s * 360f / ns + F() * 25f, el = 40f + F() * 30f, L = Mathf.Max(h, rad) * (0.6f + 0.35f * F());
+            var rot = Q(-el, a, 0); var dir = rot * Vector3.forward; var tip = b + dir * L;
+            var st = Cyl(p, b + dir * L * 0.5f, sr, L, Dk(leaf, 0.6f), sr * 0.5f, Quaternion.FromToRotation(Vector3.up, dir), 5, false, "sk_stem"); T(st, MatK.Foliage);
+            var c = Color.Lerp(leaf, Dk(leaf, 0.8f), F());
+            foreach (float t in new[] { 0.35f, 0.68f })
+                foreach (int sd in new[] { -1, 1 }) Blade(p, b + dir * L * t, rad * (0.62f - 0.25f * Mathf.Abs(t - 0.55f) * 2f) * (0.8f + 0.35f * F()), a + sd * (40f + 15f * F()), -(el * 0.5f + 5f), sd > 0 ? c : Lt(c, 0.06f));
+            Blade(p, tip, rad * (0.42f + 0.15f * F()), a, -(el * 0.7f), Lt(c, 0.08f));
+            if (!Lo) {   // forked side branch: thinner, shorter, its own tapering leaves
+                var fp = b + dir * L * 0.5f; float fa = a + (s % 2 == 0 ? 38f : -38f); var fd = Q(-(el - 12f), fa, 0) * Vector3.forward; float fl2 = L * 0.45f;
+                T(Cyl(p, fp + fd * fl2 * 0.5f, sr * 0.7f, fl2, Dk(leaf, 0.6f), sr * 0.35f, Quaternion.FromToRotation(Vector3.up, fd), 5, false, "sk_stem"), MatK.Foliage);
+                Blade(p, fp + fd * fl2, rad * (0.36f + 0.12f * F()), fa, -(el * 0.6f), Color.Lerp(c, Lt(leaf, 0.1f), F()));
+                Blade(p, fp + fd * fl2 * 0.6f, rad * 0.3f, fa + 50f, -(el * 0.4f), c); }
+            if (flower.HasValue && fl < (Lo ? 2 : 4) && s % 2 == 0) { Flower(p, tip + Vector3.up * rad * 0.08f, rad * 0.3f, fl % 2 == 0 ? flower.Value : Lt(flower.Value, 0.3f)); fl++; }
         }
-        if (flower.HasValue) { int m = Lo ? 2 : 4; for (int i = 0; i < m; i++) { float a = i * 97f + 30; Flower(p, b + Vector3.up * h * (0.7f + 0.15f * F()) + Q(0, a, 0) * new Vector3(0, 0, rad * 0.55f), rad * 0.32f, i % 2 == 0 ? flower.Value : Lt(flower.Value, 0.3f)); } }
+        for (int k = 0; k < 2; k++) Blade(p, b, rad * 0.7f, k * 180f + F() * 40f, -70f, Lt(leaf, 0.05f));   // upright heart leaves
     }
     public static void PotPlant(Transform p, Vector3 b, float s, Color leaf, Color? flower, int seed)
     {   // terracotta pot (tapered lathe with rim) + soil + leaves
@@ -219,7 +229,6 @@ public static class Goods
     {
         int nc = Lo ? 5 : 8; var r2 = new System.Random(Mathf.RoundToInt(b.x * 31 + b.z * 17));
         float F() => (float)r2.NextDouble();
-        Ball(p, b + Vector3.up * 0.3f * s, new Vector3(0.9f, 0.5f, 0.9f) * s, Dk(leaf, 0.55f), 8, false, null, "sk_plant", 0.08f);   // shaded interior mass (AO)
         for (int k = 0; k < nc; k++)
         {
             float a = k * 6.283f / nc + F() * 0.6f, rr = (0.22f + 0.14f * F()) * s, hy = (0.18f + 0.3f * F()) * s;

@@ -522,6 +522,16 @@ public class Game : MonoBehaviour
                 var bu = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_bush").OrderBy(t => Physics.OverlapSphere(t.position + Vector3.up * 0.6f, 1.3f).Count(c => !c.transform.IsChildOf(t) && c.bounds.max.y > 0.3f) * 100 + Vector3.Distance(t.position, new Vector3(-14f, 0, 0))).FirstOrDefault();
                 if (bu) { var b = Art.RenderBounds(bu.gameObject); yield return CamShot(b.center + new Vector3(0.5f, 1.3f, -0.9f) * Mathf.Max(1f, b.size.x), b.center, "L_ref_bush", 0.5f); }
             }
+            {   // v0.9.6 user's lamp+planter spot and 12 random street-level close-ups
+                yield return CamShot(new Vector3(-25.2f, 1.0f, -2.6f), new Vector3(-26f, 0.7f, -4.7f), "L_spot", 0.5f);
+                var rs = new System.Random(96);
+                for (int i = 0; i < 12; i++) { float x = -46f + (float)rs.NextDouble() * 92f; float sz = i % 2 == 0 ? 1 : -1; var tg = new Vector3(x, 0.6f, sz * 4.9f);
+                    yield return CamShot(tg + new Vector3(0.9f, 0.55f, -sz * 2.3f), tg, "L_st_" + i, 0.4f); }
+            }
+            {   // v0.9.6 house window close-ups
+                int wi = 0; foreach (var wn in SoftProps.WinSpots.Where(t => t.at.y > 2f).OrderBy(t => Vector3.Distance(t.at, new Vector3(-14f, 4f, 0))).Take(40).Where((t, i) => i % 7 == 0).Take(5))
+                {   var f = wn.outN; f.y = 0; f.Normalize(); yield return CamShot(wn.at + f * 3.2f + wn.rt * 0.8f - Vector3.up * 0.4f, wn.at, "L_hwin_" + (wi++), 0.4f); }
+            }
             {   // v0.9.4 dressing close-ups: shop windows per type + table settings
                 var all = level.root.GetComponentsInChildren<Transform>();
                 var seen = new HashSet<string>();

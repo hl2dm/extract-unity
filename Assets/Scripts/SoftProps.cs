@@ -49,7 +49,7 @@ public static class SoftProps
     public static Transform StreetLamp(Transform p, Vector3 pos, float yaw)
     {
         var g = Group(p, "sk_lamp", pos, yaw);
-        Ball(g, new Vector3(0, 0.2f, 0), new Vector3(0.75f, 0.45f, 0.75f), MintD, 16); Cyl(g, new Vector3(0, 1.5f, 0), 0.16f, 2.8f, Mint, 0.08f); Ring(g, new Vector3(0, 0.42f, 0), Q(90, 0, 0), 0.2f, 0.07f, Butter, 18); Ring(g, new Vector3(0, 1.6f, 0), Q(90, 0, 0), 0.17f, 0.045f, Lt(Mint, 0.4f), 16);
+        Cyl(g, new Vector3(0, 0.05f, 0), 0.3f, 0.1f, MintD, 0.03f, null, 16); Lath(g, new Vector3(0, 0.1f, 0), new[] { new Vector2(0, 0), new Vector2(0.25f, 0), new Vector2(0.2f, 0.12f), new Vector2(0.17f, 0.32f), new Vector2(0, 0.32f) }, MintD, 16); Cyl(g, new Vector3(0, 1.5f, 0), 0.12f, 2.8f, Mint, 0.05f); Ring(g, new Vector3(0, 0.46f, 0), Q(90, 0, 0), 0.15f, 0.04f, Butter, 18);   // v0.9.6 plinth base (was a big ball) Ring(g, new Vector3(0, 1.6f, 0), Q(90, 0, 0), 0.17f, 0.045f, Lt(Mint, 0.4f), 16);
         Ball(g, new Vector3(0, 2.95f, 0), Vector3.one * 0.38f, MintD, 12);
         Tag(Cyl(g, new Vector3(0, 3.42f, 0), 0.34f, 0.62f, Data.H("fff3c4"), 0.06f, null, 12).transform, MatK.Glass); for (int k = 0; k < 4; k++) Block(g, new Vector3(Mathf.Cos(k * 1.5708f + 0.785f) * 0.33f, 3.42f, Mathf.Sin(k * 1.5708f + 0.785f) * 0.33f), new Vector3(0.05f, 0.64f, 0.05f), MintD, 0.01f, false); Cyl(g, new Vector3(0, 3.1f, 0), 0.38f, 0.06f, MintD, 0.02f, null, 12);   // v0.9.5 lantern (was a globe ball)
         Lath(g, new Vector3(0, 3.75f, 0), new[] { new Vector2(0, 0), new Vector2(0.62f, 0), new Vector2(0.5f, 0.18f), new Vector2(0.15f, 0.36f), new Vector2(0, 0.42f) }, new[] { Rose, Sky, ButterD }[Mathf.Abs(Mathf.RoundToInt(pos.x / 16f)) % 3], 18);
@@ -157,23 +157,48 @@ public static class SoftProps
         return g;
     }
     /// rectangular window with optional arched top + sill + flower box; glass at z=0 facing -Z
+    static Material WinLampM;
+    public static readonly Dictionary<Transform, Vector2> WinDim = new Dictionary<Transform, Vector2>();
+    public static readonly List<(Vector3 at, Vector3 outN, Vector3 rt)> WinSpots = new List<(Vector3, Vector3, Vector3)>();
     public static Transform Win(Transform p, Vector3 center, float w, float h, Color frame, bool arch, Color? flowers = null, bool grille = false)
-    {
-        var g = Group(p, "sk_win", center); var om = PushM(0.5f);
-        float wr = Mathf.Min(w, h) * 0.32f;
-        Block(g, new Vector3(0, 0, 0.04f), new Vector3(w + 0.44f, h + 0.44f, 0.2f), frame, wr + 0.2f, false, 0, 0.01f);
-        Tag(Block(g, new Vector3(0, 0, -0.04f), new Vector3(w, h, 0.12f), Sky, wr, false, 0, 0.005f, 0, null, "glass").transform, MatK.Glass);
-        Ball(g, new Vector3(-w * 0.22f, h * 0.22f, -0.1f), new Vector3(w * 0.18f, h * 0.1f, 0.03f), White, 10, false, Q(0, 0, -30));
-        Block(g, new Vector3(0, -h / 2 - 0.2f, -0.12f), new Vector3(w + 0.6f, 0.26f, 0.36f), frame, 0.13f, false);
-        if (arch) { Tag(Cyl(g, new Vector3(0, h / 2, 0.03f), w / 2, 0.06f, Sky, 0.02f, Q(90, 0, 0), 20).transform, MatK.Glass); var r = Ring(g, new Vector3(0, h / 2, -0.04f), Quaternion.identity, w / 2 + 0.02f, 0.07f, frame, 24); }
-        if (flowers.HasValue) { Block(g, new Vector3(0, -h / 2 - 0.3f, -0.36f), new Vector3(w + 0.2f, 0.4f, 0.42f), WoodD, 0.18f, false); for (int i = 0; i < 4; i++) Goods.Shrub(g, new Vector3(-w / 2 + 0.25f + i * (w - 0.5f) / 3, -h / 2 - 0.1f, -0.38f), 0.2f, 0.3f, i % 2 == 0 ? Leaf : LeafD, flowers.Value, 41 + i); }   // v0.9.4
-        if (grille) Grille(g, new Vector3(0, 0, -0.06f), w + 0.1f, h + 0.1f, White);
-        else
-        {   // v0.5: chunky rounded mullion cross + keystone header, so frames match the fat pipe-trim scale
-            Cyl(g, new Vector3(0, 0, -0.1f), 0.075f, h + 0.02f, Lt(frame, 0.25f), 0.07f, null, 12);
-            Cyl(g, new Vector3(0, h * 0.1f, -0.1f), 0.075f, w + 0.02f, Lt(frame, 0.25f), 0.07f, Q(0, 0, 90), 12);
-            if (!arch) { Block(g, new Vector3(0, h / 2 + 0.3f, -0.08f), new Vector3(w + 0.7f, 0.22f, 0.3f), Dk(frame, 0.92f), 0.1f, false); Block(g, new Vector3(0, h / 2 + 0.3f, -0.2f), new Vector3(0.36f, 0.4f, 0.22f), Lt(frame, 0.35f), 0.1f, false, 0, -1, -0.3f); }
+    {   // v0.9.6: real window: recessed reveal, thin frame with depth, mullions, sill, dim interior + curtains, soft glass streaks (no opaque sky slab, no glow sticker)
+        var g = Group(p, "sk_win", center); WinSpots.Add((g.position, -g.forward, g.right)); WinDim[g] = new Vector2(w, h); var om = PushM(0.5f);
+        int hs = Mathf.Abs(Mathf.RoundToInt(p.TransformPoint(center).x * 7.3f + p.TransformPoint(center).y * 3.1f + p.TransformPoint(center).z * 5.7f));
+        float rise = arch ? Mathf.Min(w / 2, 0.42f) : 0f, fb = 0.1f, dep = 0.13f;
+        Color inside = Color.Lerp(new Color(0.36f, 0.28f, 0.32f), new Color(0.5f, 0.4f, 0.34f), (hs % 5) / 4f);
+        Block(g, new Vector3(0, 0, 0.03f), new Vector3(w, h, 0.04f), inside, 0.01f, false);                                // room back wall (recess)
+        Block(g, new Vector3(0, h / 2 - 0.12f, 0.0f), new Vector3(w * 0.9f, 0.06f, 0.03f), new Color(1f, 0.82f, 0.6f), 0.01f, false);   // warm lit ceiling edge
+        foreach (int sx in new[] { -1, 1 }) Block(g, new Vector3(sx * w / 2, 0, -0.07f), new Vector3(0.03f, h, 0.2f), Dk(frame, 0.7f), 0.005f, false);   // reveal sides
+        Block(g, new Vector3(0, -h / 2, -0.07f), new Vector3(w, 0.03f, 0.2f), Dk(frame, 0.7f), 0.005f, false);
+        Color[] cc = { new Color(0.98f, 0.93f, 0.86f), new Color(0.95f, 0.82f, 0.86f), new Color(0.86f, 0.9f, 0.96f), new Color(0.95f, 0.9f, 0.72f) };
+        Color cu = cc[hs % 4]; float open = 0.26f + (hs % 3) * 0.05f;
+        if (hs % 5 == 4) { var bl = Block(g, new Vector3(0, h / 2 - h * 0.18f, -0.05f), new Vector3(w * 0.94f, h * 0.34f, 0.03f), cu, 0.01f, false); }   // half-drawn blind
+        else foreach (int sx in new[] { -1, 1 }) { var c = Block(g, new Vector3(sx * w * (0.5f - open / 2), 0.02f, -0.05f), new Vector3(w * open, h * 0.94f, 0.05f), cu, 0.02f, false, 0, 0.01f); c.name = "sk_curtain"; }
+        if (hs % 2 == 0) { float ix = w * 0.22f * ((hs % 4) - 1.5f) / 1.5f; Block(g, new Vector3(ix, -h / 2 + 0.12f, 0.0f), new Vector3(0.16f, 0.2f, 0.12f), Color.Lerp(inside, Color.black, 0.35f), 0.03f, false); Ball(g, new Vector3(ix, -h / 2 + 0.32f, 0.0f), new Vector3(0.26f, 0.22f, 0.1f), Color.Lerp(inside, new Color(0.2f, 0.3f, 0.2f), 0.6f), 8); }   // pot-plant silhouette on the inner sill
+        else Block(g, new Vector3(w * 0.25f, -h * 0.05f, 0.015f), new Vector3(w * 0.3f, h * 0.5f, 0.02f), Color.Lerp(inside, Color.black, 0.25f), 0.02f, false);   // bookcase silhouette
+        // frame: four bars with depth (not a pillow slab)
+        foreach (int sx in new[] { -1, 1 }) Block(g, new Vector3(sx * (w / 2 + fb / 2), 0, -0.15f), new Vector3(fb, h + fb * 2, dep), frame, 0.025f, false);
+        if (!arch) Block(g, new Vector3(0, h / 2 + fb / 2, -0.15f), new Vector3(w + fb * 2, fb, dep), frame, 0.025f, false);
+        Block(g, new Vector3(0, -h / 2 - fb / 2, -0.15f), new Vector3(w + fb * 2, fb, dep), frame, 0.025f, false);
+        // mullions + transom
+        Block(g, new Vector3(0, 0, -0.11f), new Vector3(0.05f, h, 0.06f), Lt(frame, 0.2f), 0.01f, false);
+        Block(g, new Vector3(0, h * 0.18f, -0.11f), new Vector3(w, 0.05f, 0.06f), Lt(frame, 0.2f), 0.01f, false);
+        // glass hint: one faint horizontal sky sheen across the upper pane (no diagonal sticks)
+        Block(g, new Vector3(0, h * 0.36f, -0.09f), new Vector3(w * 0.96f, h * 0.2f, 0.004f), Color.Lerp(inside, new Color(0.88f, 0.86f, 0.98f), 0.35f), 0.002f, false);
+        Block(g, new Vector3(0, h / 2 - 0.06f, -0.06f), new Vector3(w * 0.96f, 0.1f, 0.04f), Dk(cu, 0.9f), 0.02f, false);   // curtain valance
+        if (hs % 3 != 2) { var lp = Art.Prim(PrimitiveType.Sphere, g, new Vector3(w * 0.15f * ((hs % 2) * 2 - 1), h * 0.22f, 0.0f), Vector3.one * Mathf.Min(0.16f, w * 0.08f), WinLampM ?? (WinLampM = Art.Emissive(new Color(1f, 0.8f, 0.55f), 0.9f))); lp.name = "sk_winlamp"; }   // dim pendant inside
+        // sill + lintel
+        Block(g, new Vector3(0, -h / 2 - fb - 0.04f, -0.16f), new Vector3(w + 0.3f, 0.08f, 0.22f), Lt(frame, 0.15f), 0.02f, false);
+        Block(g, new Vector3(0, -h / 2 - fb - 0.11f, -0.2f), new Vector3(w + 0.2f, 0.06f, 0.16f), Dk(frame, 0.85f), 0.01f, false);
+        if (arch)
+        {   // shallow segmental arch top: recess + glass hint + frame ring, flattened so it never climbs into the floor above
+            var a1 = Cyl(g, new Vector3(0, h / 2, 0.03f), w / 2, 0.04f, inside, 0.01f, Q(90, 0, 0), 20); a1.transform.localScale = new Vector3(1, 1, rise / (w / 2));
+            var rg = Ring(g, new Vector3(0, h / 2, -0.15f), Quaternion.identity, w / 2 + fb / 2, fb * 0.6f, frame, 24); rg.transform.localScale = new Vector3(1, rise / (w / 2), 1);
+            Block(g, new Vector3(0, h / 2, -0.15f), new Vector3(w + fb * 2, 0.05f, dep * 0.8f), frame, 0.01f, false);
         }
+        else Block(g, new Vector3(0, h / 2 + fb + 0.07f, -0.14f), new Vector3(w + 0.36f, 0.14f, 0.18f), Dk(frame, 0.92f), 0.03f, false);
+        if (flowers.HasValue) { Block(g, new Vector3(0, -h / 2 - 0.36f, -0.36f), new Vector3(w * 0.9f, 0.3f, 0.22f), WoodD, 0.03f, false); for (int i = 0; i < 4; i++) Goods.Shrub(g, new Vector3(-w * 0.45f + 0.2f + i * (w * 0.9f - 0.4f) / 3, -h / 2 - 0.21f, -0.36f), 0.17f, 0.24f, i % 2 == 0 ? Leaf : LeafD, flowers.Value, 41 + i + hs % 7); }
+        if (grille) Grille(g, new Vector3(0, 0, -0.08f), w + 0.1f, h + 0.1f, White);
         MatA = om; return g;
     }
     public static Transform Awning(Transform p, Vector3 center, float w, float depth, Color a, Color b)
@@ -328,8 +353,7 @@ public static class SoftProps
             else
             {
                 if (rng.Next(2) == 0 && f == floors - 1) RoundWin(fr, new Vector3(0, y, -0.05f), Mathf.Min(1.1f, w * 0.2f), trim, Mathf.Abs(Mathf.RoundToInt(pos.x * 0.37f + pos.z)) % 3 == 0);
-                else Win(fr, new Vector3(0, y, -0.05f), Mathf.Min(2.8f, w * 0.48f), 1.75f, trim, f % 2 == 0, rng.Next(2) == 0 ? (Color?)new[] { PinkD, ButterD, LavD }[rng.Next(3)] : null);
-                Block(fr, new Vector3(0, y - 1.05f, -0.2f), new Vector3(Mathf.Min(2.4f, w * 0.42f), 0.16f, 0.42f), White, 0.07f, false);   // window sill
+                else Win(fr, new Vector3(0, y, -0.05f), Mathf.Min(2.2f, w * 0.42f), 1.6f, trim, f % 2 == 0, rng.Next(2) == 0 ? (Color?)new[] { PinkD, ButterD, LavD }[rng.Next(3)] : null);   // v0.9.6: own sill (old extra slab overlapped it)
             }
         }
         Craft(g, fr, pos, w, d, H, floors, gh, fh, wall, trim, acc, gt);
@@ -365,7 +389,7 @@ public static class SoftProps
         Block(fr, new Vector3(lx, 2.6f, -0.1f), new Vector3(0.1f, 0.1f, 0.3f), GreyD, 0.03f, false);
         var om3 = PushM(0.5f); Lath(fr, new Vector3(lx, 2.36f, -0.34f), new[] { new Vector2(0, 0), new Vector2(0.1f, 0), new Vector2(0.13f, 0.26f), new Vector2(0.17f, 0.28f), new Vector2(0.06f, 0.36f), new Vector2(0, 0.37f) }, Lt(ButterD, 0.4f), 12); Cyl(fr, new Vector3(lx, 2.66f, -0.34f), 0.19f, 0.03f, GreyD, 0.01f, null, 12); Cyl(fr, new Vector3(lx, 2.36f, -0.34f), 0.11f, 0.03f, GreyD, 0.01f, null, 10); MatA = om3;   // v0.9.5 lantern shade (was a ball)
         // planters hugging the base
-        foreach (int s in new[] { -1, 1 }) if (r.Next(3) > 0) { Block(fr, new Vector3(s * (w / 2 - 0.65f), 0.32f, -0.45f), new Vector3(0.8f, 0.45f, 0.55f), Lt(trim, 0.3f), 0.12f, false); { var lc = new[] { LeafD, Leaf }[r.Next(2)]; float px = s * (w / 2 - 0.65f); Cyl(fr, new Vector3(px, 0.555f, -0.45f), 0.36f, 0.02f, Dk(trim, 0.6f), 0.005f, Q(0, 0, 0), 8); Goods.Shrub(fr, new Vector3(px - 0.17f, 0.56f, -0.45f), 0.24f, 0.4f, lc, null, 11 + s); Goods.Shrub(fr, new Vector3(px + 0.17f, 0.56f, -0.45f), 0.22f, 0.36f, Dk(lc, 0.92f), Rose, 17 + s); } }
+        foreach (int s in new[] { -1, 1 }) if (r.Next(3) > 0) { Block(fr, new Vector3(s * (w / 2 - 0.65f), 0.32f, -0.45f), new Vector3(0.8f, 0.45f, 0.55f), Lt(trim, 0.3f), 0.04f, false); { var lc = new[] { LeafD, Leaf }[r.Next(2)]; float px = s * (w / 2 - 0.65f); Cyl(fr, new Vector3(px, 0.555f, -0.45f), 0.36f, 0.02f, Dk(trim, 0.6f), 0.005f, Q(0, 0, 0), 8); Goods.Shrub(fr, new Vector3(px - 0.17f, 0.56f, -0.45f), 0.24f, 0.4f, lc, null, 11 + s); Goods.Shrub(fr, new Vector3(px + 0.17f, 0.56f, -0.45f), 0.22f, 0.36f, Dk(lc, 0.92f), Rose, 17 + s); } }
         // AC units + laundry pole on upper floors
         int side = r.Next(2) == 0 ? -1 : 1; bool laundry = false;
         for (int f = 1; f < floors; f++)
@@ -440,14 +464,12 @@ public static class SoftProps
         // 1) windows: reveals (depth) + louvred shutters + hinges
         foreach (Transform wn in fr) if (wn.name == "sk_win")
         {
-            var b = Art.RenderBounds(wn.gameObject); var lc = fr.InverseTransformPoint(b.center); float ww = Mathf.Min(b.size.x, 3.2f) - 0.5f, wh = b.size.y - 0.75f; if (ww < 0.6f || wh < 0.6f) continue;
-            foreach (int s in new[] { -1, 1 }) Block(fr, new Vector3(lc.x + s * (ww / 2 - 0.02f), lc.y, -0.02f), new Vector3(0.08f, wh, 0.22f), Dk(trim, 0.85f), 0.01f, false);   // jamb reveals
-            Block(fr, new Vector3(lc.x, lc.y + wh / 2 - 0.02f, -0.02f), new Vector3(ww, 0.08f, 0.22f), Dk(trim, 0.8f), 0.01f, false);
+            if (!WinDim.TryGetValue(wn, out var wd)) continue; var lc = wn.localPosition; float ww = wd.x + 0.2f, wh = wd.y; if (ww < 0.6f || wh < 0.6f) continue;   // v0.9.6: true opening size; Win() has its own frame/reveal now
             if (T == 0 && r.Next(2) == 0) continue;
             float sw = Mathf.Min(0.75f, ww * 0.42f);
             foreach (int s in new[] { -1, 1 })
             {
-                float sx = lc.x + s * (ww / 2 + 0.32f + sw / 2), sy = lc.y - 0.05f, sh = wh + 0.2f;
+                float sx = lc.x + s * (ww / 2 + 0.03f + sw / 2), sy = lc.y, sh = wh + 0.2f;   // hugs the frame, hinged on its inner edge
                 bool hit = false;   // v0.9.5: no shutter where it would overlap a door / its frame / the building edge
                 foreach (var dr in doorRects) if (Mathf.Abs(sx - dr.x) < sw / 2 + dr.z + 0.08f && sy - sh / 2 < dr.y) hit = true;
                 if (Mathf.Abs(sx) + sw / 2 > w / 2 - 0.4f) hit = true;
@@ -660,7 +682,7 @@ public static class SoftProps
     {
         var g = Group(p, "sk_plant", pos);
         Lath(g, Vector3.zero, new[] { new Vector2(0, 0), new Vector2(0.18f, 0), new Vector2(0.24f, 0.35f), new Vector2(0, 0.35f) }.Scale(s), Coral, 14);
-        for (int i = 0; i < 6; i++) { float a = i * 1.05f; var l = Ball(g, new Vector3(Mathf.Cos(a) * 0.18f, 0.6f + (i % 3) * 0.12f, Mathf.Sin(a) * 0.18f) * s, new Vector3(0.14f, 0.42f, 0.04f) * s, i % 2 == 0 ? Leaf : LeafD, 8, false, null, "sk_plant", 0.02f); l.transform.localRotation = Q(0, -a * Mathf.Rad2Deg, 35); }   // v0.9.4: thin blades
+        for (int i = 0; i < 6; i++) { float a = i * 1.05f; var l = Ball(g, new Vector3(Mathf.Cos(a) * 0.18f, 0.6f + (i % 3) * 0.12f, Mathf.Sin(a) * 0.18f) * s, new Vector3(0.14f, 0.42f, 0.04f) * s, i % 2 == 0 ? Leaf : LeafD, 8, false, null, "sk_leaf", 0.02f); l.transform.localRotation = Q(0, -a * Mathf.Rad2Deg, 35); }   // v0.9.4: thin blades
         var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.5f, 1f, 0.5f) * s; bc.center = new Vector3(0, 0.5f * s, 0); return g;
     }
     public static Transform FloorLamp(Transform p, Vector3 pos)

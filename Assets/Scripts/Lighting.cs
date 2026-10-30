@@ -175,7 +175,8 @@ public static class LightQ
         }
         foreach (var r in root.GetComponentsInChildren<Renderer>().Where(x => x.name.StartsWith("glass")).ToList())
         {
-            if (w >= 90) break; var b = r.bounds; if (b.size.y < 0.3f) continue;
+            break; var b = r.bounds;   // v0.9.6: window glow quads read as flat stickers -> off (interiors are modelled now)
+             if (b.size.y < 0.3f) continue;
             if (!glowRoot) { glowRoot = new GameObject("lq_glows").transform; glowRoot.SetParent(root.root, false); }
             if (glowed.Contains(r.transform)) continue; glowed.Add(r.transform);
             var q = Art.Prim(PrimitiveType.Quad, glowRoot, Vector3.zero, Vector3.one * Mathf.Max(b.size.x, b.size.y, b.size.z) * 1.5f, wg); q.name = "lq_glow"; q.transform.position = b.center;

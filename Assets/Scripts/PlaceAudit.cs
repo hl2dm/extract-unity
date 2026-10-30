@@ -8,7 +8,7 @@ using UnityEngine;
 public static class PlaceAudit
 {
     public static readonly HashSet<string> PropN = new HashSet<string> { "sk_tree", "sk_lamp", "sk_scooter", "RideScooter", "sk_hydrant", "sk_bin", "sk_mailbox", "sk_pot", "sk_bench", "sk_cone", "slide",
-        "sk_sofa", "sk_bed", "sk_rtable", "sk_tv", "sk_stool", "sk_petbed", "sk_toys", "sk_tank", "sk_tub", "sk_toilet", "sk_piggy", "sk_bear", "sk_plant", "sk_flamp", "sk_bush" };
+        "sk_sofa", "sk_bed", "sk_rtable", "sk_tv", "sk_stool", "sk_petbed", "sk_toys", "sk_tank", "sk_tub", "sk_toilet", "sk_piggy", "sk_bear", "sk_plant", "sk_flamp", "sk_bush", "sk_planter" };
     static readonly HashSet<string> Heavy = new HashSet<string> { "sk_tree", "sk_lamp", "slide", "sk_tub", "sk_toilet", "sk_bed", "sk_sofa" };
     static readonly HashSet<string> FacN = new HashSet<string> { "sk_win", "sk_roundwin", "sk_awning", "sk_ac", "sk_shutter" };
     struct Fac { public Transform root; public string kind; public Bounds b; }

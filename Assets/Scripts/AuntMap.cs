@@ -459,10 +459,19 @@ public static partial class LevelGen
 
         // street furniture
         for (float x = -50; x <= 50; x += 16) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, 4.6f), 180);
-        for (float x = -46; x <= 46; x += 16) foreach (int sd in new[] { -1, 1 }) { if (sd < 0 && x > 25 && x < 43) continue; float px = x + (sd < 0 ? 4 : 0); if (px > 6 && px < 13) continue; if (sd > 0 && (Mathf.Abs(px + 47.5f) < 3 || Mathf.Abs(px + 13.5f) < 3)) continue;   // sidewalk planters
-            Block(root, new Vector3(px, 0.42f, sd * 4.75f), new Vector3(0.9f, 0.6f, 0.6f), sd > 0 ? Coral : Lite(Sky, 0.1f), 0.2f);
-            Goods.Shrub(root, new Vector3(px - 0.2f, 0.72f, sd * 4.75f), 0.28f, 0.45f, Leaf, null, (int)px * 3 + sd); Goods.Shrub(root, new Vector3(px + 0.18f, 0.72f, sd * 4.75f), 0.26f, 0.5f, MintD, k2c(px), (int)px * 5 + sd);
+        int plOld = 0, plNow = 0;
+        for (float x = -46; x <= 46; x += 16) foreach (int sd in new[] { -1, 1 }) { if (sd < 0 && x > 25 && x < 43) continue; float px = x + (sd < 0 ? 4 : 0);
+            bool lampHit(float q) { for (float lx = (sd > 0 ? -50 : -42); lx <= 50; lx += 16) if ((sd > 0 || lx < 27 || lx > 41) && Mathf.Abs(q - lx) < 1.3f) return true; return false; }
+            if (lampHit(px)) { plOld++; px = x + (sd < 0 ? 12 : 8); if (lampHit(px)) continue; }   // v0.9.6: planters were spawned exactly on the -z lamp posts
+            if (px > 6 && px < 13) continue; if (sd > 0 && (Mathf.Abs(px + 47.5f) < 3 || Mathf.Abs(px + 13.5f) < 3)) continue;   // sidewalk planters
+            if (lampHit(px)) plNow++;
+            var pg = new GameObject("sk_planter").transform; pg.SetParent(root, false); pg.localPosition = new Vector3(px, 0.12f, sd * 4.75f);
+            var pc = sd > 0 ? Coral : Lite(Sky, 0.1f);
+            Block(pg, new Vector3(0, 0.24f, 0), new Vector3(0.9f, 0.48f, 0.55f), pc, 0.04f); Block(pg, new Vector3(0, 0.5f, 0), new Vector3(0.98f, 0.06f, 0.63f), Lite(pc, 0.25f), 0.02f); Block(pg, new Vector3(0, 0.49f, 0), new Vector3(0.82f, 0.04f, 0.47f), WoodD, 0.01f);   // trough + rim + soil
+            foreach (int fx in new[] { -1, 1 }) Block(pg, new Vector3(fx * 0.36f, 0.02f, 0), new Vector3(0.12f, 0.04f, 0.5f), Color.Lerp(pc, Color.black, 0.2f), 0.01f);
+            Goods.Shrub(pg, new Vector3(-0.2f, 0.5f, 0), 0.26f, 0.42f, Leaf, null, (int)px * 3 + sd); Goods.Shrub(pg, new Vector3(0.18f, 0.5f, 0), 0.24f, 0.46f, MintD, k2c(px), (int)px * 5 + sd);
             }
+        Debug.Log("[placeaudit] sidewalk planters on lamp posts: before " + plOld + " after " + plNow);
         for (float x = -42; x <= 50; x += 16) if (x < 27 || x > 41) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, -4.6f), 0);
         Color[] sc = { Mint, Pink, Butter, Sky, Lav, Coral };
         for (int i = 0; i < 4; i++) SoftProps.Scooter(root, new Vector3(8.5f + i * 1.0f, 0.12f, 5.35f), 180 + (i % 2) * 8, sc[i]);
