@@ -70,7 +70,13 @@ public static class Goods
         if (!Lo) for (int i = -1; i <= 1; i++) Block(p, b + Vector3.up * L * 0.4f + r * new Vector3(0, 0, i * L * 0.26f), new Vector3(L * 0.36f, 0.015f, 0.03f), CrustD, 0.006f, false, yaw + 25);
     }
     static void Croissant(Transform p, Vector3 b, float s) { var g = Ring(p, b + Vector3.up * s * 0.16f, Q(90, 0, 0), s * 0.32f, s * 0.15f, Crust, 10); g.transform.localScale = new Vector3(1, 1, 0.75f); }
-    static void Book(Transform p, Vector3 b, float h, float th, float yaw, Color c) { Block(p, b + Vector3.up * h / 2, new Vector3(th, h, h * 0.72f), c, 0.008f, false, yaw); }
+    static void Book(Transform p, Vector3 b, float h, float th, float yaw, Color c)
+    {   // v0.9.9 plain block + illustrated spine on both narrow faces (was a bare coloured block)
+        Block(p, b + Vector3.up * h / 2, new Vector3(th, h, h * 0.72f), c, 0.008f, false, yaw);
+        var r = Q(0, yaw, 0); string art = "art_sp" + (Mathf.Abs(Mathf.RoundToInt(b.x * 37 + b.z * 53 + h * 100)) % 8);
+        SoftProps.Picture(p, b + Vector3.up * h / 2 + r * new Vector3(0, 0, -h * 0.36f - 0.002f), r, th * 0.96f, h * 0.96f, art);
+        SoftProps.Picture(p, b + Vector3.up * h / 2 + r * new Vector3(0, 0, h * 0.36f + 0.002f), r * Q(0, 180, 0), th * 0.96f, h * 0.96f, art);
+    }
     static void Jar(Transform p, Vector3 b, float s, Color content)
     {
         var g = Cyl(p, b + Vector3.up * s * 0.5f, s * 0.3f, s, Lt(Glassy, 0.2f), s * 0.08f, null, 12, false, "sk_jar"); T(g, MatK.Glass);
@@ -80,7 +86,8 @@ public static class Goods
     static void Can(Transform p, Vector3 b, float s, Color label)
     {
         var g = Cyl(p, b + Vector3.up * s * 0.5f, s * 0.28f, s, Grey, 0.01f, null, 12, false, "sk_can"); T(g, MatK.Metal);
-        Cyl(p, b + Vector3.up * s * 0.5f, s * 0.285f, s * 0.6f, label, 0.005f, null, 12, false, "sk_label");
+        Cyl(p, b + Vector3.up * s * 0.5f, s * 0.285f, s * 0.6f, Lt(label, 0.5f), 0.005f, null, 12, false, "sk_label");
+        SoftProps.Picture(p, b + Vector3.up * s * 0.5f + new Vector3(0, 0, s * 0.29f), Q(0, 180, 0), s * 0.42f, s * 0.58f, "art_pk3");   // v0.9.9 illustrated can label
     }
     static void Bottle(Transform p, Vector3 b, float s, Color c)
     {
@@ -145,10 +152,8 @@ public static class Goods
     {   // tall carton: body, white label band, cookie picture, darker top flap seam
         float w = h * 0.62f, d = h * 0.3f; var r = Q(0, yaw, 0);
         var g = Block(p, b + Vector3.up * h / 2, new Vector3(w, h, d), c, 0.012f, false, yaw); T(g, MatK.Plastic);
-        Block(p, b + Vector3.up * h * 0.5f + r * new Vector3(0, 0, d / 2 + 0.002f), new Vector3(w * 0.96f, h * 0.36f, 0.006f), Paper, 0.002f, false, yaw);
-        ChipCookie(p, b + Vector3.up * h * 0.5f + r * new Vector3(0, 0, d / 2 + 0.008f), Mathf.Min(w * 0.4f, h * 0.17f), r * Q(90, 0, 0));
-        if (!Lo) { Block(p, b + Vector3.up * (h - 0.01f), new Vector3(w * 1.01f, 0.012f, d * 1.01f), Dk(c, 0.8f), 0.003f, false, yaw);
-                   Block(p, b + Vector3.up * h * 0.82f + r * new Vector3(0, 0, d / 2 + 0.003f), new Vector3(w * 0.7f, h * 0.08f, 0.005f), Dk(c, 0.7f), 0.002f, false, yaw); }
+        SoftProps.Picture(p, b + Vector3.up * h * 0.5f + r * new Vector3(0, 0, d / 2 + 0.003f), r * Q(0, 180, 0), w * 0.94f, h * 0.94f, "art_pk0");   // v0.9.9 illustrated box front (was label band + primitive cookie)
+        if (!Lo) Block(p, b + Vector3.up * (h - 0.01f), new Vector3(w * 1.01f, 0.012f, d * 1.01f), Dk(c, 0.8f), 0.003f, false, yaw);
     }
     public static void ChipCookie(Transform p, Vector3 c, float R, Quaternion face, bool choc = false)
     {   // v0.9.5 one recognisable cookie: golden disc, darker rim, choc chips on the visible face (local +y of face)
@@ -170,7 +175,7 @@ public static class Goods
         var g = Cyl(p, b + Vector3.up * h * 0.45f, R, h * 0.9f, c, 0.01f, null, 16, false, "sk_tin"); T(g, MatK.Metal);
         Cyl(p, b + Vector3.up * h * 0.45f, R * 1.005f, h * 0.32f, Paper, 0.004f, null, 16);
         var l = Cyl(p, b + Vector3.up * h * 0.94f, R * 1.05f, h * 0.12f, Dk(c, 0.85f), 0.012f, null, 16); T(l, MatK.Metal);
-        if (!Lo) Cyl(p, b + Vector3.up * (h + 0.004f), R * 0.5f, 0.008f, Cookie, 0.003f, null, 10);
+        SoftProps.Picture(p, b + Vector3.up * (h + 0.002f), Q(90, 0, 0), R * 2.0f, R * 2.0f, "art_pk2");   // v0.9.9 illustrated lid (was a cookie disc)
     }
     public static void CookieJar(Transform p, Vector3 b, float s)
     {   // clear jar with a visible stack of cookies + lid knob
@@ -185,7 +190,7 @@ public static class Goods
         float w = h * 0.7f; var r = Q(0, yaw, 0);
         var g = Block(p, b + Vector3.up * h / 2, new Vector3(w, h * 0.86f, h * 0.24f), c, h * 0.1f, false, yaw); T(g, MatK.Plastic);
         foreach (float y in new[] { 0.03f, 0.97f }) Block(p, b + Vector3.up * h * y, new Vector3(w * 1.02f, h * 0.07f, 0.012f), Dk(c, 0.85f), 0.003f, false, yaw);
-        Block(p, b + Vector3.up * h * 0.5f + r * new Vector3(0, 0, h * 0.12f), new Vector3(w * 0.55f, h * 0.3f, 0.006f), Paper, 0.002f, false, yaw);
+        SoftProps.Picture(p, b + Vector3.up * h * 0.5f + r * new Vector3(0, 0, h * 0.125f), r * Q(0, 180, 0), w * 0.9f, h * 0.84f, "art_pk1");   // v0.9.9 illustrated bag front
     }
     public static void Crackers(Transform p, Vector3 b, float s, Color wrap)
     {   // sleeve of square crackers lying flat, stacked two rolls
@@ -231,12 +236,12 @@ public static class Goods
         float F() => (float)r2.NextDouble();
         for (int k = 0; k < nc; k++)
         {
-            float a = k * 6.283f / nc + F() * 0.6f, rr = (0.22f + 0.14f * F()) * s, hy = (0.18f + 0.3f * F()) * s;
+            float a = k * 6.283f / nc + F() * 0.6f, rr = (0.22f + 0.14f * F()) * s, hy = (0.1f + 0.2f * F()) * s;   // v0.9.9 clumps sit low and overlap, no bare stick stems showing
             var c = b + new Vector3(Mathf.Cos(a) * rr, hy, Mathf.Sin(a) * rr);
-            Cyl(p, (b + c) * 0.5f, 0.02f * s, hy, WoodD, 0.005f, Q(0, 0, (a * 57f) % 20 - 10), 5);   // stem
             Shrub(p, c, (0.34f + 0.1f * F()) * s, (0.3f + 0.1f * F()) * s, k % 3 == 0 ? Lt(leaf, 0.08f) : Color.Lerp(leaf, Dk(leaf, 0.8f), F()), null, Mathf.RoundToInt(b.x * 7 + b.z * 3) + k);
         }
         Shrub(p, b + Vector3.up * 0.42f * s, 0.42f * s, 0.36f * s, Lt(leaf, 0.05f), null, Mathf.RoundToInt(b.z * 11) + 99);
+        if (!Lo) for (int k = 0; k < 5; k++) { float a = k * 1.2566f + 0.6f; Shrub(p, b + new Vector3(Mathf.Cos(a) * 0.3f * s, 0.02f * s, Mathf.Sin(a) * 0.3f * s), 0.3f * s, 0.22f * s, Dk(leaf, 0.82f), null, Mathf.RoundToInt(b.x * 5) + 200 + k); }   // v0.9.9 dark skirt hides the base
         if (flower.HasValue) for (int i = 0; i < 7; i++)
         {   // keep the caller's rng draw count identical (2 per flower)
             float a = (float)rng.NextDouble() * 6.28f, y = (0.45f + (float)rng.NextDouble() * 0.3f) * s;

@@ -64,11 +64,12 @@ public static class BaseHub
         SoftKit.Block(chair, new Vector3(0, 0.85f, -0.22f), new Vector3(0.55f, 0.6f, 0.08f), SoftKit.Rose, 0.08f, false);
         foreach (int sx in new[] { -1, 1 }) foreach (int sz in new[] { -1, 1 }) SoftKit.Cyl(chair, new Vector3(sx * 0.22f, 0.22f, sz * 0.2f), 0.035f, 0.44f, SoftKit.White, 0.015f);
         var poster = SoftKit.Group(root, "map_poster", new Vector3(0, 1.95f, -D / 2 + 0.13f), 0);
-        SoftKit.Block(poster, Vector3.zero, new Vector3(1.7f, 1.05f, 0.05f), SoftKit.Wood, 0.04f, false);
-        SoftKit.Block(poster, new Vector3(0, 0, 0.03f), new Vector3(1.58f, 0.93f, 0.02f), SoftKit.Cream, 0.006f, false);
-        SoftProps.Picture(poster, new Vector3(0, -0.04f, 0.042f), Quaternion.Euler(0, 180, 0), 1.44f, 0.81f, "art_map");   // v0.9.8 illustrated town map (was coloured blocks)
-        SoftKit.Block(poster, new Vector3(0.3f, 0.05f, 0.05f), new Vector3(0.04f, 0.04f, 0.02f), SoftKit.Rose, 0.003f, false, 0, -1, 0.9f);   // map pin
-        SoftKit.Text(poster, new Vector3(0, 0.38f, 0.07f), Quaternion.Euler(0, 180, 0), "小鎮地圖", 0.025f, SoftKit.Plum);
+        SoftKit.Block(poster, Vector3.zero, new Vector3(2.5f, 1.48f, 0.05f), SoftKit.Wood, 0.04f, false);
+        SoftKit.Block(poster, new Vector3(0, 0, 0.03f), new Vector3(2.38f, 1.36f, 0.02f), SoftKit.Cream, 0.006f, false);
+        { var mq = SoftProps.Picture(poster, new Vector3(0, -0.08f, 0.042f), Quaternion.Euler(0, 180, 0), 2.16f, 1.2f, "art_map"); var mr = mq.GetComponent<MeshRenderer>(); if (mr) mr.material.SetColor("_BaseColor", new Color(1f, 0.97f, 0.92f));   // v0.9.9 bigger + full-brightness town map
+          var sl = new GameObject("map_light").AddComponent<Light>(); sl.transform.SetParent(poster, false); sl.transform.localPosition = new Vector3(0, 0.9f, 0.9f); sl.transform.localRotation = Quaternion.Euler(50, 180, 0); sl.type = LightType.Spot; sl.spotAngle = 80; sl.range = 3.5f; sl.intensity = 2.2f; sl.color = new Color(1f, 0.93f, 0.82f); sl.shadows = LightShadows.None; }   // v0.9.8 illustrated town map (was coloured blocks)
+        SoftKit.Block(poster, new Vector3(0.45f, 0.05f, 0.05f), new Vector3(0.04f, 0.04f, 0.02f), SoftKit.Rose, 0.003f, false, 0, -1, 0.9f);   // map pin
+        SoftKit.Text(poster, new Vector3(0, 0.61f, 0.07f), Quaternion.Euler(0, 180, 0), "小鎮地圖", 0.03f, SoftKit.Plum);
         Station(root, "deploy", "書桌上的地圖：出發去玩", new Vector3(0, 0.6f, -D / 2 + 0.55f), new Vector3(1.8f, 1.2f, 0.9f), 1.8f);
         var chest = SoftKit.Group(root, "toychest", new Vector3(-W / 2 + 0.55f, 0.02f, -1.2f), 90);
         SoftKit.Block(chest, new Vector3(0, 0.33f, 0), new Vector3(1.4f, 0.64f, 0.8f), SoftKit.Coral, 0.14f, true, 0, 0.02f);

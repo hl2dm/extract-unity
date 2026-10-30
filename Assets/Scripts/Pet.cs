@@ -100,7 +100,7 @@ public class Pet : MonoBehaviour
         p.cc = root.AddComponent<CharacterController>(); p.cc.height = h; p.cc.radius = 0.25f; p.cc.center = Vector3.up * (h * 0.5f + 0.02f); p.cc.stepOffset = 0.2f;
         // floating status mark ("?" / "!" / zzz)
         var mk = new GameObject("mark"); mk.transform.SetParent(root.transform, false); mk.transform.localPosition = Vector3.up * (h + 0.45f);
-        p.mark = mk.AddComponent<TextMesh>(); p.mark.font = Art.FontBold; p.mark.GetComponent<MeshRenderer>().sharedMaterial = Art.WorldFontMat; p.mark.characterSize = 0.06f; p.mark.fontSize = 64; p.mark.anchor = TextAnchor.MiddleCenter; p.mark.text = "";
+        p.mark = mk.AddComponent<TextMesh>(); p.mark.font = Art.FontBold; p.mark.GetComponent<MeshRenderer>().sharedMaterial = Art.WorldFontMat; p.mark.characterSize = 0.04f; p.mark.fontSize = 64; p.mark.anchor = TextAnchor.MiddleCenter; p.mark.text = "";
         mk.AddComponent<Billboard2>();
         All.Add(p); return p;
     }
@@ -197,8 +197,8 @@ public class Pet : MonoBehaviour
         // status mark
         if (mark)
         {
-            string s = st == St.Sleep ? "<color=#4a7fb5>z z z</color>" : st == St.Investigate ? "<color=#b8861a>?</color>" : st == St.Notice || st == St.Chase ? "<color=#ff5a5a>!</color>" : st == St.Lured ? "<color=#c2508e>♥</color>" : st == St.Flee && carried != null ? "<color=#d97a2a>嘿嘿</color>" : "";
-            mark.richText = true; mark.text = s; mark.transform.localPosition = Vector3.up * ((dog ? 0.75f : 0.55f) + 0.45f + 0.05f * Mathf.Sin(Time.time * 4));
+            string s = st == St.Sleep ? "<size=40><color=#8fb3dc>z</color></size><size=52><color=#7aa3d2>z</color></size><color=#6a94c8>z</color>" : st == St.Investigate ? "<color=#b8861a>?</color>" : st == St.Notice || st == St.Chase ? "<color=#ff5a5a>!</color>" : st == St.Lured ? "<color=#c2508e>♥</color>" : st == St.Flee && carried != null ? "<color=#d97a2a>嘿嘿</color>" : "";
+            mark.richText = true; mark.text = s; mark.characterSize = st == St.Sleep ? 0.022f : 0.04f; mark.transform.localPosition = Vector3.up * ((dog ? 0.75f : 0.55f) + 0.45f + 0.05f * Mathf.Sin(Time.time * 4));
         }
     }
 

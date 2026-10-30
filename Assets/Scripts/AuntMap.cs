@@ -254,7 +254,7 @@ public static partial class LevelGen
         Cyl(h, new Vector3(-6, FY + 2.88f, -0.05f), 0.16f, 4.4f, Lite(Grey, 0.4f), 0.05f, Quaternion.Euler(0, 0, 90), 14);
         SoftProps.Awning(h, new Vector3(0, FY + 3.2f, -0.15f), 2.4f, 0.8f, Mint, White);
         foreach (float x in new[] { -2.3f, -1.4f, 1.4f, 2.3f, 7.7f, 8.6f }) SoftProps.FlowerPot(h, new Vector3(x, FY, -0.42f), x < 0 ? Coral : Sky, x > 5 ? ButterD : Rose, 0.9f);
-        SoftProps.Mailbox(h, new Vector3(-2.9f, FY, -0.55f), 180);
+        SoftProps.Mailbox(h, new Vector3(-3.85f, FY, -0.75f), 180);   // r3: moved clear of the door pillar
         SoftProps.Scooter(h, new Vector3(3.9f, FY, -0.8f), 90, Mint);
         SoftProps.Bush(h, new Vector3(-9.4f, FY, -0.6f), 0.9f, Leaf, Rose);
         SoftProps.Bush(h, new Vector3(9.4f, FY, -0.6f), 0.9f, Leaf, ButterD);

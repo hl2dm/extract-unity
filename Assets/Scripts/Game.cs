@@ -496,6 +496,9 @@ public class Game : MonoBehaviour
               yield return CamShot(bc0 + new Vector3(-0.6f, 0.75f, 1.55f), bc0 + new Vector3(-1.35f, 0.12f, 2.35f), "L_toys", 0.6f);
               yield return CamShot(bc0 + new Vector3(1.4f, 1.3f, -1.6f), bc0 + new Vector3(2.0f, 0.6f, -3.8f), "L_shelf", 0.6f);
               yield return CamShot(bc0 + new Vector3(0.6f, 1.5f, 1.0f), bc0 + new Vector3(0.8f, 1.6f, 3.9f), "L_frames", 0.6f); }
+                { var ml = FindObjectsOfType<Light>(true).FirstOrDefault(l => l.name == "map_light"); if (ml) { var pt = ml.transform.parent; var fw = pt.forward; Debug.Log("[closeup] map @" + pt.position); yield return CamShot(pt.position + fw * 2.2f + Vector3.up * 0.1f, pt.position, "L_cu_map", 0.5f);
+                    yield return CamShot(pt.position + fw * 1.6f + pt.right * 1.4f + Vector3.up * 0.3f, pt.position, "L_cu_map_b", 0.5f); } }
+
             Deploy(0); for (float w = 0; w < 8 && state != St.Raid; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(2.5f); Pet.FreezeAll = 999;
             float E = player.camRig.localPosition.y;
             yield return Aim(new Vector3(-24f, 0.12f + E, -1.5f), new Vector3(-8f, 1.8f, 1.5f)); yield return new WaitForSeconds(0.6f); yield return Shot("L_street");
@@ -529,6 +532,24 @@ public class Game : MonoBehaviour
                     Debug.Log("[ref] shelf " + ck.label + " @" + ck.transform.position + " f " + f + " b " + b.center + " sz " + b.size + " eye " + eye); yield return Aim(eye, tgt); yield return new WaitForSeconds(0.8f); yield return CamShot(eye, tgt, "L_ref_shelf", 0.5f); }
                 var bu = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_bush").OrderBy(t => Physics.OverlapSphere(t.position + Vector3.up * 0.6f, 1.3f).Count(c => !c.transform.IsChildOf(t) && c.bounds.max.y > 0.3f) * 100 + Vector3.Distance(t.position, new Vector3(-14f, 0, 0))).FirstOrDefault();
                 if (bu) { var b = Art.RenderBounds(bu.gameObject); yield return CamShot(b.center + new Vector3(0.5f, 1.3f, -0.9f) * Mathf.Max(1f, b.size.x), b.center, "L_ref_bush", 0.5f); }
+                // v0.9.9 per-prop close-up audit: TV, pine, toy blocks, foliage, sign icon, menu easel, book shelf
+                var all = level.root.GetComponentsInChildren<Transform>(true);
+                foreach (var (nm, fs, tag) in new[] { ("sk_tv", 1f, "tv"), ("pine", 0f, "pine"), ("sk_toyblock", 1f, "blocks"), ("sk_bush", 0f, "bush2"), ("sk_signicon", -1f, "signicon"), ("sk_menuboard", -1f, "menu"), ("sk_lowshelf", 1f, "books"), ("sk_bench", 1f, "bench"), ("sk_scooter", 0f, "scooter"), ("sk_hydrant", 0f, "hydrant"), ("sk_mailbox", 1f, "mailbox"), ("sk_cone", 0f, "cone") })
+                {
+                    var cands = all.Where(t => t && t.gameObject.activeInHierarchy && (nm == "pine" ? (t.name == "sk_tree" && t.Find("pine_tag")) : t.name == nm)).OrderBy(t => Vector3.Distance(t.position, new Vector3(-14f, 0, 0))).Take(6).ToList();
+                    Transform pick = null; Vector3 eye = Vector3.zero, tgt = Vector3.zero;
+                    foreach (var c in cands)
+                    {
+                        var b = Art.RenderBounds(c.gameObject); float dist = Mathf.Clamp(b.size.magnitude * 1.4f, 1.6f, 6f);
+                        var f = fs == 0 ? new Vector3(0.6f, 0, -0.8f) : c.forward * fs; f.y = 0; f.Normalize();
+                        tgt = b.center; eye = b.center + f * dist + Vector3.up * Mathf.Min(0.5f, b.size.y * 0.3f);
+                        if (tag == "mailbox") { tgt = b.center + Vector3.up * 0.3f; eye = tgt + f * 1.9f + Vector3.left * 0.5f + Vector3.up * 0.15f; pick = c; break; }
+                        if (!Physics.Linecast(eye, tgt + f * (b.extents.magnitude * 0.6f))) { pick = c; break; }
+                    }
+                    if (pick == null && cands.Count > 0 && tag == "mailbox") { pick = cands[0]; var b = Art.RenderBounds(pick.gameObject); tgt = b.center + Vector3.up * 0.25f; eye = tgt + pick.forward * 1.15f + pick.right * 0.35f + Vector3.up * 0.15f; }
+                    if (pick == null && cands.Count > 0) { pick = cands[0]; var b = Art.RenderBounds(pick.gameObject); var f = fs == 0 ? new Vector3(0.6f, 0, -0.8f) : pick.forward * fs; f.y = 0; f.Normalize(); tgt = b.center; eye = b.center + f * Mathf.Clamp(b.size.magnitude * 1.4f, 1.6f, 6f) + Vector3.up * 0.3f; }
+                    if (pick) { Debug.Log("[closeup] " + tag + " @" + pick.position + " eye " + eye + " tgt " + tgt + " fwd " + pick.forward + " sz " + Art.RenderBounds(pick.gameObject).size); yield return CamShot(eye, tgt, "L_cu_" + tag, 0.5f); }
+                }
             }
             {   // v0.9.6 user's lamp+planter spot and 12 random street-level close-ups
                 yield return CamShot(new Vector3(-25.2f, 1.0f, -2.6f), new Vector3(-26f, 0.7f, -4.7f), "L_spot", 0.5f);

@@ -7,6 +7,7 @@ public static class ItemArt
     public static Sprite Pic(Item it) => it == null ? null : Art.Icon(it.ic);
     public static Sprite Pic(string name, string ic) => Art.Icon(ic);
     static readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
+    static Material blobM;
     public static Transform Build(Transform parent, Item it, out bool fallback)
     {
         fallback = false; var root = new GameObject("model").transform; root.SetParent(parent, false);
@@ -17,7 +18,8 @@ public static class ItemArt
         q.transform.SetParent(root, false); q.transform.localPosition = new Vector3(0, 0.28f, 0); q.transform.localScale = Vector3.one * 0.48f;
         var r = q.GetComponent<Renderer>(); r.sharedMaterial = m; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         q.AddComponent<Billboard>();
-        var sh = Art.Prim(PrimitiveType.Cylinder, root, new Vector3(0, 0.022f, 0), new Vector3(0.3f, 0.004f, 0.3f), Art.Unlit(new Color(0, 0, 0, 0.35f)));
+        if (!blobM) { var bs = Resources.Load<Shader>("Shaders/Blob") ?? Shader.Find("Soft/Blob"); if (bs) { blobM = new Material(bs) { name = "ItemBlob" }; blobM.SetColor("_BaseColor", new Color(0.28f, 0.2f, 0.14f, 0.3f)); } }
+        if (blobM) { var bq = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(bq.GetComponent<Collider>()); bq.name = "item_blob"; bq.transform.SetParent(root, false); bq.transform.localPosition = new Vector3(0, 0.012f, 0); bq.transform.localRotation = Quaternion.Euler(90, 0, 0); bq.transform.localScale = Vector3.one * 0.36f; var br = bq.GetComponent<Renderer>(); br.sharedMaterial = blobM; br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; br.receiveShadows = false; }   // v0.9.9 soft blob (opaque black cylinder read as a hole in the rug)
         return root;
     }
 }
