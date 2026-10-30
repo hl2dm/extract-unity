@@ -174,6 +174,7 @@ public static class Goods
     {   // round biscuit tin: body, label band, slightly wider lid with rim
         var g = Cyl(p, b + Vector3.up * h * 0.45f, R, h * 0.9f, c, 0.01f, null, 16, false, "sk_tin"); T(g, MatK.Metal);
         Cyl(p, b + Vector3.up * h * 0.45f, R * 1.005f, h * 0.32f, Paper, 0.004f, null, 16);
+        if (!Lo) SoftProps.CurvedLabel(p, b + Vector3.up * h * 0.45f, R * 1.012f, h * 0.31f, 140f, "art_lb3");
         var l = Cyl(p, b + Vector3.up * h * 0.94f, R * 1.05f, h * 0.12f, Dk(c, 0.85f), 0.012f, null, 16); T(l, MatK.Metal);
         SoftProps.Picture(p, b + Vector3.up * (h + 0.002f), Q(90, 0, 0), R * 2.0f, R * 2.0f, "art_pk2");   // v0.9.9 illustrated lid (was a cookie disc)
     }
@@ -183,6 +184,7 @@ public static class Goods
         var g = Cyl(p, b + Vector3.up * s * 0.45f, R, s * 0.9f, Lt(Glassy, 0.35f), s * 0.06f, null, 14, false, "sk_cjar"); T(g, MatK.Glass);
         int n = Lo ? 3 : 6; for (int i = 0; i < n; i++) Cyl(p, b + new Vector3(((i % 2) - 0.5f) * R * 0.15f, s * 0.05f + i * s * 0.12f, 0), R * 0.8f, s * 0.08f, i % 3 == 2 ? Choco : (i % 2 == 0 ? Cookie : CookieD), 0.01f, Q(0, 0, (i % 2) * 6 - 3), 12);
         var l = Cyl(p, b + Vector3.up * s * 0.94f, R * 1.04f, s * 0.08f, Coral, 0.01f, null, 14); T(l, MatK.Plastic);
+        if (!Lo) SoftProps.CurvedLabel(p, b + Vector3.up * s * 0.5f, R * 1.01f, s * 0.34f, 120f, ((int)(b.x * 7 + b.z * 3) & 1) == 0 ? "art_lb2" : "art_lb3");   // v0.9.12 jar label
         Ball(p, b + Vector3.up * s * 1.01f, new Vector3(R * 0.45f, s * 0.1f, R * 0.45f), Dk(Coral, 0.85f), 8, false, null, "sk_knob");
     }
     public static void Packet(Transform p, Vector3 b, float h, Color c, float yaw)
@@ -201,6 +203,7 @@ public static class Goods
     {   // PET bottle: clear body tinted by drink, label band, cap
         var g = Lath(p, b, new[] { new Vector2(0, 0), new Vector2(s * 0.15f, 0), new Vector2(s * 0.16f, s * 0.05f), new Vector2(s * 0.16f, s * 0.6f), new Vector2(s * 0.07f, s * 0.82f), new Vector2(s * 0.05f, s * 0.9f), new Vector2(0, s * 0.9f) }, Lt(liquid, 0.25f), 12, false, null, "sk_pet"); T(g, MatK.Glass);
         Cyl(p, b + Vector3.up * s * 0.38f, s * 0.165f, s * 0.2f, Paper, 0.004f, null, 12);
+        if (!Lo) SoftProps.CurvedLabel(p, b + Vector3.up * s * 0.38f, s * 0.168f, s * 0.19f, 150f, liquid.g > liquid.r ? "art_lb1" : "art_lb0");   // v0.9.12 printed wrap label
         Cyl(p, b + Vector3.up * s * 0.93f, s * 0.055f, s * 0.07f, White, 0.008f, null, 8);
     }
     public static void Figure(Transform p, Vector3 b, float s, Color c)

@@ -76,6 +76,52 @@ public static class SoftKit
         for (int j = 0; j < ny; j++) for (int i = 0; i < nx; i++) { int q = j * (nx + 1) + i; mb.Quad(q, q + 1, q + nx + 2, q + nx + 1); }
         return mb.Build("sk_pillow");
     }
+    /// v0.9.12 real cloth panel: pleated/wavy sheet hanging in XY (front faces -Z), gathered pencil-pleat heading at the top,
+    /// optional tie-back pinch toward one edge, rolled soft hem, two-sided with real thickness, fold valleys shaded darker.
+    public static Mesh DrapeMesh(float w, float h, int folds, float depth, Color c, int seed, float tieV = -1, float tieSide = 1, float pinch = 0.6f, float th = 0.012f)
+    {
+        var mb = new MB(); int nx = Mathf.Max(48, folds * 10), ny = 40; float e = 0.0015f;
+        System.Func<float, float, Vector3> P = (u, v) =>
+        {
+            float ph = u * folds * Mathf.PI * 2 + 0.7f * (1 - v) * Mathf.Sin(u * 5.3f + seed) + 0.25f * Mathf.Sin(v * 3.1f + u * 9f + seed * 0.3f);
+            float amp = depth * (0.75f + 0.35f * (1 - v)); if (v > 0.93f) amp *= 1.15f;
+            float x = (u - 0.5f) * w, z = -amp * (0.5f + 0.5f * Mathf.Sin(ph));
+            if (tieV > 0)
+            {
+                float k = Mathf.Exp(-Mathf.Pow((v - tieV) / 0.16f, 2)), below = v < tieV ? Mathf.SmoothStep(0, 1, (tieV - v) / 0.22f) : 0;   // v0.9.12 r2 below the tie the cloth falls as one gathered column (no fan)
+                float sq = 1 - pinch * k - pinch * 0.82f * below * (1 - k); float ax = tieSide * w / 2;
+                x = ax + (x - ax) * sq; z *= 1 + 0.6f * k; z -= 0.05f * k;
+            }
+            if (v < 0.05f) { float t = 1 - v / 0.05f; z -= 0.004f * t * t; }   // rolled hem curls slightly out
+            return new Vector3(x, (v - 0.5f) * h, z);
+        };
+        int Grid(bool back)
+        {
+            int b0 = mb.V.Count;
+            for (int j = 0; j <= ny; j++) for (int i = 0; i <= nx; i++)
+            {
+                float u = (float)i / nx, v = (float)j / ny; var pp = P(u, v);
+                var du = P(Mathf.Min(1, u + e), v) - P(Mathf.Max(0, u - e), v); var dv = P(u, Mathf.Min(1, v + e)) - P(u, Mathf.Max(0, v - e));
+                var n = Vector3.Cross(dv, du).normalized; if (n.z > 0) n = -n;
+                float ph = u * folds * Mathf.PI * 2 + 0.7f * (1 - v) * Mathf.Sin(u * 5.3f + seed) + 0.25f * Mathf.Sin(v * 3.1f + u * 9f + seed * 0.3f);
+                float sh = 0.78f + 0.22f * (0.5f + 0.5f * Mathf.Sin(ph)); if (v < 0.05f || v > 0.95f) sh *= 0.92f;
+                var cc = new Color(c.r * sh, c.g * sh, c.b * sh, MatA);
+                if (back) { pp -= n * th; n = -n; cc = new Color(cc.r * 0.9f, cc.g * 0.9f, cc.b * 0.9f, MatA); }
+                mb.Add(pp, n, cc);
+            }
+            for (int j = 0; j < ny; j++) for (int i = 0; i < nx; i++) { int q = b0 + j * (nx + 1) + i; mb.Quad(q, q + 1, q + nx + 2, q + nx + 1); }
+            return b0;
+        }
+        int f0 = Grid(false), k0 = Grid(true); int W1 = nx + 1;
+        // close the bottom hem and side edges so the sheet has a visible soft thickness (no paper edge)
+        void Edge(int a0, int b0, int step, int cnt, Vector3 dir) { for (int k = 0; k < cnt; k++) { int a = mb.Add(mb.V[a0 + k * step], dir, mb.C[a0 + k * step]), b = mb.Add(mb.V[a0 + (k + 1) * step], dir, mb.C[a0 + (k + 1) * step]), cI = mb.Add(mb.V[b0 + (k + 1) * step], dir, mb.C[b0 + (k + 1) * step]), d = mb.Add(mb.V[b0 + k * step], dir, mb.C[b0 + k * step]); mb.Quad(a, b, cI, d); } }
+        Edge(f0, k0, 1, nx, Vector3.down); Edge(f0, k0, W1, ny, Vector3.left); Edge(f0 + nx, k0 + nx, W1, ny, Vector3.right);
+        return mb.Build("sk_drape");
+    }
+    public static GameObject Drape(Transform p, Vector3 pos, Quaternion rot, float w, float h, int folds, float depth, Color c, float tieV = -1, float tieSide = 1)
+    {
+        var om = PushM(MatK.Fabric); var g = Obj(p, "sk_drape", DrapeMesh(w, h, folds, depth, c, Seed(pos, new Vector3(w, h, folds)) & 1023, tieV, tieSide), pos, rot, 0.008f); MatA = om; return g;
+    }
     public static GameObject Pillow(Transform p, Vector3 pos, float w, float h, float b, Color c) { return Obj(p, "sk_pillow", PillowMesh(w, h, b, c, Seed(pos, new Vector3(w, h, b))), pos, Quaternion.identity); }
     static int Seed(Vector3 a, Vector3 b) { unchecked { return (int)(a.x * 73.1f) * 31 + (int)(a.y * 91.7f) * 17 + (int)(a.z * 53.3f) * 7 + (int)(b.x * 11.3f + b.y * 7.1f + b.z * 3.7f); } }
     public static int GlobalSeed;
@@ -94,6 +140,8 @@ public static class SoftKit
         public void Quad(int a, int b, int c, int d) { Tri(a, b, c); Tri(a, c, d); }
         public Mesh Build(string n)
         {
+            for (int i = 0; i < N.Count; i++) { var q = N[i]; if (float.IsNaN(q.x) || float.IsNaN(q.y) || float.IsNaN(q.z) || q.sqrMagnitude < 1e-8f) N[i] = Vector3.up; else N[i] = q.normalized; }
+            for (int i = 0; i < V.Count; i++) { var q = V[i]; if (float.IsNaN(q.x) || float.IsNaN(q.y) || float.IsNaN(q.z)) V[i] = i > 0 ? V[i - 1] : Vector3.zero; }
             var m = new Mesh { name = n }; if (V.Count > 65000) m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             m.SetVertices(V); m.SetNormals(N); m.SetColors(C); m.SetTriangles(T, 0); m.RecalculateBounds(); return m;
         }
@@ -258,8 +306,8 @@ public static class GeoQ
             return Mathf.Clamp(Mathf.Min(cap, lv), 0, 2);
         }
     }
-    static readonly float[] Mul = { 1f, 1.6f, 2.2f };
-    static readonly int[] Bevs = { 2, 3, 5 }, Arcs = { 3, 5, 8 };
+    static readonly float[] Mul = { 1f, 1.6f, 3.0f };   // v0.9.12 desktop high: denser smooth meshes (quality over budget)
+    static readonly int[] Bevs = { 2, 3, 7 }, Arcs = { 3, 5, 12 };
     // v0.8.1: inside building shells curves are capped (big smooth radii were eating the budget); detail pass spends it on architecture
     public static bool ArchLow;
     public static int Seg(int s) => Mathf.Max(3, Mathf.RoundToInt(s * (ArchLow ? Mathf.Min(Mul[Tier], 1.05f) : Mul[Tier])));

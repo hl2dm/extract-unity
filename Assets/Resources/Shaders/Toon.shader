@@ -79,7 +79,7 @@ Shader "Casual/Toon"
                 alb = lerp(alb, snapPalette(alb), _PaletteAmt * (1 - _UseVC)) * lerp(0.92, 0.9, _UseVC);
                 float grain = _Grain * lerp(0.12, 0.0, _UseVC);
 
-                float3 n = normalize(i.nw); float3 ws = i.ws;
+                float3 n = i.nw; n = dot(n, n) > 1e-12 ? normalize(n) : float3(0, 1, 0); float3 ws = i.ws;   // v0.9.12 NaN guard
                 float4 sc = TransformWorldToShadowCoord(ws); Light L = GetMainLight(sc);
                 float nl = dot(n, L.direction) * 0.5 + 0.5;
                 float S = _ToonSoft.x;   // v0.8.1 softness (0 = v0.8)
@@ -180,6 +180,7 @@ Shader "Casual/Toon"
                 { float3 kn = col > 0.55 ? 0.55 + (col - 0.55) * 0.4 : col;   // v0.9.1 soft knee: whites settle at ~0.78, no paper-white glare
                   col = lerp(col, kn * 0.96 + float3(0.03, 0.026, 0.018), S2); }
                 col = MixFog(col, i.fog);
+                col = any(isnan(col)) || any(isinf(col)) ? float3(0.5, 0.45, 0.45) : min(col, 3.0);   // v0.9.12 a NaN/inf pixel bloomed into a screen-wide white blob
                 return half4(col, 1);
             }
             ENDHLSL

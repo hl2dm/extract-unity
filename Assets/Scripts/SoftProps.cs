@@ -315,8 +315,8 @@ public static class SoftProps
         Block(g, new Vector3(0, -h / 2, -0.07f), new Vector3(w, 0.03f, 0.2f), Dk(frame, 0.7f), 0.005f, false);
         Color[] cc = { new Color(0.98f, 0.93f, 0.86f), new Color(0.95f, 0.82f, 0.86f), new Color(0.86f, 0.9f, 0.96f), new Color(0.95f, 0.9f, 0.72f) };
         Color cu = cc[hs % 4]; float open = 0.26f + (hs % 3) * 0.05f;
-        if (hs % 5 == 4) { var bl = Block(g, new Vector3(0, h / 2 - h * 0.18f, -0.05f), new Vector3(w * 0.94f, h * 0.34f, 0.03f), cu, 0.01f, false); }   // half-drawn blind
-        else foreach (int sx in new[] { -1, 1 }) { var c = Block(g, new Vector3(sx * w * (0.5f - open / 2), 0.02f, -0.05f), new Vector3(w * open, h * 0.94f, 0.05f), cu, 0.02f, false, 0, 0.01f); c.name = "sk_curtain"; }
+        if (hs % 5 == 4) { var bl = Drape(g, new Vector3(0, h / 2 - h * 0.2f, -0.05f), Quaternion.identity, w * 0.94f, h * 0.36f, Mathf.Max(4, Mathf.RoundToInt(w * 5)), 0.035f, cu); bl.name = "sk_curtainp"; }   // v0.9.12 gathered half-drawn cafe curtain (was a slab)
+        else foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(3, Mathf.RoundToInt(w * open * 9)), 0.04f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; }   // v0.9.12 pleated cloth panels (were boxes)
         if (hs % 2 == 0) { float ix = w * 0.22f * ((hs % 4) - 1.5f) / 1.5f; Block(g, new Vector3(ix, -h / 2 + 0.12f, 0.0f), new Vector3(0.16f, 0.2f, 0.12f), Color.Lerp(inside, Color.black, 0.35f), 0.03f, false); Ball(g, new Vector3(ix, -h / 2 + 0.32f, 0.0f), new Vector3(0.26f, 0.22f, 0.1f), Color.Lerp(inside, new Color(0.2f, 0.3f, 0.2f), 0.6f), 8); }   // pot-plant silhouette on the inner sill
         else Block(g, new Vector3(w * 0.25f, -h * 0.05f, 0.015f), new Vector3(w * 0.3f, h * 0.5f, 0.02f), Color.Lerp(inside, Color.black, 0.25f), 0.02f, false);   // bookcase silhouette
         // frame: four bars with depth (not a pillow slab)
@@ -331,7 +331,8 @@ public static class SoftProps
         }
         // glass hint: one faint horizontal sky sheen across the upper pane (no diagonal sticks)
         Block(g, new Vector3(0, h * 0.36f, -0.09f), new Vector3(w * 0.96f, h * 0.2f, 0.004f), Color.Lerp(inside, new Color(0.88f, 0.86f, 0.98f), 0.35f), 0.002f, false);
-        Block(g, new Vector3(0, h / 2 - 0.06f, -0.06f), new Vector3(w * 0.96f, 0.1f, 0.04f), Dk(cu, 0.9f), 0.02f, false);   // curtain valance
+        Drape(g, new Vector3(0, h / 2 - 0.07f, -0.075f), Quaternion.identity, w * 0.96f, 0.13f, Mathf.Max(6, Mathf.RoundToInt(w * 10)), 0.025f, Dk(cu, 0.9f));   // v0.9.12 ruffled cloth valance (was a bar)
+        Cyl(g, new Vector3(0, h / 2 - 0.005f, -0.075f), 0.012f, w * 0.98f, Dk(frame, 0.6f), 0.004f, Q(0, 0, 90), 10);   // curtain rod
         if (hs % 3 != 2) { var lp = Art.Prim(PrimitiveType.Sphere, g, new Vector3(w * 0.15f * ((hs % 2) * 2 - 1), h * 0.22f, 0.0f), Vector3.one * Mathf.Min(0.16f, w * 0.08f), WinLampM ?? (WinLampM = Art.Emissive(new Color(1f, 0.8f, 0.55f), 0.9f))); lp.name = "sk_winlamp"; }   // dim pendant inside
         // sill + lintel
         Block(g, new Vector3(0, -h / 2 - fb - 0.04f, -0.16f), new Vector3(w + 0.3f, 0.08f, 0.22f), Lt(frame, 0.15f), 0.02f, false);
@@ -930,12 +931,23 @@ public static class SoftProps
     {   string[][] k = { new[]{"早餐"}, new[]{"冰"}, new[]{"書"}, new[]{"花"}, new[]{"麵包","烘焙"}, new[]{"豆花"}, new[]{"文具"}, new[]{"理髮","髮"} };
         if (n.Contains("豆花")) return 5; for (int i = 0; i < k.Length; i++) foreach (var t in k[i]) if (n.Contains(t)) return i; return 8; }
     static readonly Dictionary<string, Material> PicMats = new Dictionary<string, Material>();
+    // v0.9.12 wrap-around printed label hugging a cylinder (bottles, jars, tins) - faces local +z
+    public static Transform CurvedLabel(Transform p, Vector3 axisPos, float R, float h, float arcDeg, string art)
+    {
+        var t = Picture(p, axisPos, Quaternion.identity, 1, 1, art); t.localScale = Vector3.one; t.name = "sk_label";
+        int N = 24; var V = new List<Vector3>(); var Nn = new List<Vector3>(); var U = new List<Vector2>(); var T = new List<int>();
+        for (int i = 0; i <= N; i++) { float u = (float)i / N, a = Mathf.Deg2Rad * arcDeg * (0.5f - u); var d = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
+            V.Add(d * R + Vector3.down * h / 2); V.Add(d * R + Vector3.up * h / 2); Nn.Add(d); Nn.Add(d); U.Add(new Vector2(u, 0)); U.Add(new Vector2(u, 1)); }
+        for (int i = 0; i < N; i++) { int a = i * 2; T.AddRange(new[] { a, a + 1, a + 2, a + 2, a + 1, a + 3, a, a + 2, a + 1, a + 2, a + 3, a + 1 }); }
+        var m = new Mesh { name = "sk_label" }; m.SetVertices(V); m.SetNormals(Nn); m.SetUVs(0, U); m.SetTriangles(T, 0); m.RecalculateBounds();
+        t.GetComponent<MeshFilter>().sharedMesh = m; return t;
+    }
     public static Transform Picture(Transform p, Vector3 lpos, Quaternion lrot, float w, float h, string art)
     {   
         // v0.9.8: flat artwork is a single illustrated texture on a quad inside a modelled frame
         var q = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(q.GetComponent<Collider>()); q.name = "sk_art";
         q.transform.SetParent(p, false); q.transform.localPosition = lpos; q.transform.localRotation = lrot; q.transform.localScale = new Vector3(w, h, 1);
-        var r = q.GetComponent<MeshRenderer>(); if (!PicMats.TryGetValue(art, out var am) || am == null) { am = Art.Cutout(Resources.Load<Texture2D>("Art/" + art)); am.SetColor("_BaseColor", new Color(0.86f, 0.82f, 0.78f)); if (art.StartsWith("art_menu") || art.StartsWith("art_sg") || art.StartsWith("art_plate") || art.StartsWith("art_lbl") || art.StartsWith("art_ic") || art.StartsWith("art_cv") || art.StartsWith("art_tv") || art.StartsWith("art_blk") || art.StartsWith("art_bin") || art.StartsWith("art_clock")) am.SetColor("_BaseColor", new Color(1f, 0.97f, 0.92f)); PicMats[art] = am; } r.sharedMaterial = am; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;   // v0.9.9 one shared material per artwork   // unlit, toned to sit in the warm room light r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var r = q.GetComponent<MeshRenderer>(); if (!PicMats.TryGetValue(art, out var am) || am == null) { am = Art.Cutout(Resources.Load<Texture2D>("Art/" + art)); am.SetColor("_BaseColor", new Color(0.86f, 0.82f, 0.78f)); if (art.StartsWith("art_menu") || art.StartsWith("art_sg") || art.StartsWith("art_plate") || art.StartsWith("art_lb") || art.StartsWith("art_ic") || art.StartsWith("art_cv") || art.StartsWith("art_tv") || art.StartsWith("art_blk") || art.StartsWith("art_bin") || art.StartsWith("art_clock")) am.SetColor("_BaseColor", new Color(1f, 0.97f, 0.92f)); PicMats[art] = am; } r.sharedMaterial = am; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;   // v0.9.9 one shared material per artwork   // unlit, toned to sit in the warm room light r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         return q.transform;
     }
     public static Transform WallFrame(Transform p, Vector3 pos, float yaw, float w, float h, Color frame, int kind)
@@ -1018,9 +1030,26 @@ public static class SoftProps
         return g;
     }
     public static Transform Curtains(Transform p, Vector3 center, float w, float h, Color c)
-    {
-        var g = Group(p, "sk_curtain", center); Cyl(g, new Vector3(0, h / 2 + 0.1f, 0), 0.03f, w + 0.6f, WoodD, 0.01f, Q(0, 0, 90), 8);
-        foreach (int s in new[] { -1, 1 }) { var cu = Block(g, new Vector3(s * (w / 2 + 0.1f), 0, 0), new Vector3(0.38f, h, 0.1f), c, 0.06f, false, 0, 0.03f, -0.3f); Ball(g, new Vector3(s * (w / 2 + 0.1f), -h * 0.15f, 0.03f), new Vector3(0.22f, 0.08f, 0.14f), Dk(c, 0.9f), 8); }
+    {   // v0.9.12: two pleated cloth panels gathered on a turned rod with rings + finials, tied back with sashes (was two rounded boxes)
+        var g = Group(p, "sk_curtain", center); float rodY = h / 2 + 0.1f, pw = Mathf.Max(0.55f, w * 0.34f), ph = h + 0.05f;
+        var omw = PushM(MatK.Wood); Cyl(g, new Vector3(0, rodY, -0.02f), 0.022f, w + 0.75f, WoodD, 0.008f, Q(0, 0, 90), 16);
+        foreach (int s in new[] { -1, 1 })
+        {
+            float ex = s * (w / 2 + 0.38f);
+            Lath(g, new Vector3(ex, rodY, -0.02f), new[] { new Vector2(0, 0), new Vector2(0.035f, 0.005f), new Vector2(0.05f, 0.03f), new Vector2(0.03f, 0.06f), new Vector2(0.045f, 0.085f), new Vector2(0, 0.11f) }, Lt(WoodD, 0.1f), 16, false, Q(0, 0, -s * 90));   // turned finial
+            Block(g, new Vector3(s * (w / 2 + 0.22f), rodY + 0.0f, 0.03f), new Vector3(0.03f, 0.05f, 0.08f), Dk(WoodD, 0.85f), 0.012f, false);   // wall bracket
+        }
+        MatA = omw;
+        foreach (int s in new[] { -1, 1 })
+        {
+            float cx = s * (w / 2 + 0.1f);
+            Drape(g, new Vector3(cx, rodY - 0.04f - ph / 2, -0.02f), Quaternion.identity, pw, ph, 5, 0.07f, c, 0.42f, s);
+            for (int k = 0; k < 6; k++) Ring(g, new Vector3(cx - pw / 2 + 0.05f + k * (pw - 0.1f) / 5f, rodY, -0.02f), Q(0, 90, 0), 0.032f, 0.006f, Lt(WoodD, 0.25f), 14);   // curtain rings
+            float tx = s * (w / 2 + 0.1f + pw * 0.3f), ty = rodY - 0.04f - ph * 0.58f;
+            var sash = Obj(g, "sk_sash", Torus(pw * 0.24f, 0.02f, Dk(c, 0.78f), 24, 10, 3), new Vector3(tx, ty, -0.08f), Q(90, 0, 0) * Quaternion.Euler(0, 0, 0)); sash.transform.localScale = new Vector3(1f, 1f, 0.55f);   // fabric tie-back band
+            Ball(g, new Vector3(tx - s * 0.04f, ty - 0.02f, -0.14f), new Vector3(0.07f, 0.05f, 0.04f), Dk(c, 0.72f), 10);   // sash knot
+            Cyl(g, new Vector3(s * (w / 2 + 0.3f), ty, 0.02f), 0.018f, 0.06f, Dk(WoodD, 0.9f), 0.006f, Q(90, 0, 0), 12);   // wall hook
+        }
         return g;
     }
     public static Transform PetBed(Transform p, Vector3 pos, Color c)
@@ -1107,12 +1136,12 @@ public static class SoftProps
             { var bm = Art.Cutout(Resources.Load<Texture2D>("Art/art_beachball")); var sp = Art.Prim(PrimitiveType.Sphere, bb, Vector3.zero, Vector3.one * br * 2, bm); sp.name = "sk_ballpanels"; sp.transform.localRotation = Q(0, 0, 18); }   // v0.9.9 r3 textured 6-panel ball
         }
         {   var rb = Group(g, "sk_toyrobot", new Vector3(0.58f, 0, 0.05f), -30); rb.localScale = Vector3.one * 1.25f; var mc = H("d9553f"); var md = H("3f6fa6");   // v0.9.10 painted tin toy: red body, blue limbs
-            foreach (int lx in new[] { -1, 1 }) { Block(rb, new Vector3(lx * 0.03f, 0.035f, 0), new Vector3(0.035f, 0.07f, 0.04f), md, 0.008f, false); Block(rb, new Vector3(lx * 0.03f, 0.008f, 0.008f), new Vector3(0.045f, 0.016f, 0.06f), tc[(k0 + 2) % 6], 0.005f, false); }
-            Block(rb, new Vector3(0, 0.115f, 0), new Vector3(0.11f, 0.09f, 0.07f), mc, 0.014f, false);
-            Block(rb, new Vector3(0, 0.12f, 0.036f), new Vector3(0.06f, 0.045f, 0.004f), H("2b3440"), 0.004f, false);
+            foreach (int lx in new[] { -1, 1 }) { Cyl(rb, new Vector3(lx * 0.03f, 0.04f, 0), 0.017f, 0.06f, md, 0.006f, null, 16); Obj(rb, "sk_knee", SoftKit.Torus(0.018f, 0.005f, md, 16, 6, 2), new Vector3(lx * 0.03f, 0.05f, 0), Q(90, 0, 0), 0.002f); Ball(rb, new Vector3(lx * 0.03f, 0.012f, 0.01f), new Vector3(0.05f, 0.026f, 0.066f), tc[(k0 + 2) % 6], 14); }
+            Block(rb, new Vector3(0, 0.115f, 0), new Vector3(0.11f, 0.09f, 0.07f), mc, 0.03f, false, 0, -1, 0.12f);   /* v0.9.12 rounded tin barrel, tapered */
+            Block(rb, new Vector3(0, 0.12f, 0.036f), new Vector3(0.06f, 0.045f, 0.006f), H("2b3440"), 0.012f, false);
             for (int di = 0; di < 3; di++) Ball(rb, new Vector3(-0.018f + di * 0.018f, 0.12f, 0.04f), Vector3.one * 0.011f, tc[(k0 + di) % 6], 6);
             foreach (int ax in new[] { -1, 1 }) { Cyl(rb, new Vector3(ax * 0.07f, 0.12f, 0), 0.014f, 0.06f, md, 0.004f, Q(0, 0, ax * 20), 10); Ball(rb, new Vector3(ax * 0.08f, 0.085f, 0), Vector3.one * 0.026f, tc[(k0 + 3) % 6], 8); }
-            Block(rb, new Vector3(0, 0.2f, 0), new Vector3(0.085f, 0.065f, 0.07f), mc, 0.016f, false);
+            Block(rb, new Vector3(0, 0.2f, 0), new Vector3(0.085f, 0.065f, 0.07f), mc, 0.028f, false); Ball(rb, new Vector3(0, 0.232f, 0), new Vector3(0.07f, 0.03f, 0.058f), Dk(mc, 0.92f), 16);   /* domed cap */
             foreach (int ex in new[] { -1, 1 }) { Ball(rb, new Vector3(ex * 0.02f, 0.205f, 0.036f), new Vector3(0.022f, 0.022f, 0.008f), H("fff3a0"), 8); Ball(rb, new Vector3(ex * 0.02f, 0.205f, 0.04f), new Vector3(0.009f, 0.009f, 0.004f), H("2b3440"), 6); }
             Block(rb, new Vector3(0, 0.183f, 0.036f), new Vector3(0.04f, 0.006f, 0.004f), H("2b3440"), 0.002f, false);
             Cyl(rb, new Vector3(0, 0.245f, 0), 0.004f, 0.03f, md, 0.002f, null, 6); Ball(rb, new Vector3(0, 0.265f, 0), Vector3.one * 0.016f, tc[k0 % 6], 8);
@@ -1123,6 +1152,12 @@ public static class SoftProps
                 Block(rb, new Vector3(0, 0.073f, 0), new Vector3(0.115f, 0.012f, 0.075f), tc[(k0 + 1) % 6], 0.004f, false); Block(rb, new Vector3(0, 0.162f, 0), new Vector3(0.04f, 0.014f, 0.04f), md, 0.004f, false);   // belt + neck
                 Cyl(rb, new Vector3(0, 0.12f, -0.045f), 0.005f, 0.03f, H("e8b84a"), 0.002f, Q(90, 0, 0), 6); foreach (int kx in new[] { -1, 1 }) Ball(rb, new Vector3(kx * 0.014f, 0.12f, -0.062f), new Vector3(0.018f, 0.012f, 0.005f), H("e8b84a"), 6);   // wind-up key
                 foreach (int ax in new[] { -1, 1 }) foreach (int cz in new[] { -1, 1 }) Block(rb, new Vector3(ax * 0.085f, 0.064f, cz * 0.008f), new Vector3(0.008f, 0.02f, 0.006f), md, 0.002f, false);   // claws
+                // v0.9.12 r2 tin-toy finish: shoulder caps, chest gauge with needle, mouth grille, cream racing stripe, foot treads
+                foreach (int ax in new[] { -1, 1 }) Ball(rb, new Vector3(ax * 0.06f, 0.148f, 0), new Vector3(0.036f, 0.03f, 0.05f), tc[(k0 + 2) % 6], 12);
+                Cyl(rb, new Vector3(0.0f, 0.138f, 0.04f), 0.013f, 0.004f, H("fbf1d6"), 0.001f, Q(90, 0, 0), 16); Block(rb, new Vector3(0.004f, 0.141f, 0.043f), new Vector3(0.002f, 0.011f, 0.002f), H("c8402e"), 0.0005f, false).transform.localRotation = Q(0, 0, -35);
+                for (int mi = 0; mi < 4; mi++) Block(rb, new Vector3(-0.012f + mi * 0.008f, 0.184f, 0.039f), new Vector3(0.003f, 0.008f, 0.002f), H("9aa6b2"), 0.0005f, false);
+                Block(rb, new Vector3(0, 0.115f, -0.036f), new Vector3(0.11f, 0.012f, 0.004f), H("fbf1d6"), 0.002f, false);
+                foreach (int lx in new[] { -1, 1 }) for (int ti = 0; ti < 3; ti++) Block(rb, new Vector3(lx * 0.03f, 0.002f, -0.006f + ti * 0.012f), new Vector3(0.05f, 0.004f, 0.004f), H("2b3440"), 0.001f, false);
             }
         }
         MatA = om; return g;

@@ -22,14 +22,14 @@ public static class LightQ
         {
             urp.mainLightShadowmapResolution = t == 2 ? 4096 : (t == 1 ? 2048 : 1024);
             urp.shadowCascadeCount = t == 2 ? 4 : (t == 1 ? 2 : 1);
-            urp.shadowDistance = t == 2 ? 90 : (t == 1 ? 55 : 35);
+            urp.shadowDistance = t == 2 ? 130 : (t == 1 ? 55 : 35);
         }
-        QualitySettings.shadowDistance = t == 2 ? 90 : (t == 1 ? 55 : 35);
+        QualitySettings.shadowDistance = t == 2 ? 130 : (t == 1 ? 55 : 35);
         sun.shadows = LightShadows.Soft; sun.shadowStrength = Mathf.Lerp(0.55f, 0.3f, S); sun.intensity *= Mathf.Lerp(1f, 0.86f, S);
         var ad = sun.GetComponent<UniversalAdditionalLightData>() ?? sun.gameObject.AddComponent<UniversalAdditionalLightData>();
         ad.softShadowQuality = t == 2 ? SoftShadowQuality.High : (t == 1 ? SoftShadowQuality.Medium : SoftShadowQuality.Low);
         // warm key, cool fill (shader-side, no extra light cost), lamp pools, SSAO, rim
-        sun.color = new Color(1f, 0.94f, 0.86f); 
+        sun.color = new Color(1f, 0.96f, 0.92f); 
         var fd = Quaternion.Euler(25, sun.transform.eulerAngles.y + 160, 0) * Vector3.back;
         Shader.SetGlobalVector("_ToonFillDir", fd.normalized);
         Shader.SetGlobalColor("_ToonFillCol", Color.Lerp(new Color(0.16f, 0.21f, 0.28f), new Color(0.22f, 0.24f, 0.26f), S));
@@ -108,7 +108,7 @@ public static class LightQ
         ("grass", SoftKit.MatK.Foliage), ("lawn", SoftKit.MatK.Foliage), ("sk_tree", SoftKit.MatK.Foliage), ("sk_bush", SoftKit.MatK.Foliage), ("sk_plant", SoftKit.MatK.Foliage), ("clump", SoftKit.MatK.Foliage), ("Vegetation", SoftKit.MatK.Foliage),
         ("hinge", SoftKit.MatK.Wood), ("sk_bench", SoftKit.MatK.Wood), ("bookcase", SoftKit.MatK.Wood), ("desk", SoftKit.MatK.Wood), ("chair", SoftKit.MatK.Wood), ("sidetable", SoftKit.MatK.Wood), ("crafttable", SoftKit.MatK.Wood), ("sk_counter", SoftKit.MatK.Wood),
         ("sk_scooter", SoftKit.MatK.Metal), ("shop_sign", SoftKit.MatK.Metal), ("sk_ac", SoftKit.MatK.Metal), ("sk_tank", SoftKit.MatK.Metal), ("sk_mailbox", SoftKit.MatK.Metal), ("sk_hydrant", SoftKit.MatK.Metal), ("sk_bin", SoftKit.MatK.Metal), ("PalletRack", SoftKit.MatK.Metal), ("sk_lamp", SoftKit.MatK.Metal),
-        ("sk_rug", SoftKit.MatK.Fabric), ("sk_sofa", SoftKit.MatK.Fabric), ("sk_bed", SoftKit.MatK.Fabric), ("sk_curtain", SoftKit.MatK.Fabric), ("sk_petbed", SoftKit.MatK.Fabric), ("sk_awning", SoftKit.MatK.Fabric),
+        ("sk_rug", SoftKit.MatK.Fabric), ("sk_sofa", SoftKit.MatK.Fabric), ("sk_bed", SoftKit.MatK.Fabric), ("sk_curtain", SoftKit.MatK.Fabric), ("sk_curtainp", SoftKit.MatK.Fabric), ("sk_petbed", SoftKit.MatK.Fabric), ("sk_awning", SoftKit.MatK.Fabric),
         ("glass", SoftKit.MatK.Glass) };
     public static int Materials(Transform root)
     {
@@ -138,8 +138,11 @@ public static class LightQ
             foreach (var rd in list) if (rd) foreach (var ft in rd.rendererFeatures) if (ft && ft.GetType().Name.Contains("AmbientOcclusion")) ft.SetActive(on);
     }
     public static float PoolK = 1f;
+    static List<(Bounds b, Transform t)> Near; public static int Skipped;
     static Light Pt(Transform at, Vector3 local, Color c, float range, float inten)
     {   inten *= PoolK; if (PoolK > 1) { c = Color.Lerp(c, new Color(1f, 0.7f, 0.42f), 0.45f); range *= 1.2f; }
+        var wp = at.TransformPoint(local);
+        if (Near != null) foreach (var nb in Near) if (!nb.t.IsChildOf(at) && nb.b.SqrDistance(wp) < 0.32f * 0.32f) { Skipped++; return null; }   // v0.9.12 a pixel light hugging a surface (cloth, sills) blows it to white
         var g = new GameObject("lq_pool"); g.transform.SetParent(at, false); g.transform.localPosition = local;
         var l = g.AddComponent<Light>(); l.type = LightType.Point; l.color = c; l.range = range; l.intensity = inten; l.shadows = LightShadows.None; l.renderMode = LightRenderMode.ForcePixel; l.intensity *= (NoSoft2 ? 1f : 0.7f); return l;
     }
@@ -186,20 +189,24 @@ public static class LightQ
     }
     public static int Pools(Transform root, int t)
     {
-        int n = 0, cap = t == 2 ? 60 : 24;
+        int n = 0, cap = t == 2 ? 120 : 24;
+        Near = root.GetComponentsInChildren<Renderer>().Where(x => x.enabled && !(x is ParticleSystemRenderer) && !x.name.StartsWith("glass") && !x.name.StartsWith("lq_") && x.bounds.size.magnitude < 3.5f).Select(x => (x.bounds, x.transform)).ToList(); Skipped = 0;
         foreach (var tr in root.GetComponentsInChildren<Transform>().Where(x => x.name == "sk_lamp" || x.name == "sk_flamp" || x.name == "sk_curtain").ToList())
         {
             if (n >= cap) break; if (tr.Find("lq_pool")) continue;
             if (tr.name == "sk_lamp") Pt(tr, new Vector3(0, 3.1f, 0), new Color(1f, 0.82f, 0.55f), 6.5f, 0.9f);
             else if (tr.name == "sk_flamp") Pt(tr, new Vector3(0, 1.5f, 0), new Color(1f, 0.74f, 0.45f), 3.2f, 1.5f);
-            else Pt(tr, new Vector3(0, -0.3f, 0), new Color(1f, 0.93f, 0.8f), 3.0f, PoolK > 1 ? 0.75f : 0.55f);
+            else Pt(tr, new Vector3(0, -0.3f, -0.45f), new Color(1f, 0.93f, 0.8f), 3.0f, PoolK > 1 ? 0.75f : 0.55f);
             n++;
         }
+        List<Bounds> drapes = null;
         if (PoolK > 1) foreach (var r in root.GetComponentsInChildren<Renderer>().Where(x => x.name.StartsWith("glass")).ToList())
             {   // v0.9.4 dusk: warm amber light spilling in through windows (motivated interior light)
                 if (n >= cap) break; var b = r.bounds; if (b.size.y < 0.3f || r.transform.Find("lq_pool")) continue;
+                if (drapes == null) drapes = root.GetComponentsInChildren<Renderer>().Where(x => x.name.StartsWith("sk_curtain") || x.name == "sk_drape" || x.name == "sk_sash").Select(x => x.bounds).ToList();
+                if (drapes.Any(db => db.SqrDistance(b.center) < 0.5f * 0.5f)) continue;   // v0.9.12 a pixel light 5 cm behind cloth blew the drape out to white
                 Pt(r.transform, r.transform.InverseTransformPoint(b.center), new Color(1f, 0.64f, 0.34f), 5.5f, 0.8f); n++;
             }
-        Debug.Log("[light] tier " + t + " pools " + n); return n;
+        Debug.Log("[light] tier " + t + " pools " + n + " skipped " + Skipped); Near = null; return n;
     }
 }

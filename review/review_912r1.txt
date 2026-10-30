@@ -1,0 +1,22 @@
+Reviewed all 26 screenshots. Here are the problems, worst first:
+
+**1. Curtains still don't read as real cloth (systemic, appears in 7+ shots: `L_cu_curtain_1`, `L_cu_curtain_b1`, `L_frames`, `L_shelf`, `L_cu_scooter`, `L_abed`, `L_cu_curtain_b0`).** Instead of fabric gathered on a rod, they're built as four separate pleated "fan" clusters pinned at round grommet points, leaving large bare gaps of window glass in the middle. The strips have hard rounded end-caps that read as rigid ribbon/paper, not cloth responding to gravity. This is a direct miss on the brief's explicit "curtains must be real pleated cloth on rods" requirement — they're not boxes, but they don't look like fabric either, and the same broken asset is reused everywhere so the problem compounds across nearly every interior shot.
+
+**2. Primitive-blockout props the brief specifically called out are still blockouts.** The cardboard box next to the scooter (`L_cu_scooter`) is a flat, single-color rectangular prism with zero flaps, creases, or print — a literal placeholder box. The ceramic jar beside it is a plain flat-shaded gourd with two line "bands" and no glaze/texture variation. The toy robot (`L_atoys`, `L_toys`) is built from bare capsule/sphere primitives with only one surface detail (a single round button) — noticeably less finished than the scooters or the hydrant sitting right next to it, which actually is detailed enough (bolts, caps, segments) to pass.
+
+**3. Style mismatch on the TV screen (`L_cu_tv`).** The cartoon content is rendered with soft atmospheric blur/painterly lighting, while every other 2D surface (map poster, menu board, frames) uses flat, crisp gouache-vector illustration. It breaks the "ONE consistent style" rule the brief sets as criterion #1.
+
+**4. Loot card art is a tier below everything else (`L_bedroom`, `L_tab_fruit`).** The "卡牌" 114元 card shows a crude, flat, sticker-like ghost doodle — noticeably cruder than the polished map poster/menu board gouache work sitting in the same room.
+
+**5. Minor clipping:** the curtain rod/finial on the right edge of `L_abed` terminates directly into the wardrobe corner rather than reading as a clean wall mount.
+
+**6. Minor script inconsistency:** alphabet blocks mix Latin "A", a Zhuyin symbol, and the Chinese character "貓" on what should be one coherent toy set (`L_toys`, `L_cu_blocks`) — may be intentional for the Taiwanese setting, but worth confirming with design.
+
+**7. Minor:** flat, unshaded white/grey ceiling planes (`L_bedroom`, `L_frames`, `L_interior`) carry none of the gouache brush texture used on the walls below them — reads as an unfinished plane against an otherwise rich, warm palette.
+
+**What's working well:** the town map poster (`L_cu_map_b`), menu board (`L_cu_menu`), shop signage (豆花/冰店/阿忠家/花店), mailbox plate, wall frames, and book spines all share a cohesive gouache storybook look with crisp, correct, legible Traditional Chinese text and a well-locked golden-hour palette — this is the strongest part of the set and shows the target style is achievable.
+
+The signage/map/menu work is genuinely close to shippable, but the curtain construction problem repeats across most interior shots and the brief's own named blockout offenders (box, jar, robot) are still unresolved, plus a style-mismatched TV screen. That's enough recurring, brief-violating issues to keep this below the shippable bar.
+
+SCORE: 6/10
+done

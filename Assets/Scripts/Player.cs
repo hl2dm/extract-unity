@@ -134,7 +134,7 @@ public static class AAQuality
     {
         if (Level < 0) Level = Mathf.Clamp(PlayerPrefs.GetInt("aa", Default), 0, 2);
         var urp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
-        if (urp) { urp.msaaSampleCount = Level == 0 ? 1 : (Level == 1 ? 2 : 4); urp.renderScale = 1f; }
+        if (urp) { urp.msaaSampleCount = Level == 0 ? 1 : (Level == 1 ? 2 : 4); urp.renderScale = (Level == 2 && Application.platform != RuntimePlatform.WebGLPlayer) ? 1.3f : 1f; }   /* v0.9.12 desktop supersampling */
         if (cam)
         {
             cam.allowMSAA = Level > 0;

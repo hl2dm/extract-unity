@@ -1,0 +1,20 @@
+## Review Findings — `/workspace/rev912` (26 screenshots)
+
+**1. Toy robot remains a primitive blockout — recurring across multiple shots (`L_atoys.png`, `L_abed.png`, `L_bedroom.png`, `L_toys.png`).** It's built from bare cone/sphere antenna, smooth cylinder limbs, and flat unshaded primary-color plastic with none of the painted-cel outline treatment the rest of the world has. The brief explicitly calls out "toy robot" as a prop that must look like a detailed model — this is the single most visible violation, and it shows up in four separate screenshots, not a one-off.
+
+**2. Scooter model is also still a blockout — `L_cu_scooter.png`, `L_st_3.png`, `L_overview.png`, `L_street.png`.** Smooth undetailed body, no headlight glass, no seat stitching, no decals/paint variation, flat plastic-toy shading. It's especially bad in `L_cu_scooter.png` where it's framed as a hero/interactable prop filling a third of the screen — right next to it sit an unpainted flat-color yellow jar and a plain orange crate box, both also undecorated primitives that clash with the painted surfaces around them.
+
+**3. Curtain fidelity is inconsistent between shots of the same window — `L_cu_curtain_0.png` vs. `L_cu_curtain_1/2/b0/b1.png`.** The close-up curtain shots show nicely shaded pleated cloth on a rod (good). But the exterior view through that same window in `L_cu_curtain_0.png` renders the curtain as flat, evenly-spaced vertical stripes with no pleat shading — reads like a striped box/blind rather than fabric. Same asset, two very different quality levels depending on camera distance.
+
+**4. Alphabet blocks mix three different writing systems with no logic — `L_toys.png`.** Sibling cubes in one toy set show Latin "A", Zhuyin "ㄅ", and Hanzi "貓" side by side. For a Taiwanese children's toy this reads as an asset mix-up rather than an intentional design (should be consistently paired Zhuyin+Hanzi, or a full Latin alphabet set, not a random grab-bag).
+
+**5. Minor prop/palette nits:**
+   - The wall-mounted mailbox icon in `L_st_1.png` is a flat, undetailed green box, noticeably lower fidelity than the nicely detailed standalone mailbox prop in `L_cu_mailbox.png`.
+   - The red rolling cabinet in `L_cu_scooter.png`/`L_interior.png` is a very saturated primary red that pops out of the soft golden-hour palette (ochre/pink/orange) locked everywhere else.
+
+**What's working well (for balance):** the 2D surfaces that actually got art pass — town map poster (`L_cu_map_b.png`), daily menu board (`L_cu_menu.png`), flower shop sign (`L_shops.png`), TV cartoon content (`L_cu_tv.png`), wall frames (`L_frames.png`), street signage (`L_street.png`) — are all in a cohesive gouache storybook style, correctly palette-locked to the warm scene, with crisp, correct Traditional Chinese text throughout (menu items, map labels, shop names, mailbox plate, dialogue). No white blowouts or obvious z-fighting/clipping were found. The hydrant (`L_cu_hydrant.png`) is actually detailed enough to pass, contrary to what the brief worried about.
+
+**Overall:** signage/2D-art pipeline is in good shape and nearly shippable on its own, but two prominent, repeatedly-appearing hero props (toy robot, scooter) are still unmistakable grey-box placeholders that directly violate the brief, plus a curtain LOD mismatch and a toy-text inconsistency. That's enough to keep this below the shippable bar.
+
+SCORE: 6/10
+done

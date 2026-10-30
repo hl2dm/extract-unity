@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using static SoftKit;
@@ -8,6 +9,19 @@ public static partial class LevelGen
 {
     struct Op { public bool ax; public float fc, c, w, y0, y1; }
     public const float AWH = 3.0f, AWT = 0.24f, FY = 0.12f;
+    // v0.9.12 r2 a wall clock hung over the new cloth drapes: slide it along its wall until it clears every curtain
+    static void ClearOfCurtains(Transform h, Transform c)
+    {
+        if (!c) return; var cur = h.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_curtain" || t.name == "sk_win").Select(t => Art.RenderBounds(t.gameObject)).ToList();
+        var start = c.position;
+        for (int k = 0; k < 40; k++)
+        {
+            var b = Art.RenderBounds(c.gameObject); b.Expand(0.12f);
+            if (!cur.Any(q => q.Intersects(b))) return;
+            float d = 0.15f * (k / 2 + 1) * ((k & 1) == 0 ? 1 : -1); c.position = start + c.right * d;
+        }
+        c.position = start;
+    }
     static Color Lite(Color c, float k) => Color.Lerp(c, Color.white, k);
     static Color k2c(float x) => new[] { Rose, ButterD, Coral }[Mathf.Abs(Mathf.RoundToInt(x)) % 3];
     static void NoShadow(GameObject g) { foreach (var r in g.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = ShadowCastingMode.Off; }
@@ -64,7 +78,7 @@ public static partial class LevelGen
             var b = r.bounds; float len = Mathf.Max(b.size.x, b.size.z);
             if (b.size.y > 0.35f || len < 0.5f || len < b.size.y * 3) continue;
             bool skip = false;
-            for (var q = r.transform; q && q != root; q = q.parent) { var nm = q.name; if (nm == "Door" || nm == "LockedDoor" || nm == "sk_grille" || nm == "sk_curtain" || nm == "flowerbox" || q.GetComponent<Interactable>()) { skip = true; break; } }
+            for (var q = r.transform; q && q != root; q = q.parent) { var nm = q.name; if (nm == "Door" || nm == "LockedDoor" || nm == "sk_grille" || nm == "sk_curtain" || nm == "sk_curtainp" || nm == "flowerbox" || q.GetComponent<Interactable>()) { skip = true; break; } }
             if (skip) continue;
             foreach (var o in Openings) if (o.Intersects(b)) { n++; if (log) Debug.Log("[trimcheck] " + r.name + " " + b.ToString("F2") + " crosses opening " + o.ToString("F2")); break; }
         }
@@ -137,8 +151,8 @@ public static partial class LevelGen
         var wallOut = Pink; var trim = White; var ops = new List<Op>();
         System.Func<float, float, Color> wood = (x, z) => Color.Lerp((Mathf.FloorToInt(x / 0.55f) & 1) == 0 ? Wood : Lite(Wood, 0.1f), WoodD, 0.28f * VN(new Vector3(x * 0.5f, 0, z * 0.5f), 3));
         System.Func<float, float, Color> Tiles(Color a, Color b) => (x, z) => ((Mathf.FloorToInt(x / 0.6f) + Mathf.FloorToInt(z / 0.6f)) & 1) == 0 ? a : b;
-        rooms.Add(new ARoom { name = "garage", x0 = -9, x1 = -3, z0 = 0, z1 = 6, wall = H("d9b08a"), trim = SkyD, floor = Tiles(Lite(Grey, 0.55f), Lite(Grey, 0.4f)) });
-        rooms.Add(new ARoom { name = "living", x0 = -3, x1 = 3, z0 = 0, z1 = 6, wall = H("eba684"), trim = Rose, floor = wood });
+        rooms.Add(new ARoom { name = "garage", x0 = -9, x1 = -3, z0 = 0, z1 = 6, wall = H("d2bba4"), trim = SkyD, floor = Tiles(Lite(Grey, 0.55f), Lite(Grey, 0.4f)) });
+        rooms.Add(new ARoom { name = "living", x0 = -3, x1 = 3, z0 = 0, z1 = 6, wall = H("e4b9a4"), trim = Rose, floor = wood });
         rooms.Add(new ARoom { name = "kitchen", x0 = 3, x1 = 9, z0 = 0, z1 = 6, wall = H("c3cf8e"), trim = MintD, floor = Tiles(Mint, White) });
         rooms.Add(new ARoom { name = "bath", x0 = -9, x1 = -3, z0 = 6, z1 = 12, wall = H("8fcab8"), trim = SkyD, floor = Tiles(Sky, White) });
         rooms.Add(new ARoom { name = "bedroom", x0 = -3, x1 = 3, z0 = 6, z1 = 12, wall = H("e7a49a"), trim = Coral, floor = (x, z) => (Mathf.FloorToInt(z / 0.55f) & 1) == 0 ? Lite(Wood, 0.22f) : Lite(Wood, 0.32f) });
@@ -281,7 +295,7 @@ public static partial class LevelGen
         petSpots.Add(h.TransformPoint(new Vector3(1.6f, FY, 1.3f)));
         SoftProps.FloorLamp(h, new Vector3(-2.5f, FY, 0.55f));
         SoftProps.Plant(h, new Vector3(2.45f, FY, 0.5f));
-        SoftProps.Clock(h, new Vector3(0.4f, FY + 2.25f, 5.82f), 180);
+        ClearOfCurtains(h, SoftProps.Clock(h, new Vector3(0.4f, FY + 2.25f, 5.82f), 180));
         SoftProps.Frame(h, new Vector3(-2.82f, FY + 2.0f, 4.0f), 90, 1.1f, 0.8f, ButterD, Sky);
         { var mr = Ring(h, new Vector3(-2.8f, FY + 2.15f, 5.05f), Quaternion.Euler(0, 90, 0), 0.33f, 0.05f, WoodD, 24); SoftProps.Picture(h, new Vector3(-2.79f, FY + 2.15f, 5.05f), Quaternion.Euler(0, -90, 0), 0.66f, 0.66f, "art_plate"); // v0.9.10 painted wreath plate
           Block(h, new Vector3(-2.7f, FY + 1.95f, 2.85f), new Vector3(0.3f, 0.1f, 0.9f), Lite(Wood, 0.2f), 0.05f, false); foreach (int sx in new[] { -1, 1 }) Ball(h, new Vector3(-2.76f, FY + 1.85f, 2.85f + sx * 0.35f), new Vector3(0.1f, 0.14f, 0.1f), WoodD, 6);
@@ -295,7 +309,7 @@ public static partial class LevelGen
         for (int i = 0; i < 3; i++) { float a = i * 2.1f + 0.4f; SoftProps.Stool(h, new Vector3(5.6f + Mathf.Cos(a) * 1.05f, FY, 3.0f + Mathf.Sin(a) * 1.05f), i == 0 ? Rose : i == 1 ? Mint : Lav); }
         Goods.Meal(h, new Vector3(5.6f, FY + 0.76f, 3.0f));   // v0.9.4: plate + rice bowl + dish (was balls)
 
-        SoftProps.Clock(h, new Vector3(5.0f, FY + 2.2f, 0.17f), 0);
+        ClearOfCurtains(h, SoftProps.Clock(h, new Vector3(5.0f, FY + 2.2f, 0.17f), 0));
         // ---- BATH
         SoftProps.Bathtub(h, new Vector3(-7.6f, FY, 11.35f), 180);
         SoftProps.Toilet(h, new Vector3(-3.7f, FY, 11.45f), 180);

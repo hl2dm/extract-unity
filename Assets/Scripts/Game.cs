@@ -445,6 +445,27 @@ public class Game : MonoBehaviour
     }
     static Transform FrontOf(Transform t) { for (var a = t.parent; a; a = a.parent) if (a.name == "front") return a; return null; }
     static string PathOf(Transform t) { string s = t.name; while (t.parent) { t = t.parent; s = t.name + "/" + s; } return s; }
+    // v0.9.12 cloth curtain close-ups: room curtains (have a sash) and window drapes, each from its viewing side
+    static bool RBlock(Vector3 e, Vector3 c, Transform own)
+    {   // renderer-bounds occlusion (signs/awnings have no colliders)
+        var ray = new Ray(e, (c - e).normalized); float L = Vector3.Distance(e, c) - 0.35f;
+        foreach (var r in Object.FindObjectsByType<Renderer>(FindObjectsSortMode.None)) { if (!r.enabled || r.transform.IsChildOf(own) || r is ParticleSystemRenderer) continue; var bb = r.bounds; if (bb.size.magnitude < 0.4f || bb.size.magnitude > 8f || Vector3.Distance(bb.center, c) > 6f) continue; if (bb.IntersectRay(ray, out var dd) && dd < L) return true; }
+        return false;
+    }
+    IEnumerator CuCurtains(string pre, int max)
+    {
+        var groups = Object.FindObjectsByType<Transform>(FindObjectsSortMode.None).Where(t => (t.name == "sk_curtain" && t.gameObject.activeInHierarchy && (t.Find("sk_sash") || (t.parent && t.parent.name == "sk_win"))) || (t.name == "sk_curtainp" && t.parent && t.parent.name == "sk_win" && t.gameObject.activeInHierarchy)).Select(t => t.parent && t.parent.name == "sk_win" ? t.parent : t).Distinct().OrderBy(t => t.position.x * 0.37f + t.position.z).ToList();
+        var picked = new List<Transform>(); foreach (var t in groups) { if (picked.Any(q => Vector3.Distance(q.position, t.position) < 4f)) continue; if (picked.Count(q => q.name == t.name) >= (max + 1) / 2) continue; picked.Add(t); if (picked.Count >= max) break; }
+        int n = 0;
+        foreach (var t in picked)
+        {
+            var b = Art.RenderBounds(t.gameObject); float d = Mathf.Clamp(b.size.magnitude * 0.9f, 1.1f, 2.4f); Vector3 eye = Vector3.zero; bool ok = false;
+            foreach (var sg in new[] { -1f, 1f }) { foreach (var k in new[] { 1f, 0.7f, 0.45f }) { var f = t.forward * sg; f.y = 0; f.Normalize(); var e = b.center + f * d * k + Vector3.up * 0.1f + t.right * 0.2f * k;
+                if (!Physics.Linecast(e, b.center + f * 0.25f) && !RBlock(e, b.center, t) && !Physics.CheckSphere(e, 0.2f) && Physics.Raycast(e, Vector3.down, 6f)) { eye = e; ok = true; break; } } if (ok) break; }
+            if (!ok) continue;
+            Debug.Log("[closeup] curtain " + t.name + " @" + t.position); yield return CamShot(eye, b.center, pre + (n++), 0.5f);
+        }
+    }
     IEnumerator CamShot(Vector3 from, Vector3 at, string name, float wait = 0.4f)
     {
         bool vmOn = player.vmCam.enabled, vrOn = player.vmRoot.gameObject.activeSelf; player.vmCam.enabled = false; player.vmRoot.gameObject.SetActive(false);   // free-camera shots: hide the first-person hand overlay
@@ -498,6 +519,7 @@ public class Game : MonoBehaviour
               yield return CamShot(bc0 + new Vector3(0.6f, 1.5f, 1.0f), bc0 + new Vector3(0.8f, 1.6f, 3.9f), "L_frames", 0.6f); }
                 { var ml = FindObjectsOfType<Light>(true).FirstOrDefault(l => l.name == "map_light"); if (ml) { var pt = ml.transform.parent; var fw = pt.forward; Debug.Log("[closeup] map @" + pt.position); yield return CamShot(pt.position + fw * 2.2f + Vector3.up * 0.1f, pt.position, "L_cu_map", 0.5f);
                     yield return CamShot(pt.position + fw * 1.6f + pt.right * 1.4f + Vector3.up * 0.3f, pt.position, "L_cu_map_b", 0.5f); } }
+                yield return CuCurtains("L_cu_curtain_b", 2);
 
             Deploy(0); for (float w = 0; w < 8 && state != St.Raid; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(2.5f); Pet.FreezeAll = 999;
             float E = player.camRig.localPosition.y;
@@ -550,6 +572,7 @@ public class Game : MonoBehaviour
                     if (pick == null && cands.Count > 0) { pick = cands[0]; var b = Art.RenderBounds(pick.gameObject); var f = fs == 0 ? new Vector3(0.6f, 0, -0.8f) : pick.forward * fs; f.y = 0; f.Normalize(); tgt = b.center; eye = b.center + f * Mathf.Clamp(b.size.magnitude * 1.4f, 1.6f, 6f) + Vector3.up * 0.3f; }
                     if (pick) { Debug.Log("[closeup] " + tag + " @" + pick.position + " eye " + eye + " tgt " + tgt + " fwd " + pick.forward + " sz " + Art.RenderBounds(pick.gameObject).size); yield return CamShot(eye, tgt, "L_cu_" + tag, 0.5f); }
                 }
+                yield return CuCurtains("L_cu_curtain_", 5);
             }
             {   // v0.9.6 user's lamp+planter spot and 12 random street-level close-ups
                 yield return CamShot(new Vector3(-25.2f, 1.0f, -2.6f), new Vector3(-26f, 0.7f, -4.7f), "L_spot", 0.5f);

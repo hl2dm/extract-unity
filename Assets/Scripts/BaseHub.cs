@@ -9,7 +9,7 @@ public static class BaseHub
         float W = 9, D = 8, H = 3.0f; SoftKit.GlobalSeed = 606;
         System.Func<Color, float, Color> Lt = (c, k) => Color.Lerp(c, Color.white, k);
         SoftKit.Block(root, new Vector3(0, -0.1f, 0), new Vector3(40, 0.2f, 40), SoftKit.Leaf, 0.05f, true, 0, 0, 0, null, "ground");
-        SoftKit.Field(root, new Vector3(0, 0.02f, 0), W, D, 0.5f, (x, z) => (Mathf.FloorToInt(x / 0.6f) & 1) == 0 ? SoftKit.Wood : Lt(SoftKit.Wood, 0.1f), true, "floor");
+        SoftKit.Field(root, new Vector3(0, 0.02f, 0), W, D, 0.5f, (x, z) => (Mathf.FloorToInt(x / 0.6f) & 1) == 0 ? new Color(0.85f, 0.73f, 0.6f) : new Color(0.89f, 0.78f, 0.66f), true, "floor");
         var walls = new GameObject("walls").transform; walls.SetParent(root, false);
         void Wall(Vector3 c, Vector3 size, bool alongX)
         {

@@ -17,7 +17,14 @@ public static class ItemArt
         var q = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(q.GetComponent<Collider>()); q.name = "sticker";
         q.transform.SetParent(root, false); q.transform.localPosition = new Vector3(0, 0.28f, 0); q.transform.localScale = Vector3.one * 0.48f;
         var r = q.GetComponent<Renderer>(); r.sharedMaterial = m; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        q.AddComponent<Billboard>();
+        {   // v0.9.12 a chunky enamel token (rarity rim, cream face, icon both sides) that spins, instead of a flat sticker
+            var tk = new GameObject("token").transform; tk.SetParent(root, false); tk.localPosition = new Vector3(0, 0.28f, 0); tk.gameObject.AddComponent<TokenSpin>();
+            var rc = Data.RarCol[Mathf.Clamp(it.r, 0, Data.RarCol.Length - 1)];
+            SoftKit.Cyl(tk, Vector3.zero, 0.25f, 0.05f, new Color(0.99f, 0.95f, 0.86f), 0.02f, Quaternion.Euler(90, 0, 0), 40);
+            SoftKit.Obj(tk, "sk_tokenrim", SoftKit.Torus(0.25f, 0.026f, Color.Lerp(rc, Color.white, 0.15f), 48, 12, 1), Vector3.zero, Quaternion.identity, 0.006f);
+            q.transform.SetParent(tk, false); q.transform.localPosition = new Vector3(0, 0, -0.027f); q.transform.localScale = Vector3.one * 0.4f;
+            var q2 = Object.Instantiate(q, tk); q2.transform.localPosition = new Vector3(0, 0, 0.027f); q2.transform.localRotation = Quaternion.Euler(0, 180, 0);
+        }
         if (!blobM) { var bs = Resources.Load<Shader>("Shaders/Blob") ?? Shader.Find("Soft/Blob"); if (bs) { blobM = new Material(bs) { name = "ItemBlob" }; blobM.SetColor("_BaseColor", new Color(0.28f, 0.2f, 0.14f, 0.3f)); } }
         if (blobM) { var bq = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(bq.GetComponent<Collider>()); bq.name = "item_blob"; bq.transform.SetParent(root, false); bq.transform.localPosition = new Vector3(0, 0.012f, 0); bq.transform.localRotation = Quaternion.Euler(90, 0, 0); bq.transform.localScale = Vector3.one * 0.36f; var br = bq.GetComponent<Renderer>(); br.sharedMaterial = blobM; br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; br.receiveShadows = false; }   // v0.9.9 soft blob (opaque black cylinder read as a hole in the rug)
         if (!glowM) { var gs = Resources.Load<Shader>("Shaders/Blob") ?? Shader.Find("Soft/Blob"); if (gs) { glowM = new Material(gs) { name = "ItemGlow" }; glowM.SetColor("_BaseColor", new Color(1f, 0.86f, 0.42f, 0.55f)); glowM.renderQueue = 3001; } }
@@ -32,6 +39,8 @@ public class GlowPulse : MonoBehaviour { void Update() { transform.localScale = 
 
 /// v0.8.1: steady, gentle item feedback (off = v0.8 pulsing/blinking, kept for before/after tests)
 public static class Calm { public static bool On = true; }
+
+public class TokenSpin : MonoBehaviour { void Update() { float k = transform.parent ? transform.parent.GetInstanceID() : 0; transform.localRotation = Quaternion.Euler(0, Time.time * 55f + k, 0); transform.localPosition = new Vector3(0, 0.3f + 0.025f * Mathf.Sin(Time.time * 1.6f + k), 0); } }
 
 public class Billboard : MonoBehaviour
 {
