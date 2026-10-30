@@ -82,6 +82,7 @@ public static class Goods
         var g = Cyl(p, b + Vector3.up * s * 0.5f, s * 0.3f, s, Lt(Glassy, 0.2f), s * 0.08f, null, 12, false, "sk_jar"); T(g, MatK.Glass);
         Cyl(p, b + Vector3.up * s * 0.38f, s * 0.26f, s * 0.7f, content, s * 0.05f, null, 10, false, "sk_jarfill");
         var l = Cyl(p, b + Vector3.up * s * 1.04f, s * 0.31f, s * 0.12f, Coral, 0.01f, null, 12, false, "sk_lid"); T(l, MatK.Metal);
+        SoftProps.Picture(p, b + Vector3.up * s * 0.45f + new Vector3(0, 0, s * 0.305f), Q(0, 180, 0), s * 0.4f, s * 0.42f, "art_pk" + (Mathf.Abs((int)(b.x * 37 + b.z * 11)) % 3));   // v0.9.13 jar label
     }
     static void Can(Transform p, Vector3 b, float s, Color label)
     {
@@ -93,6 +94,7 @@ public static class Goods
     {
         var g = Lath(p, b, new[] { new Vector2(0, 0), new Vector2(s * 0.16f, 0), new Vector2(s * 0.16f, s * 0.62f), new Vector2(s * 0.06f, s * 0.8f), new Vector2(s * 0.06f, s * 0.95f), new Vector2(0, s * 0.95f) }, c, 10, false, null, "sk_bottle"); T(g, MatK.Plastic);
         Cyl(p, b + Vector3.up * s, s * 0.07f, s * 0.1f, White, 0.01f, null, 8);
+        SoftProps.Picture(p, b + Vector3.up * s * 0.33f + new Vector3(0, 0, s * 0.165f), Q(0, 180, 0), s * 0.22f, s * 0.3f, "art_pk" + (Mathf.Abs((int)(b.x * 29 + b.z * 13)) % 4));   // v0.9.13 bottle label
     }
     static void Bouquet(Transform p, Vector3 b, float s, Color c)
     {   // wrapped paper cone with flowers

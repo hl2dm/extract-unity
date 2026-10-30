@@ -83,8 +83,8 @@ public static class SoftKit
         var mb = new MB(); int nx = Mathf.Max(48, folds * 10), ny = 40; float e = 0.0015f;
         System.Func<float, float, Vector3> P = (u, v) =>
         {
-            float ph = u * folds * Mathf.PI * 2 + 0.7f * (1 - v) * Mathf.Sin(u * 5.3f + seed) + 0.25f * Mathf.Sin(v * 3.1f + u * 9f + seed * 0.3f);
-            float amp = depth * (0.75f + 0.35f * (1 - v)); if (v > 0.93f) amp *= 1.15f;
+            float uw = u + 0.045f / Mathf.Max(1, folds * 0.25f) * Mathf.Sin(u * 13f + seed) + 0.02f * Mathf.Sin(u * 29f + seed * 1.7f); float ph = uw * folds * Mathf.PI * 2 + 0.7f * (1 - v) * Mathf.Sin(u * 5.3f + seed) + 0.25f * Mathf.Sin(v * 3.1f + u * 9f + seed * 0.3f);
+            float amp = depth * (0.75f + 0.35f * (1 - v)) * (0.78f + 0.32f * Mathf.Sin(u * 7.3f + seed * 0.9f));   // v0.9.13 uneven fold depth/spacing (cloth, not fluting) if (v > 0.93f) amp *= 1.15f;
             float x = (u - 0.5f) * w, z = -amp * (0.5f + 0.5f * Mathf.Sin(ph));
             if (tieV > 0)
             {
@@ -92,8 +92,8 @@ public static class SoftKit
                 float sq = 1 - pinch * k - pinch * 0.82f * below * (1 - k); float ax = tieSide * w / 2;
                 x = ax + (x - ax) * sq; z *= 1 + 0.6f * k; z -= 0.05f * k;
             }
-            if (v < 0.05f) { float t = 1 - v / 0.05f; z -= 0.004f * t * t; }   // rolled hem curls slightly out
-            return new Vector3(x, (v - 0.5f) * h, z);
+            if (v < 0.05f) { float t = 1 - v / 0.05f; z -= 0.004f * t * t; } float yv = (v - 0.5f) * h + (v < 0.08f ? (1 - v / 0.08f) * 0.012f * Mathf.Sin(u * folds * 6.28f + 1.3f) : 0);   // wavy hem   // rolled hem curls slightly out
+            return new Vector3(x, yv, z);
         };
         int Grid(bool back)
         {
@@ -103,7 +103,7 @@ public static class SoftKit
                 float u = (float)i / nx, v = (float)j / ny; var pp = P(u, v);
                 var du = P(Mathf.Min(1, u + e), v) - P(Mathf.Max(0, u - e), v); var dv = P(u, Mathf.Min(1, v + e)) - P(u, Mathf.Max(0, v - e));
                 var n = Vector3.Cross(dv, du).normalized; if (n.z > 0) n = -n;
-                float ph = u * folds * Mathf.PI * 2 + 0.7f * (1 - v) * Mathf.Sin(u * 5.3f + seed) + 0.25f * Mathf.Sin(v * 3.1f + u * 9f + seed * 0.3f);
+                float uw = u + 0.045f / Mathf.Max(1, folds * 0.25f) * Mathf.Sin(u * 13f + seed) + 0.02f * Mathf.Sin(u * 29f + seed * 1.7f); float ph = uw * folds * Mathf.PI * 2 + 0.7f * (1 - v) * Mathf.Sin(u * 5.3f + seed) + 0.25f * Mathf.Sin(v * 3.1f + u * 9f + seed * 0.3f);
                 float sh = 0.78f + 0.22f * (0.5f + 0.5f * Mathf.Sin(ph)); if (v < 0.05f || v > 0.95f) sh *= 0.92f;
                 var cc = new Color(c.r * sh, c.g * sh, c.b * sh, MatA);
                 if (back) { pp -= n * th; n = -n; cc = new Color(cc.r * 0.9f, cc.g * 0.9f, cc.b * 0.9f, MatA); }

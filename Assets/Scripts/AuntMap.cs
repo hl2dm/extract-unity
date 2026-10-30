@@ -210,6 +210,14 @@ public static partial class LevelGen
             Band(h, false, r.x1, r.x1 - 0.17f, r.z0 + 0.15f, r.z1 - 0.15f, 0.07f, new Color(r.trim.r * 0.9f, r.trim.g * 0.9f, r.trim.b * 0.9f, 1), ops);
             Band(h, true, r.z0, r.z0 + 0.17f, r.x0 + 0.15f, r.x1 - 0.15f, 0.07f, new Color(r.trim.r * 0.9f, r.trim.g * 0.9f, r.trim.b * 0.9f, 1), ops);
             Band(h, true, r.z1, r.z1 - 0.17f, r.x0 + 0.15f, r.x1 - 0.15f, 0.07f, new Color(r.trim.r * 0.9f, r.trim.g * 0.9f, r.trim.b * 0.9f, 1), ops);
+            {   // v0.9.13 ceilings: crown moulding everywhere, fans / dome lamps / beams per room
+                float ix0 = r.x0 + 0.16f, ix1 = r.x1 - 0.16f, iz0 = r.z0 + 0.16f, iz1 = r.z1 - 0.16f, cy = FY + AWH;
+                SoftProps.Crown(h, ix0, ix1, iz0, iz1, cy, Lite(r.trim, 0.45f));
+                var cc = new Vector3((r.x0 + r.x1) / 2, cy, (r.z0 + r.z1) / 2);
+                if (r.name.Contains("garage") || r.name.Contains("Garage")) { SoftProps.Beams(h, ix0, ix1, iz0, iz1, cy, 4, WoodD); SoftProps.DomeLamp(h, cc + new Vector3(0, -0.18f, 0), GreyD); }
+                else if (r.name.Contains("living") || r.name.Contains("Living") || r.name.Contains("bed") || r.name.Contains("Bed")) SoftProps.CeilFan(h, cc, Lite(WoodD, 0.1f));
+                else SoftProps.DomeLamp(h, cc, Lite(r.trim, 0.2f));
+            }
         }
         foreach (var o in ops) Trim(h, o, trim, o.y0 == 0 && o.w < 2);
         foreach (var o in ops)
@@ -277,11 +285,11 @@ public static partial class LevelGen
         // ---- GARAGE
         var gC = rooms[0]; 
         SCont(h, "toolchest", new Vector3(-8.55f, FY, 1.0f), 90, Coral, "工具箱");
-        SCont(h, "box", new Vector3(-8.3f, FY, 5.25f), 0, Wood, "神秘紙箱");
+        SCont(h, "box", new Vector3(-8.3f, FY, 5.25f), 0, H("a88a66"), "神秘紙箱");
         SCont(h, "shelf", new Vector3(-4.0f, FY, 5.62f), 180, Lite(Sky, 0.1f), "雜物架");
         SoftProps.Scooter(h, new Vector3(-7.7f, FY, 3.3f), 0, Pink);
         SoftProps.Cone(h, new Vector3(-3.6f, FY, 0.6f));
-        SoftProps.WaterJar(h, new Vector3(-5.2f, FY, 5.5f), Butter);
+        SoftProps.PaintCans(h, new Vector3(-5.35f, FY, 5.5f), 180);   // v0.9.13 paint tins (was a plain yellow jar)
         // ---- LIVING
         SoftProps.Rug(h, new Vector3(0, FY + 0.004f, 3.2f), 1.1f, PinkD, Cream);
         SoftProps.Sofa(h, new Vector3(-2.35f, FY, 4.0f), 90, Rose, Mint);
@@ -319,7 +327,7 @@ public static partial class LevelGen
         // ---- BEDROOM
         SoftProps.Rug(h, new Vector3(0.4f, FY + 0.004f, 8.6f), 1.2f, Lav, Butter);
         SoftProps.Bed(h, new Vector3(-1.83f, FY, 9.9f), 90, 1.3f, Wood, Lav, ButterD);
-        SCont(h, "wardrobe", new Vector3(1.7f, FY, 11.55f), 180, Lite(Wood, 0.1f), "衣櫃");
+        SCont(h, "wardrobe", new Vector3(2.42f, FY, 10.2f), -90, Lite(Wood, 0.1f), "衣櫃");
         SCont(h, "drawer", new Vector3(-2.45f, FY, 11.5f), 180, Pink, "床頭小抽屜");
         SCont(h, "box", new Vector3(2.45f, FY, 7.3f), -90, Lite(Butter, 0.1f), "玩具箱");
         SoftProps.Teddy(h, new Vector3(-1.4f, FY + 0.75f, 10.3f), 90, 0.8f);
@@ -483,6 +491,17 @@ public static partial class LevelGen
             var pc = sd > 0 ? Coral : Lite(Sky, 0.1f);
             Block(pg, new Vector3(0, 0.24f, 0), new Vector3(0.9f, 0.48f, 0.55f), pc, 0.04f); Block(pg, new Vector3(0, 0.5f, 0), new Vector3(0.98f, 0.06f, 0.63f), Lite(pc, 0.25f), 0.02f); Block(pg, new Vector3(0, 0.49f, 0), new Vector3(0.82f, 0.04f, 0.47f), WoodD, 0.01f);   // trough + rim + soil
             foreach (int fx in new[] { -1, 1 }) Block(pg, new Vector3(fx * 0.36f, 0.02f, 0), new Vector3(0.12f, 0.04f, 0.5f), Color.Lerp(pc, Color.black, 0.2f), 0.01f);
+            {   // v0.9.13 tiled planter: grout grid, mosaic band, corner caps (was a flat box)
+                var gr = Color.Lerp(pc, Color.black, 0.28f); Color[] mz = { Data.H("3f8a8c"), Data.H("e8b850"), Data.H("d4624a"), Data.H("f3e6c8") };
+                foreach (int fz in new[] { -1, 1 })
+                {
+                    float zf = fz * 0.278f;
+                    for (int t = 1; t < 4; t++) Block(pg, new Vector3(-0.45f + t * 0.225f, 0.22f, zf), new Vector3(0.012f, 0.4f, 0.006f), gr, 0.002f, false);
+                    Block(pg, new Vector3(0, 0.13f, zf), new Vector3(0.88f, 0.012f, 0.006f), gr, 0.002f, false);
+                    for (int t = 0; t < 11; t++) Block(pg, new Vector3(-0.4f + t * 0.08f, 0.38f, zf + fz * 0.002f), new Vector3(0.06f, 0.06f, 0.008f), mz[(t + (int)px) & 3], 0.006f, false);
+                }
+                foreach (int fx in new[] { -1, 1 }) foreach (int fz in new[] { -1, 1 }) Block(pg, new Vector3(fx * 0.44f, 0.24f, fz * 0.27f), new Vector3(0.05f, 0.5f, 0.05f), Lite(pc, 0.15f), 0.015f, false);
+            }
             Goods.Shrub(pg, new Vector3(-0.2f, 0.5f, 0), 0.26f, 0.42f, Leaf, null, (int)px * 3 + sd); Goods.Shrub(pg, new Vector3(0.18f, 0.5f, 0), 0.24f, 0.46f, MintD, k2c(px), (int)px * 5 + sd);
             }
         Debug.Log("[placeaudit] sidewalk planters on lamp posts: before " + plOld + " after " + plNow);

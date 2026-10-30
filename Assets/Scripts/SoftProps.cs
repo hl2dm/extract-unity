@@ -121,8 +121,92 @@ public static class SoftProps
         Block(g, new Vector3(0, 0.93f, -0.42f), new Vector3(0.39f, 0.012f, 0.67f), Dk(dark, 0.7f), 0.004f, false);   // seat piping
         Block(g, new Vector3(0, 0.62f, -0.87f), new Vector3(0.26f, 0.14f, 0.02f), Cream, 0.01f, false); Block(g, new Vector3(0, 0.75f, -0.86f), new Vector3(0.2f, 0.06f, 0.03f), Coral, 0.01f, false);   // plate + tail light
         Cyl(g, new Vector3(0, 1.38f, 0.695f), 0.08f, 0.012f, Grey, 0.004f, Q(90, 0, 0), 14);   // headlight rim
+        {   // v0.9.13 detail: ribbed rubber deck mat, fork tubes + stem, headlight glass, kickstand, seat stitching, side decals, exhaust, rear rack, brake levers
+            for (int ri = 0; ri < 7; ri++) Block(g, new Vector3(0, 0.505f, -0.2f + ri * 0.075f), new Vector3(0.3f, 0.012f, 0.03f), H("3a3236"), 0.004f, false);
+            foreach (int s in new[] { -1, 1 }) { Cyl(g, new Vector3(s * 0.075f, 0.52f, 0.64f), 0.022f, 0.46f, Lt(Grey, 0.2f), 0.008f, Q(-12, 0, 0), 10); Cyl(g, new Vector3(s * 0.075f, 0.32f, 0.62f), 0.03f, 0.06f, GreyD, 0.01f, Q(0, 0, 90), 10); }
+            Cyl(g, new Vector3(0, 1.0f, 0.58f), 0.035f, 0.5f, Lt(Grey, 0.1f), 0.01f, Q(-10, 0, 0), 12);   // steering stem
+            Art.Prim(PrimitiveType.Sphere, g, new Vector3(0, 1.38f, 0.705f), new Vector3(0.13f, 0.13f, 0.04f), Art.Emissive(H("fff4c8"), 0.9f)).name = "sk_headlamp";
+            foreach (int s in new[] { -1, 1 }) Block(g, new Vector3(s * 0.12f, 1.27f, 0.69f), new Vector3(0.06f, 0.035f, 0.02f), H("ffb347"), 0.008f, false);   // indicators
+            foreach (int s in new[] { -1, 1 }) Cyl(g, new Vector3(s * 0.12f, 0.2f, -0.12f), 0.014f, 0.36f, GreyD, 0.005f, Q(25, 0, s * 8), 8);   // kickstand legs
+            Cyl(g, new Vector3(0, 0.04f, -0.2f), 0.014f, 0.3f, GreyD, 0.005f, Q(0, 0, 90), 8); foreach (int s in new[] { -1, 1 }) Block(g, new Vector3(s * 0.15f, 0.015f, -0.2f), new Vector3(0.06f, 0.02f, 0.08f), Dk(GreyD, 0.7f), 0.006f, false);
+            for (int si = 0; si < 12; si++) foreach (int s in new[] { -1, 1 }) Block(g, new Vector3(s * 0.165f, 0.995f, -0.72f + si * 0.054f), new Vector3(0.008f, 0.004f, 0.026f), Cream, 0.001f, false);   // seat stitching
+            foreach (int s in new[] { -1, 1 }) { Block(g, new Vector3(s * 0.252f, 0.66f, -0.48f), new Vector3(0.008f, 0.035f, 0.62f), Cream, 0.003f, false); Block(g, new Vector3(s * 0.252f, 0.61f, -0.5f), new Vector3(0.008f, 0.015f, 0.55f), Dk(c, 0.7f), 0.003f, false); Cyl(g, new Vector3(s * 0.255f, 0.76f, -0.3f), 0.045f, 0.008f, Cream, 0.002f, Q(0, 0, 90), 14); Text(g, new Vector3(s * 0.262f, 0.76f, -0.3f), Q(0, -s * 90, 0), "50", 0.012f, Dk(c, 0.55f)); }
+            Cyl(g, new Vector3(0.2f, 0.3f, -0.7f), 0.045f, 0.4f, Lt(Grey, 0.15f), 0.015f, Q(80, 0, 0), 12); Cyl(g, new Vector3(0.2f, 0.33f, -0.92f), 0.03f, 0.04f, H("4a4346"), 0.01f, Q(80, 0, 0), 10);   // exhaust
+            foreach (int s in new[] { -1, 1 }) Cyl(g, new Vector3(s * 0.15f, 1.0f, -0.82f), 0.012f, 0.3f, GreyD, 0.004f, Q(90, 0, 0), 8); Cyl(g, new Vector3(0, 1.0f, -0.96f), 0.012f, 0.3f, GreyD, 0.004f, Q(0, 0, 90), 8);   // rear rack
+            foreach (int s in new[] { -1, 1 }) Cyl(g, new Vector3(s * 0.33f, 1.47f, 0.56f), 0.008f, 0.16f, GreyD, 0.003f, Q(80, s * 15, 0), 6);   // brake levers
+        }
         var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.7f, 1.3f, 1.8f); bc.center = new Vector3(0, 0.65f, 0);
         return g;
+    }
+    // v0.9.13 ceiling dressing: stepped crown moulding, ceiling fan, flush dome lamp, exposed beams, paint cans
+    public static void Crown(Transform p, float x0, float x1, float z0, float z1, float y, Color c)
+    {
+        float w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = (z0 + z1) / 2;
+        for (int k = 0; k < 3; k++)
+        {
+            float o = 0.03f + k * 0.035f, hh = 0.05f + k * 0.03f, yy = y - hh / 2 - k * 0.0f; Color ck = k == 1 ? Dk(c, 0.92f) : c;
+            Block(p, new Vector3(cx, yy, z0 + o / 2), new Vector3(w, hh, o), ck, 0.01f, false).name = "sk_crown";
+            Block(p, new Vector3(cx, yy, z1 - o / 2), new Vector3(w, hh, o), ck, 0.01f, false).name = "sk_crown";
+            Block(p, new Vector3(x0 + o / 2, yy, cz), new Vector3(o, hh, d), ck, 0.01f, false).name = "sk_crown";
+            Block(p, new Vector3(x1 - o / 2, yy, cz), new Vector3(o, hh, d), ck, 0.01f, false).name = "sk_crown";
+        }
+        Block(p, new Vector3(cx, y - 0.135f, z0 + 0.008f), new Vector3(w, 0.012f, 0.016f), Dk(c, 0.8f), 0.003f, false);   // shadow bead
+        Block(p, new Vector3(cx, y - 0.135f, z1 - 0.008f), new Vector3(w, 0.012f, 0.016f), Dk(c, 0.8f), 0.003f, false);
+        Block(p, new Vector3(x0 + 0.008f, y - 0.135f, cz), new Vector3(0.016f, 0.012f, d), Dk(c, 0.8f), 0.003f, false);
+        Block(p, new Vector3(x1 - 0.008f, y - 0.135f, cz), new Vector3(0.016f, 0.012f, d), Dk(c, 0.8f), 0.003f, false);
+    }
+    public static Transform CeilFan(Transform p, Vector3 pos, Color blade)
+    {
+        var g = Group(p, "sk_ceilfan", pos);
+        Cyl(g, new Vector3(0, -0.03f, 0), 0.11f, 0.05f, Grey, 0.02f, null, 20);                     // ceiling canopy
+        Cyl(g, new Vector3(0, -0.2f, 0), 0.018f, 0.3f, GreyD, 0.006f, null, 10);                    // down rod
+        Cyl(g, new Vector3(0, -0.4f, 0), 0.16f, 0.12f, Lt(GreyD, 0.2f), 0.05f, null, 22);            // motor housing
+        Ring(g, new Vector3(0, -0.4f, 0), Q(90, 0, 0), 0.16f, 0.012f, H("c9a14a"), 22);
+        for (int b = 0; b < 4; b++)
+        {
+            var arm = Group(g, "sk_fanblade", new Vector3(0, -0.42f, 0), b * 90 + 20);
+            Block(arm, new Vector3(0, 0, 0.22f), new Vector3(0.05f, 0.015f, 0.18f), GreyD, 0.006f, false);
+            var bl = Block(arm, new Vector3(0, -0.005f, 0.5f), new Vector3(0.16f, 0.012f, 0.5f), blade, 0.006f, false, 0, -1, 0.15f); bl.transform.localRotation = Q(0, 0, 8);
+        }
+        Ball(g, new Vector3(0, -0.5f, 0), new Vector3(0.22f, 0.12f, 0.22f), H("f4ead2"), 18, false, null, "sk_fanglobe", 0);
+        Art.Prim(PrimitiveType.Sphere, g, new Vector3(0, -0.52f, 0), new Vector3(0.17f, 0.08f, 0.17f), Art.Emissive(H("ffe9b8"), 0.9f)).name = "sk_fanbulb";
+        Cyl(g, new Vector3(0.05f, -0.62f, 0), 0.003f, 0.16f, GreyD, 0.001f, null, 4); Ball(g, new Vector3(0.05f, -0.71f, 0), Vector3.one * 0.02f, H("c9a14a"), 6);   // pull chain
+        return g;
+    }
+    public static Transform DomeLamp(Transform p, Vector3 pos, Color rim)
+    {
+        var g = Group(p, "sk_domelamp", pos);
+        Cyl(g, new Vector3(0, -0.015f, 0), 0.26f, 0.03f, rim, 0.01f, null, 24);
+        Ball(g, new Vector3(0, -0.04f, 0), new Vector3(0.44f, 0.12f, 0.44f), H("fbf3e2"), 20, false, null, "sk_dome", 0);
+        Art.Prim(PrimitiveType.Sphere, g, new Vector3(0, -0.05f, 0), new Vector3(0.36f, 0.09f, 0.36f), Art.Emissive(H("fff0cc"), 1.0f)).name = "sk_domeglow";
+        Ball(g, new Vector3(0, -0.1f, 0), Vector3.one * 0.03f, rim, 8);
+        return g;
+    }
+    public static void Beams(Transform p, float x0, float x1, float z0, float z1, float y, int n, Color c)
+    {
+        for (int i = 0; i < n; i++) { float z = Mathf.Lerp(z0, z1, (i + 0.5f) / n); Block(p, new Vector3((x0 + x1) / 2, y - 0.09f, z), new Vector3(x1 - x0, 0.18f, 0.16f), c, 0.02f, false).name = "sk_beam"; for (int k = 0; k < 6; k++) Block(p, new Vector3(Mathf.Lerp(x0, x1, (k + 0.5f) / 6), y - 0.181f, z), new Vector3(0.24f, 0.004f, 0.012f), Dk(c, 0.78f), 0.001f, false); }
+    }
+    public static Transform PaintCans(Transform p, Vector3 pos, float yaw)
+    {
+        var g = Group(p, "sk_paintcans", pos, yaw); var om = PushM(MatK.Metal);
+        var cols = new[] { H("5f8fbf"), H("e0a948"), H("8fbf8a") };
+        var at = new[] { new Vector3(0, 0, 0), new Vector3(0.3f, 0, 0.05f), new Vector3(0.14f, 0.27f, 0.02f) };
+        for (int i = 0; i < 3; i++)
+        {
+            var b = at[i]; var cc = cols[i];
+            Cyl(g, b + new Vector3(0, 0.13f, 0), 0.13f, 0.26f, H("c8ccd0"), 0.01f, null, 22);                              // tin
+            Cyl(g, b + new Vector3(0, 0.13f, 0), 0.132f, 0.16f, Lt(cc, 0.55f), 0.004f, null, 22);                        // paper label
+            Cyl(g, b + new Vector3(0, 0.14f, 0), 0.133f, 0.06f, cc, 0.003f, null, 22);                                  // colour band
+            foreach (float ry in new[] { 0.005f, 0.255f }) Ring(g, b + new Vector3(0, ry, 0), Q(90, 0, 0), 0.128f, 0.008f, H("aab0b6"), 22);
+            Cyl(g, b + new Vector3(0, 0.262f, 0), 0.115f, 0.01f, H("b8bec4"), 0.003f, null, 22);                       // lid
+            for (int d = 0; d < 3; d++) { float a = (i * 1.7f + d * 0.9f); Block(g, b + new Vector3(Mathf.Sin(a) * 0.13f, 0.215f - d * 0.02f, Mathf.Cos(a) * 0.13f), new Vector3(0.018f, 0.06f + d * 0.02f, 0.006f), cc, 0.004f, false).transform.localRotation = Q(0, a * Mathf.Rad2Deg, 0); }   // drips
+            if (i < 2) { var hd = Obj(g, "sk_handle", SoftKit.Torus(0.12f, 0.005f, H("8a9096"), 20, 5, 1), b + new Vector3(0, 0.27f, 0), Q(0, i * 40, 0), 0.002f); }
+            Text(g, b + new Vector3(0, 0.12f, -0.136f), Quaternion.identity, new[] { "藍", "黃", "綠" }[i], 0.02f, Dk(cc, 0.5f));
+        }
+        Block(g, new Vector3(0.45f, 0.012f, -0.1f), new Vector3(0.06f, 0.02f, 0.3f), H("c9a06c"), 0.006f, false).transform.localRotation = Q(0, 30, 0);   // stir stick
+        var brush = Group(g, "sk_brush", new Vector3(-0.22f, 0.02f, -0.05f), 60); Block(brush, new Vector3(0, 0, 0), new Vector3(0.03f, 0.025f, 0.2f), WoodD, 0.008f, false); Block(brush, new Vector3(0, 0, 0.13f), new Vector3(0.07f, 0.03f, 0.05f), H("b8bec4"), 0.006f, false); Block(brush, new Vector3(0, 0, 0.18f), new Vector3(0.068f, 0.026f, 0.06f), cols[0], 0.006f, false);
+        var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.6f, 0.55f, 0.35f); bc.center = new Vector3(0.15f, 0.27f, 0);
+        MatA = om; return g;
     }
     public static Transform Bench(Transform p, Vector3 pos, float yaw, Color seat, Color leg)
     {
@@ -315,8 +399,10 @@ public static class SoftProps
         Block(g, new Vector3(0, -h / 2, -0.07f), new Vector3(w, 0.03f, 0.2f), Dk(frame, 0.7f), 0.005f, false);
         Color[] cc = { new Color(0.98f, 0.93f, 0.86f), new Color(0.95f, 0.82f, 0.86f), new Color(0.86f, 0.9f, 0.96f), new Color(0.95f, 0.9f, 0.72f) };
         Color cu = cc[hs % 4]; float open = 0.26f + (hs % 3) * 0.05f;
-        if (hs % 5 == 4) { var bl = Drape(g, new Vector3(0, h / 2 - h * 0.2f, -0.05f), Quaternion.identity, w * 0.94f, h * 0.36f, Mathf.Max(4, Mathf.RoundToInt(w * 5)), 0.035f, cu); bl.name = "sk_curtainp"; }   // v0.9.12 gathered half-drawn cafe curtain (was a slab)
-        else foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(3, Mathf.RoundToInt(w * open * 9)), 0.04f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; }   // v0.9.12 pleated cloth panels (were boxes)
+        if (hs % 5 == 4) { var bl = Drape(g, new Vector3(0, h / 2 - h * 0.2f, -0.05f), Quaternion.identity, w * 0.94f, h * 0.36f, Mathf.Max(6, Mathf.RoundToInt(w * 8)), 0.06f, cu); bl.name = "sk_curtainp"; }   // v0.9.12 gathered half-drawn cafe curtain (was a slab)
+        else foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(5, Mathf.RoundToInt(w * open * 14)), 0.075f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; if (hs % 2 == 0) { Ring(g, new Vector3(sx * w * (0.5f - open / 2), -0.08f, -0.06f), Q(90, 0, 0), w * open * 0.28f, 0.012f, Dk(cu, 0.75f), 16); } }   // v0.9.12 pleated cloth panels (were boxes)
+        { var glw = Art.Prim(PrimitiveType.Quad, g, new Vector3(0, 0.02f, 0.008f), new Vector3(w * 0.94f, h * 0.88f, 1), Art.Emissive(Color.Lerp(new Color(1f, 0.83f, 0.58f), cu, 0.35f), 0.75f)); glw.name = "sk_winglow"; }   // v0.9.13 warm back-light behind the cloth
+        Cyl(g, new Vector3(0, h / 2 - 0.035f, -0.075f), 0.012f, w * 0.96f, Dk(frame, 0.6f), 0.005f, Q(0, 0, 90), 8); for (int ri = 0; ri < 7; ri++) Ring(g, new Vector3(-w * 0.45f + ri * w * 0.15f, h / 2 - 0.035f, -0.075f), Q(0, 90, 0), 0.02f, 0.005f, Dk(frame, 0.5f), 10);   // v0.9.13 rod + rings
         if (hs % 2 == 0) { float ix = w * 0.22f * ((hs % 4) - 1.5f) / 1.5f; Block(g, new Vector3(ix, -h / 2 + 0.12f, 0.0f), new Vector3(0.16f, 0.2f, 0.12f), Color.Lerp(inside, Color.black, 0.35f), 0.03f, false); Ball(g, new Vector3(ix, -h / 2 + 0.32f, 0.0f), new Vector3(0.26f, 0.22f, 0.1f), Color.Lerp(inside, new Color(0.2f, 0.3f, 0.2f), 0.6f), 8); }   // pot-plant silhouette on the inner sill
         else Block(g, new Vector3(w * 0.25f, -h * 0.05f, 0.015f), new Vector3(w * 0.3f, h * 0.5f, 0.02f), Color.Lerp(inside, Color.black, 0.25f), 0.02f, false);   // bookcase silhouette
         // frame: four bars with depth (not a pillow slab)
@@ -540,6 +626,20 @@ public static class SoftProps
             Block(fr, new Vector3(mx, 1.38f, -0.3f), new Vector3(0.28f, 0.035f, 0.02f), Dk(mbc, 0.45f), 0.005f, false);   // letter slot
             Block(fr, new Vector3(mx, 1.1f, -0.3f), new Vector3(0.16f, 0.1f, 0.02f), White, 0.01f, false);   // name card
             Block(fr, new Vector3(mx + 0.23f, 1.32f, -0.17f), new Vector3(0.03f, 0.24f, 0.05f), Coral, 0.008f, false);   // flag
+            {   // v0.9.13 mailbox detail: back plate, raised rim, slot flap, rivets, keyhole door, name text, flag pivot, newspaper
+                Block(fr, new Vector3(mx, 1.28f, -0.06f), new Vector3(0.5f, 0.66f, 0.03f), Dk(wall, 0.85f), 0.01f, false);
+                foreach (int sx in new[] { -1, 1 }) Block(fr, new Vector3(mx + sx * 0.2f, 1.24f, -0.295f), new Vector3(0.025f, 0.5f, 0.015f), Lt(mbc, 0.25f), 0.006f, false);
+                Block(fr, new Vector3(mx, 1.0f, -0.295f), new Vector3(0.42f, 0.025f, 0.015f), Lt(mbc, 0.25f), 0.006f, false);
+                Block(fr, new Vector3(mx, 1.41f, -0.31f), new Vector3(0.3f, 0.05f, 0.012f), Lt(mbc, 0.15f), 0.006f, false).transform.localRotation = Q(-18, 0, 0);   // slot flap
+                Block(fr, new Vector3(mx, 1.18f, -0.298f), new Vector3(0.3f, 0.26f, 0.012f), Dk(mbc, 0.92f), 0.01f, false);   // collection door
+                Cyl(fr, new Vector3(mx + 0.11f, 1.18f, -0.307f), 0.016f, 0.008f, Data.H("d9b24a"), 0.002f, Q(90, 0, 0), 12); Block(fr, new Vector3(mx + 0.11f, 1.18f, -0.312f), new Vector3(0.004f, 0.014f, 0.003f), GreyD, 0.001f, false);   // keyhole
+                foreach (int sx in new[] { -1, 1 }) foreach (float sy in new[] { 1.03f, 1.47f }) Ball(fr, new Vector3(mx + sx * 0.18f, sy, -0.305f), Vector3.one * 0.018f, Lt(Grey, 0.3f), 6);   // rivets
+                Text(fr, new Vector3(mx, 1.1f, -0.312f), Quaternion.identity, "林宅", 0.018f, Data.H("3a2f35"));
+                Text(fr, new Vector3(mx, 1.27f, -0.306f), Quaternion.identity, "信 件", 0.022f, Lt(mbc, 0.55f));
+                Cyl(fr, new Vector3(mx + 0.23f, 1.22f, -0.17f), 0.02f, 0.05f, GreyD, 0.006f, Q(0, 0, 90), 10);   // flag pivot
+                Block(fr, new Vector3(mx + 0.23f, 1.42f, -0.17f), new Vector3(0.03f, 0.08f, 0.12f), Coral, 0.008f, false);   // flag paddle
+                var np = Cyl(fr, new Vector3(mx - 0.05f, 1.5f, -0.33f), 0.03f, 0.22f, Data.H("eae4d6"), 0.01f, Q(0, 0, 80), 12); np.name = "sk_newspaper";
+            }
             float py = gt == 2 ? 2.72f : 2.15f, ppx = gt == 2 ? dx : mx;
             Block(fr, new Vector3(ppx, py, -0.08f), new Vector3(0.56f, 0.32f, 0.04f), Dk(trim, 0.6f), 0.02f, false);   // plaque back
             Block(fr, new Vector3(ppx, py, -0.11f), new Vector3(0.5f, 0.26f, 0.03f), Lt(Butter, 0.2f), 0.03f, false);   // enamel face
@@ -1043,7 +1143,7 @@ public static class SoftProps
         foreach (int s in new[] { -1, 1 })
         {
             float cx = s * (w / 2 + 0.1f);
-            Drape(g, new Vector3(cx, rodY - 0.04f - ph / 2, -0.02f), Quaternion.identity, pw, ph, 5, 0.07f, c, 0.42f, s);
+            Drape(g, new Vector3(cx, rodY - 0.04f - ph / 2, -0.02f), Quaternion.identity, pw, ph, 9, 0.095f, c, 0.42f, s);   // v0.9.13 more, deeper folds
             for (int k = 0; k < 6; k++) Ring(g, new Vector3(cx - pw / 2 + 0.05f + k * (pw - 0.1f) / 5f, rodY, -0.02f), Q(0, 90, 0), 0.032f, 0.006f, Lt(WoodD, 0.25f), 14);   // curtain rings
             float tx = s * (w / 2 + 0.1f + pw * 0.3f), ty = rodY - 0.04f - ph * 0.58f;
             var sash = Obj(g, "sk_sash", Torus(pw * 0.24f, 0.02f, Dk(c, 0.78f), 24, 10, 3), new Vector3(tx, ty, -0.08f), Q(90, 0, 0) * Quaternion.Euler(0, 0, 0)); sash.transform.localScale = new Vector3(1f, 1f, 0.55f);   // fabric tie-back band
@@ -1097,7 +1197,7 @@ public static class SoftProps
     /// a small stacked tower plus pieces lying flat - every piece rests on the floor or on the piece under it
     public static Transform ToyBlocks(Transform p, Vector3 pos, int n, System.Random rng)
     {
-        var g = Group(p, "sk_toys", pos); Color[] tc = { H("e8473f"), H("2fa84f"), H("2f7fe0"), H("ffc21a"), H("9b4fd8"), H("ff7fb0") }; var om = PushM(MatK.Plastic);   // v0.9.9 saturated toy paint (muted house palette read grey)   // v0.9.9 painted pieces use glossy paint (wood/plaster material greyed them out)
+        var g = Group(p, "sk_toys", pos); Color[] tc = { H("d4624a"), H("6fa36a"), H("5b86b8"), H("e8b850"), H("9a78b8"), H("e48fa8") }; /* v0.9.13 warm-locked toy paint */ var om = PushM(MatK.Plastic);   // v0.9.9 saturated toy paint (muted house palette read grey)   // v0.9.9 painted pieces use glossy paint (wood/plaster material greyed them out)
         string[] gl = { "A", "B", "C", "1", "2", "3", "★", "D", "4" }; float s = 0.16f; int li = 0;
         void Cube(Vector3 at, float yaw, Color c)
         {
@@ -1135,30 +1235,73 @@ public static class SoftProps
         {   var bb = Group(g, "sk_beachball", new Vector3(-0.05f, 0.09f, 0.36f), 20); float br = 0.09f;
             { var bm = Art.Cutout(Resources.Load<Texture2D>("Art/art_beachball")); var sp = Art.Prim(PrimitiveType.Sphere, bb, Vector3.zero, Vector3.one * br * 2, bm); sp.name = "sk_ballpanels"; sp.transform.localRotation = Q(0, 0, 18); }   // v0.9.9 r3 textured 6-panel ball
         }
-        {   var rb = Group(g, "sk_toyrobot", new Vector3(0.58f, 0, 0.05f), -30); rb.localScale = Vector3.one * 1.25f; var mc = H("d9553f"); var md = H("3f6fa6");   // v0.9.10 painted tin toy: red body, blue limbs
-            foreach (int lx in new[] { -1, 1 }) { Cyl(rb, new Vector3(lx * 0.03f, 0.04f, 0), 0.017f, 0.06f, md, 0.006f, null, 16); Obj(rb, "sk_knee", SoftKit.Torus(0.018f, 0.005f, md, 16, 6, 2), new Vector3(lx * 0.03f, 0.05f, 0), Q(90, 0, 0), 0.002f); Ball(rb, new Vector3(lx * 0.03f, 0.012f, 0.01f), new Vector3(0.05f, 0.026f, 0.066f), tc[(k0 + 2) % 6], 14); }
-            Block(rb, new Vector3(0, 0.115f, 0), new Vector3(0.11f, 0.09f, 0.07f), mc, 0.03f, false, 0, -1, 0.12f);   /* v0.9.12 rounded tin barrel, tapered */
-            Block(rb, new Vector3(0, 0.12f, 0.036f), new Vector3(0.06f, 0.045f, 0.006f), H("2b3440"), 0.012f, false);
-            for (int di = 0; di < 3; di++) Ball(rb, new Vector3(-0.018f + di * 0.018f, 0.12f, 0.04f), Vector3.one * 0.011f, tc[(k0 + di) % 6], 6);
-            foreach (int ax in new[] { -1, 1 }) { Cyl(rb, new Vector3(ax * 0.07f, 0.12f, 0), 0.014f, 0.06f, md, 0.004f, Q(0, 0, ax * 20), 10); Ball(rb, new Vector3(ax * 0.08f, 0.085f, 0), Vector3.one * 0.026f, tc[(k0 + 3) % 6], 8); }
-            Block(rb, new Vector3(0, 0.2f, 0), new Vector3(0.085f, 0.065f, 0.07f), mc, 0.028f, false); Ball(rb, new Vector3(0, 0.232f, 0), new Vector3(0.07f, 0.03f, 0.058f), Dk(mc, 0.92f), 16);   /* domed cap */
-            foreach (int ex in new[] { -1, 1 }) { Ball(rb, new Vector3(ex * 0.02f, 0.205f, 0.036f), new Vector3(0.022f, 0.022f, 0.008f), H("fff3a0"), 8); Ball(rb, new Vector3(ex * 0.02f, 0.205f, 0.04f), new Vector3(0.009f, 0.009f, 0.004f), H("2b3440"), 6); }
-            Block(rb, new Vector3(0, 0.183f, 0.036f), new Vector3(0.04f, 0.006f, 0.004f), H("2b3440"), 0.002f, false);
-            Cyl(rb, new Vector3(0, 0.245f, 0), 0.004f, 0.03f, md, 0.002f, null, 6); Ball(rb, new Vector3(0, 0.265f, 0), Vector3.one * 0.016f, tc[k0 % 6], 8);
-            {   // v0.9.10 detail: ear bolts, chest grille, rivets, belt, wind-up key, claw hands
-                foreach (int ex in new[] { -1, 1 }) { Cyl(rb, new Vector3(ex * 0.046f, 0.205f, 0), 0.018f, 0.012f, tc[(k0 + 4) % 6], 0.003f, Q(0, 0, 90), 10); Cyl(rb, new Vector3(ex * 0.053f, 0.205f, 0), 0.007f, 0.01f, md, 0.002f, Q(0, 0, 90), 6); }
-                for (int gi = 0; gi < 4; gi++) Block(rb, new Vector3(0, 0.1f + gi * 0.0f - 0.0f, 0.036f), new Vector3(0.05f, 0.003f, 0.003f), H("9aa6b2"), 0.001f, false).transform.localPosition = new Vector3(0, 0.086f + gi * 0.007f, 0.037f);
-                foreach (int rx in new[] { -1, 1 }) foreach (int ry in new[] { -1, 1 }) Ball(rb, new Vector3(rx * 0.046f, 0.115f + ry * 0.036f, 0.036f), Vector3.one * 0.007f, md, 5);
-                Block(rb, new Vector3(0, 0.073f, 0), new Vector3(0.115f, 0.012f, 0.075f), tc[(k0 + 1) % 6], 0.004f, false); Block(rb, new Vector3(0, 0.162f, 0), new Vector3(0.04f, 0.014f, 0.04f), md, 0.004f, false);   // belt + neck
-                Cyl(rb, new Vector3(0, 0.12f, -0.045f), 0.005f, 0.03f, H("e8b84a"), 0.002f, Q(90, 0, 0), 6); foreach (int kx in new[] { -1, 1 }) Ball(rb, new Vector3(kx * 0.014f, 0.12f, -0.062f), new Vector3(0.018f, 0.012f, 0.005f), H("e8b84a"), 6);   // wind-up key
-                foreach (int ax in new[] { -1, 1 }) foreach (int cz in new[] { -1, 1 }) Block(rb, new Vector3(ax * 0.085f, 0.064f, cz * 0.008f), new Vector3(0.008f, 0.02f, 0.006f), md, 0.002f, false);   // claws
-                // v0.9.12 r2 tin-toy finish: shoulder caps, chest gauge with needle, mouth grille, cream racing stripe, foot treads
-                foreach (int ax in new[] { -1, 1 }) Ball(rb, new Vector3(ax * 0.06f, 0.148f, 0), new Vector3(0.036f, 0.03f, 0.05f), tc[(k0 + 2) % 6], 12);
-                Cyl(rb, new Vector3(0.0f, 0.138f, 0.04f), 0.013f, 0.004f, H("fbf1d6"), 0.001f, Q(90, 0, 0), 16); Block(rb, new Vector3(0.004f, 0.141f, 0.043f), new Vector3(0.002f, 0.011f, 0.002f), H("c8402e"), 0.0005f, false).transform.localRotation = Q(0, 0, -35);
-                for (int mi = 0; mi < 4; mi++) Block(rb, new Vector3(-0.012f + mi * 0.008f, 0.184f, 0.039f), new Vector3(0.003f, 0.008f, 0.002f), H("9aa6b2"), 0.0005f, false);
-                Block(rb, new Vector3(0, 0.115f, -0.036f), new Vector3(0.11f, 0.012f, 0.004f), H("fbf1d6"), 0.002f, false);
-                foreach (int lx in new[] { -1, 1 }) for (int ti = 0; ti < 3; ti++) Block(rb, new Vector3(lx * 0.03f, 0.002f, -0.006f + ti * 0.012f), new Vector3(0.05f, 0.004f, 0.004f), H("2b3440"), 0.001f, false);
+        {   // v0.9.13 rebuilt tin robot: beveled body, glowing face screen, jointed arms + claws, spring antenna, paint wear + decals
+            var rb = Group(g, "sk_toyrobot", new Vector3(0.75f, 0, 0.1f), -30); rb.localScale = Vector3.one * 2.1f;
+            var mc = H("c9573f"); var md = H("3f6fa6"); var cr = H("f3e6c4"); var dk = H("262d36"); var st = H("aeb7bf"); var gld = H("e8b84a"); var wr = H("e9d7b5");
+            foreach (int lx in new[] { -1, 1 })
+            {
+                Block(rb, new Vector3(lx * 0.031f, 0.017f, 0.006f), new Vector3(0.046f, 0.034f, 0.072f), md, 0.014f, false);                 // boot
+                Block(rb, new Vector3(lx * 0.031f, 0.02f, 0.042f), new Vector3(0.04f, 0.022f, 0.006f), cr, 0.004f, false);                   // toe cap
+                for (int ti = 0; ti < 5; ti++) Block(rb, new Vector3(lx * 0.031f, 0.0015f, -0.024f + ti * 0.012f), new Vector3(0.046f, 0.004f, 0.005f), dk, 0.001f, false);
+                Cyl(rb, new Vector3(lx * 0.031f, 0.05f, 0), 0.013f, 0.035f, st, 0.004f, null, 16);                                         // shin
+                Ball(rb, new Vector3(lx * 0.031f, 0.066f, 0), Vector3.one * 0.024f, md, 14, false, null, "sk_knee", 0);
+                for (int ri = 0; ri < 3; ri++) Ring(rb, new Vector3(lx * 0.031f, 0.04f + ri * 0.008f, 0), Q(90, 0, 0), 0.0135f, 0.0022f, dk, 14);
             }
+            Block(rb, new Vector3(0, 0.081f, 0), new Vector3(0.1f, 0.016f, 0.066f), dk, 0.007f, false);                                    // hip joint
+            Block(rb, new Vector3(0, 0.137f, 0), new Vector3(0.12f, 0.1f, 0.08f), mc, 0.036f, false, 0, 0, 0.08f);                           // torso
+            Block(rb, new Vector3(0, 0.092f, 0), new Vector3(0.126f, 0.013f, 0.086f), gld, 0.006f, false);                                    // belt
+            Block(rb, new Vector3(0, 0.092f, 0.044f), new Vector3(0.022f, 0.016f, 0.004f), st, 0.003f, false);                               // buckle
+            Block(rb, new Vector3(0, 0.142f, 0.04f), new Vector3(0.072f, 0.058f, 0.006f), cr, 0.014f, false);                                // chest plate
+            Block(rb, new Vector3(-0.012f, 0.15f, 0.0445f), new Vector3(0.03f, 0.022f, 0.003f), dk, 0.004f, false);                          // gauge window
+            Cyl(rb, new Vector3(-0.012f, 0.15f, 0.046f), 0.008f, 0.002f, H("fff6dc"), 0.0005f, Q(90, 0, 0), 14);
+            Block(rb, new Vector3(-0.01f, 0.152f, 0.0475f), new Vector3(0.0015f, 0.008f, 0.0015f), H("d0402c"), 0.0004f, false).transform.localRotation = Q(0, 0, -40);
+            var leds = new[] { H("ff5a4a"), H("7dff8a"), H("ffd84a") };
+            for (int li2 = 0; li2 < 3; li2++) Art.Prim(PrimitiveType.Sphere, rb, new Vector3(0.012f + li2 * 0.0095f, 0.153f, 0.0445f), new Vector3(0.007f, 0.007f, 0.004f), Art.Emissive(leds[li2], 1.3f)).name = "sk_led";
+            for (int gi = 0; gi < 4; gi++) Block(rb, new Vector3(0.0f, 0.124f + gi * 0.0055f, 0.0445f), new Vector3(0.05f, 0.0022f, 0.002f), H("8d98a4"), 0.0005f, false);   // speaker grille
+            foreach (int sx in new[] { -1, 1 }) foreach (int sy in new[] { -1, 1 }) Ball(rb, new Vector3(sx * 0.031f, 0.142f + sy * 0.025f, 0.0445f), Vector3.one * 0.005f, st, 6, false, null, "sk_rivet", 0);
+            foreach (int sx in new[] { -1, 1 })
+            {   // side decals: cream racing stripe + yellow bolt
+                Block(rb, new Vector3(sx * 0.0605f, 0.137f, 0), new Vector3(0.003f, 0.012f, 0.074f), cr, 0.001f, false);
+                var b1 = Block(rb, new Vector3(sx * 0.061f, 0.158f, 0.008f), new Vector3(0.003f, 0.02f, 0.006f), gld, 0.001f, false); b1.transform.localRotation = Q(25, 0, 0);
+                var b2 = Block(rb, new Vector3(sx * 0.061f, 0.118f, -0.006f), new Vector3(0.003f, 0.02f, 0.006f), gld, 0.001f, false); b2.transform.localRotation = Q(25, 0, 0);
+            }
+            foreach (var wp in new[] { new Vector3(0.056f, 0.18f, 0.036f), new Vector3(-0.055f, 0.1f, 0.037f), new Vector3(0.04f, 0.186f, -0.03f), new Vector3(-0.05f, 0.18f, 0.03f), new Vector3(0.058f, 0.1f, -0.02f) })
+                Ball(rb, wp, new Vector3(0.012f, 0.006f, 0.008f), wr, 6, false, null, "sk_wear", 0);                                         // chipped paint
+            foreach (int ax in new[] { -1, 1 })
+            {   // arm: shoulder ball, upper arm, elbow, forearm, wrist ring, two-finger claw
+                Ball(rb, new Vector3(ax * 0.068f, 0.168f, 0), new Vector3(0.036f, 0.034f, 0.036f), md, 14, false, null, "sk_shoulder", 0);
+                Cyl(rb, new Vector3(ax * 0.079f, 0.143f, 0.002f), 0.01f, 0.04f, st, 0.003f, Q(0, 0, ax * 14), 12);
+                for (int ri = 0; ri < 2; ri++) Ring(rb, new Vector3(ax * (0.076f + ri * 0.003f), 0.15f - ri * 0.012f, 0.002f), Q(0, 0, ax * 14) * Q(90, 0, 0), 0.0105f, 0.002f, dk, 12);
+                Ball(rb, new Vector3(ax * 0.084f, 0.12f, 0.006f), Vector3.one * 0.022f, md, 12, false, null, "sk_elbow", 0);
+                Cyl(rb, new Vector3(ax * 0.085f, 0.11f, 0.026f), 0.0095f, 0.036f, mc, 0.003f, Q(68, 0, 0), 12);
+                Ring(rb, new Vector3(ax * 0.085f, 0.103f, 0.043f), Q(158, 0, 0), 0.011f, 0.0025f, gld, 12);
+                foreach (int cs in new[] { -1, 1 })
+                {
+                    var c1 = Block(rb, new Vector3(ax * 0.085f + cs * 0.007f, 0.097f, 0.056f), new Vector3(0.0055f, 0.007f, 0.022f), st, 0.002f, false); c1.transform.localRotation = Q(20, cs * -22, 0);
+                    var c2 = Block(rb, new Vector3(ax * 0.085f + cs * 0.004f, 0.094f, 0.068f), new Vector3(0.005f, 0.006f, 0.01f), dk, 0.002f, false); c2.transform.localRotation = Q(20, cs * 30, 0);
+                }
+            }
+            Cyl(rb, new Vector3(0, 0.192f, 0), 0.02f, 0.014f, dk, 0.003f, null, 14);                                                     // neck
+            Block(rb, new Vector3(0, 0.228f, 0), new Vector3(0.1f, 0.072f, 0.078f), mc, 0.03f, false);                                       // head
+            Ball(rb, new Vector3(0, 0.262f, 0), new Vector3(0.08f, 0.022f, 0.064f), Dk(mc, 0.9f), 16, false, null, "sk_cap", 0);
+            Block(rb, new Vector3(0, 0.226f, 0.039f), new Vector3(0.076f, 0.048f, 0.006f), cr, 0.012f, false);                               // screen bezel
+            Block(rb, new Vector3(0, 0.226f, 0.0415f), new Vector3(0.066f, 0.04f, 0.004f), H("15202a"), 0.01f, false);                       // face screen
+            var eye = Art.Emissive(H("7fe8ff"), 1.6f);
+            foreach (int ex in new[] { -1, 1 }) Art.Prim(PrimitiveType.Sphere, rb, new Vector3(ex * 0.016f, 0.231f, 0.0438f), new Vector3(0.013f, 0.015f, 0.003f), eye).name = "sk_eye";
+            for (int mi = 0; mi < 5; mi++) { float a = Mathf.PI * (1.15f + mi * 0.175f); Art.Prim(PrimitiveType.Cube, rb, new Vector3(Mathf.Cos(a) * 0.014f, 0.222f + Mathf.Sin(a) * 0.008f, 0.0438f), new Vector3(0.006f, 0.0025f, 0.002f), eye).name = "sk_smile"; }
+            foreach (int ex in new[] { -1, 1 })
+            {   // ear bolts with rims
+                Cyl(rb, new Vector3(ex * 0.053f, 0.228f, 0), 0.018f, 0.01f, md, 0.003f, Q(0, 0, 90), 14);
+                Ring(rb, new Vector3(ex * 0.058f, 0.228f, 0), Q(0, 90, 0), 0.013f, 0.0025f, gld, 14);
+                Cyl(rb, new Vector3(ex * 0.06f, 0.228f, 0), 0.006f, 0.008f, st, 0.002f, Q(0, 0, 90), 8);
+            }
+            Cyl(rb, new Vector3(0, 0.284f, 0), 0.0035f, 0.04f, st, 0.0015f, null, 8);                                                    // antenna mast
+            for (int ri = 0; ri < 4; ri++) Ring(rb, new Vector3(0, 0.275f + ri * 0.006f, 0), Q(90, 0, 0), 0.0065f, 0.0015f, dk, 10);
+            Art.Prim(PrimitiveType.Sphere, rb, new Vector3(0, 0.31f, 0), Vector3.one * 0.016f, Art.Emissive(H("ff6a4a"), 1.4f)).name = "sk_antennaball";
+            Cyl(rb, new Vector3(0, 0.137f, -0.047f), 0.005f, 0.03f, gld, 0.002f, Q(90, 0, 0), 8);                                         // wind-up key
+            foreach (int kx in new[] { -1, 1 }) Ball(rb, new Vector3(kx * 0.015f, 0.137f, -0.064f), new Vector3(0.02f, 0.013f, 0.005f), gld, 8, false, null, "sk_key", 0);
+            Block(rb, new Vector3(0, 0.137f, -0.041f), new Vector3(0.05f, 0.05f, 0.004f), Dk(mc, 0.85f), 0.01f, false);                      // back hatch
+            foreach (int sx in new[] { -1, 1 }) foreach (int sy in new[] { -1, 1 }) Ball(rb, new Vector3(sx * 0.02f, 0.137f + sy * 0.02f, -0.0435f), Vector3.one * 0.004f, st, 5, false, null, "sk_rivet", 0);
         }
         MatA = om; return g;
     }
@@ -1196,7 +1339,8 @@ public static class SoftProps
                 foreach (int s in new[] { -1, 1 }) { var fl = Block(g, new Vector3(0, 0.61f, s * 0.41f), new Vector3(0.8f, 0.015f, 0.36f), Dk(kr, 0.9f), 0.005f, false); fl.transform.localPosition = new Vector3(0, 0.66f, s * 0.47f); fl.transform.localRotation = Q(s * -28, 0, 0); }
                 Block(g, new Vector3(0, 0.45f, 0.415f), new Vector3(0.16f, 0.32f, 0.008f), H("e9dcb0"), 0.003f, false);   // tape strip
                 Picture(g, new Vector3(0.12f, 0.24f, 0.418f), Q(0, 180, 0), 0.4f, 0.27f, "art_lbl");   // v0.9.10 painted fragile label
-                Ball(g, new Vector3(0.05f, 0.6f, 0.05f), new Vector3(0.22f, 0.16f, 0.22f), Coral, 10); Ball(g, new Vector3(-0.15f, 0.62f, -0.05f), new Vector3(0.18f, 0.14f, 0.18f), Butter, 10);   // goodies peeking out
+                foreach (var pp in new[] { new Vector3(0.08f, 0.6f, 0.06f), new Vector3(-0.16f, 0.61f, -0.08f), new Vector3(0.12f, 0.6f, -0.17f) }) Ball(g, pp, new Vector3(0.2f, 0.12f, 0.18f), H("efe6d2"), 8, false, null, "sk_packpaper", 0.25f);   // v0.9.13 crumpled packing paper
+                Block(g, new Vector3(0, 0.31f, -0.415f), new Vector3(0.16f, 0.32f, 0.008f), H("e9dcb0"), 0.003f, false); Text(g, new Vector3(-0.16f, 0.5f, -0.42f), Quaternion.identity, "易碎", 0.03f, H("8a3b2a")); Text(g, new Vector3(0.2f, 0.18f, -0.42f), Quaternion.identity, "↑↑", 0.03f, H("5a4030"));
                 MatA = om2; break;
             }
             case "safe":
@@ -1227,7 +1371,7 @@ public static class SoftProps
                 for (int i = 0; i < 6; i++) Ball(g, new Vector3(-0.12f + (i % 3) * 0.12f, 0.28f, 0.03f + (i / 3) * 0.1f), new Vector3(0.07f, 0.03f, 0.07f), White, 6); break;
             case "toolchest":
             {   // v0.9.10: rolling metal tool chest - drawers, pulls, lid handle, casters, rivets
-                var om3 = PushM(MatK.Metal); var tcC = H("c8443a"); var tcD = Dk(tcC, 0.75f); var st = H("b9c2c9");
+                var om3 = PushM(MatK.Metal); var tcC = H("5f8f86"); var tcD = Dk(tcC, 0.75f); var st = H("b9c2c9");
                 Block(g, new Vector3(0, 0.36f, 0), new Vector3(0.66f, 0.56f, 0.4f), tcC, 0.03f, false);
                 Block(g, new Vector3(0, 0.66f, 0), new Vector3(0.69f, 0.06f, 0.42f), tcD, 0.02f, false);
                 for (int i = 0; i < 4; i++) { float y = 0.17f + i * 0.13f; Block(g, new Vector3(0, y, 0.2f), new Vector3(0.6f, 0.11f, 0.02f), Lt(tcC, 0.08f), 0.01f, false); Block(g, new Vector3(0, y + 0.02f, 0.215f), new Vector3(0.3f, 0.018f, 0.02f), st, 0.006f, false); Block(g, new Vector3(0.22f, y, 0.212f), new Vector3(0.07f, 0.04f, 0.006f), White, 0.003f, false); }
