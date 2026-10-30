@@ -269,7 +269,7 @@ public static partial class LevelGen
         SoftProps.Cone(h, new Vector3(-3.6f, FY, 0.6f));
         SoftProps.WaterJar(h, new Vector3(-5.2f, FY, 5.5f), Butter);
         // ---- LIVING
-        SoftProps.Rug(h, new Vector3(0, FY + 0.004f, 3.2f), 1.1f, PinkD, Cream); Ring(h, new Vector3(0, FY + 0.03f, 3.2f), Quaternion.Euler(90, 0, 0), 1.12f, 0.05f, Rose, 40);
+        SoftProps.Rug(h, new Vector3(0, FY + 0.004f, 3.2f), 1.1f, PinkD, Cream);
         SoftProps.Sofa(h, new Vector3(-2.35f, FY, 4.0f), 90, Rose, Mint);
         SoftProps.RoundTable(h, new Vector3(0, FY, 3.2f), 0.55f, 0.45f, White, WoodD); Cyl(h, new Vector3(0, FY + 0.22f, 3.2f), 0.14f, 0.42f, WoodD, 0.05f, null, 16); Cyl(h, new Vector3(0, FY + 0.05f, 3.2f), 0.34f, 0.1f, WoodD, 0.05f, null, 20); // chunky pedestal
         Goods.FruitBowl(h, new Vector3(0, FY + 0.44f, 3.2f));   // v0.9.4: fruit bowl (was 3 balls)
@@ -301,7 +301,7 @@ public static partial class LevelGen
         SoftProps.Toilet(h, new Vector3(-3.7f, FY, 11.45f), 180);
         SoftProps.Counter(h, new Vector3(-8.5f, FY, 8.3f), 90, 0.9f, White, Lite(Sky, 0.3f), "sink");
         SCont(h, "box", new Vector3(-4.0f, FY, 7.0f), -90, Lite(Lav, 0.2f), "洗衣籃");
-        Ball(h, new Vector3(-6.5f, FY + 0.02f, 8.8f), new Vector3(1.1f, 0.04f, 0.7f), Mint, 12);
+        SoftProps.Rug(h, new Vector3(-6.5f, FY + 0.004f, 8.8f), 0.55f, Mint, Cream);   // v0.9.7 was a flat ball disc
         // ---- BEDROOM
         SoftProps.Rug(h, new Vector3(0.4f, FY + 0.004f, 8.6f), 1.2f, Lav, Butter);
         SoftProps.Bed(h, new Vector3(-1.83f, FY, 9.9f), 90, 1.3f, Wood, Lav, ButterD);
@@ -309,7 +309,7 @@ public static partial class LevelGen
         SCont(h, "drawer", new Vector3(-2.45f, FY, 11.5f), 180, Pink, "床頭小抽屜");
         SCont(h, "box", new Vector3(2.45f, FY, 7.3f), -90, Lite(Butter, 0.1f), "玩具箱");
         SoftProps.Teddy(h, new Vector3(-1.4f, FY + 0.75f, 10.3f), 90, 0.8f);
-        SoftProps.ToyBlocks(h, new Vector3(0.6f, FY, 7.3f), 6, rng);
+        SoftProps.ToyBlocks(h, new Vector3(0.6f, FY, 6.95f), 6, rng);
         // ---- AUNT'S LOCKED ROOM
         SoftProps.Rug(h, new Vector3(6.0f, FY + 0.004f, 8.4f), 1.1f, PinkD, Cream);
         SoftProps.Bed(h, new Vector3(7.83f, FY, 9.6f), -90, 1.7f, PinkD, Rose, White, false);
@@ -431,7 +431,7 @@ public static partial class LevelGen
         Field(root, new Vector3(0, 0.12f, -6.75f), 130, 5.5f, 1f, tiles, true, "sidewalk");
         foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.08f, s * 4.06f), new Vector3(130, 0.17f, 0.24f), H("e4ded2"), 0.06f, false, 0, 0.01f);
         foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(0, 0.035f, s * 3.5f), new Vector3(130, 0.04f, 0.9f), H("cfc8bc"), 0.015f, false, 0, 0);   // v0.5 gutter band
-        for (float x = -54; x < 58; x += 18) { Cyl(root, new Vector3(x + 3, 0.05f, 1.9f), 0.6f, 0.08f, H("b3aca0"), 0.035f, null, 24); Ring(root, new Vector3(x + 3, 0.095f, 1.9f), Quaternion.Euler(90, 0, 0), 0.38f, 0.04f, H("9a9488"), 24); Ball(root, new Vector3(x + 3, 0.095f, 1.9f), new Vector3(0.22f, 0.04f, 0.22f), H("8f80ab"), 12); }   // manhole covers
+        for (float x = -54; x < 58; x += 18) { Cyl(root, new Vector3(x + 3, 0.05f, 1.9f), 0.6f, 0.08f, H("b3aca0"), 0.035f, null, 24); Ring(root, new Vector3(x + 3, 0.095f, 1.9f), Quaternion.Euler(90, 0, 0), 0.38f, 0.04f, H("9a9488"), 24); for (int q = -3; q <= 3; q++) Block(root, new Vector3(x + 3 + q * 0.09f, 0.093f, 1.9f), new Vector3(0.035f, 0.012f, 0.5f * Mathf.Sqrt(1f - (q / 3.6f) * (q / 3.6f))), H("8f877c"), 0.004f, false); }   // manhole covers: cast grate ribs (was a flat ball)
         for (float x = -57; x < 58; x += 12) foreach (int s in new[] { -1, 1 }) Block(root, new Vector3(x, 0.04f, s * 3.62f), new Vector3(0.8f, 0.05f, 0.5f), H("9a9488"), 0.01f, false, 0, 0);   // drain grates
         foreach (var (p, s) in new[] { (new Vector3(0, 2, 60), new Vector3(130, 6, 1)), (new Vector3(0, 2, -60), new Vector3(130, 6, 1)), (new Vector3(60, 2, 0), new Vector3(1, 6, 130)), (new Vector3(-60, 2, 0), new Vector3(1, 6, 130)) })
         { var b = new GameObject("bound"); b.transform.SetParent(root, false); b.transform.localPosition = p; b.AddComponent<BoxCollider>().size = s; }
@@ -477,7 +477,7 @@ public static partial class LevelGen
         for (int i = 0; i < 4; i++) SoftProps.Scooter(root, new Vector3(8.5f + i * 1.0f, 0.12f, 5.35f), 180 + (i % 2) * 8, sc[i]);
         for (int i = 0; i < 3; i++) SoftProps.Scooter(root, new Vector3(-41f + i * 1.0f, 0.12f, -5.35f), (i % 2) * -8, sc[i + 2]);
         for (int i = 0; i < 2; i++) SoftProps.Scooter(root, new Vector3(44f + i * 1.0f, 0.12f, 5.35f), 180, sc[(i + 4) % 6]);
-        foreach (float x in new[] { -46f, -34f, 46f, 54f }) SoftProps.Tree(root, new Vector3(x, 0.12f, -5.9f), x < 0 ? 0 : 1, 0.85f);
+        foreach (float x in new[] { -34f, 46f, 54f }) SoftProps.Tree(root, new Vector3(x, 0.12f, -5.9f), x < 0 ? 0 : 1, 0.85f);
         foreach (float x in new[] { -52f, 24f, 52f }) SoftProps.Tree(root, new Vector3(x, 0.12f, 5.9f), 1, 0.8f, Lite(Pink, 0.05f));
         SoftProps.Hydrant(root, new Vector3(16f, 0.12f, 4.7f)); SoftProps.Hydrant(root, new Vector3(-30f, 0.12f, -4.7f));
         SoftProps.TrashBin(root, new Vector3(-17.5f, 0.12f, -9.0f), Mint); SoftProps.TrashBin(root, new Vector3(-16.9f, 0.12f, -9.0f), Butter);

@@ -487,7 +487,12 @@ public class Game : MonoBehaviour
         }
         if (lightOnly)
         {   // v0.9.1: fixed camera views for scene-light before/after (-soft2 0 = v0.9 light)
-            { var bc0 = baseRoot.position; yield return CamShot(bc0 + new Vector3(3.6f, 2.6f, 3.4f), bc0 + new Vector3(-1.5f, 0.7f, -2f), "L_bedroom", 0.8f); }
+            { var bc0 = baseRoot.position; yield return CamShot(bc0 + new Vector3(3.6f, 2.6f, 3.4f), bc0 + new Vector3(-1.5f, 0.7f, -2f), "L_bedroom", 0.8f);
+              // v0.9.7 bedroom close-ups: bed + nightstand, toy blocks, low shelf + frames
+              yield return CamShot(bc0 + new Vector3(-1.2f, 1.35f, 1.2f), bc0 + new Vector3(-3.2f, 0.5f, 3.1f), "L_bed", 0.6f);
+              yield return CamShot(bc0 + new Vector3(-0.6f, 0.75f, 1.55f), bc0 + new Vector3(-1.35f, 0.12f, 2.35f), "L_toys", 0.6f);
+              yield return CamShot(bc0 + new Vector3(1.4f, 1.3f, -1.6f), bc0 + new Vector3(2.0f, 0.6f, -3.8f), "L_shelf", 0.6f);
+              yield return CamShot(bc0 + new Vector3(0.6f, 1.5f, 1.0f), bc0 + new Vector3(0.8f, 1.6f, 3.9f), "L_frames", 0.6f); }
             Deploy(0); for (float w = 0; w < 8 && state != St.Raid; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(2.5f); Pet.FreezeAll = 999;
             float E = player.camRig.localPosition.y;
             yield return Aim(new Vector3(-24f, 0.12f + E, -1.5f), new Vector3(-8f, 1.8f, 1.5f)); yield return new WaitForSeconds(0.6f); yield return Shot("L_street");
@@ -531,6 +536,12 @@ public class Game : MonoBehaviour
             {   // v0.9.6 house window close-ups
                 int wi = 0; foreach (var wn in SoftProps.WinSpots.Where(t => t.at.y > 2f).OrderBy(t => Vector3.Distance(t.at, new Vector3(-14f, 4f, 0))).Take(40).Where((t, i) => i % 7 == 0).Take(5))
                 {   var f = wn.outN; f.y = 0; f.Normalize(); yield return CamShot(wn.at + f * 3.2f + wn.rt * 0.8f - Vector3.up * 0.4f, wn.at, "L_hwin_" + (wi++), 0.4f); }
+            }
+            {   // v0.9.7 ground-floor grille windows head-on (user's screenshot angle) + aunt bedroom
+                int gi = 0; foreach (var wn in SoftProps.WinSpots.Where(t => t.at.y > 1f && t.at.y < 2.2f && Mathf.Abs(t.at.z) > 6f).OrderBy(t => Vector3.Distance(t.at, new Vector3(-14f, 1.5f, 0))).Take(3))
+                {   var f = wn.outN; f.y = 0; f.Normalize(); yield return CamShot(wn.at + f * 3.6f - wn.rt * 1.2f + Vector3.up * 0.1f, wn.at - wn.rt * 1.0f, "L_gwin_" + (gi++), 0.4f); }
+                if (hs) { yield return CamShot(hs.TransformPoint(new Vector3(2.4f, 1.5f, 6.6f)), hs.TransformPoint(new Vector3(-1.4f, 0.4f, 9.6f)), "L_abed", 0.5f);
+                          yield return CamShot(hs.TransformPoint(new Vector3(1.4f, 0.9f, 6.4f)), hs.TransformPoint(new Vector3(0.6f, 0.1f, 6.95f)), "L_atoys", 0.5f); }
             }
             {   // v0.9.4 dressing close-ups: shop windows per type + table settings
                 var all = level.root.GetComponentsInChildren<Transform>();
@@ -974,7 +985,7 @@ public class Game : MonoBehaviour
                         d = Mathf.Max(d, Mathf.Abs(cur.Item2.a - pv.e.a), Mathf.Abs(cur.Item2.r - pv.e.r)); maxD = Mathf.Max(maxD, d);
                         string key = tx.name + "'" + (tx.text.Length > 24 ? tx.text.Substring(0, 24) : tx.text) + "'";
                         if (d > 0.5f / 255f) { colCh++; bad[key + " colour"] = bad.TryGetValue(key + " colour", out var k1) ? k1 + 1 : 1; }
-                        if (cur.Item3 != pv.s && !(tx.rectTransform == ui.TimerRect && pv.c == cur.Item1)) { txtCh++; if (statik) bad[key + " text"] = bad.TryGetValue(key + " text", out var k2) ? k2 + 1 : 1; }
+                        if (cur.Item3 != pv.s && !(tx.rectTransform == ui.TimerRect && pv.c == cur.Item1) && System.Text.RegularExpressions.Regex.Replace(cur.Item3, "[0-9]", "") != System.Text.RegularExpressions.Regex.Replace(pv.s, "[0-9]", "")) { txtCh++; if (statik) bad[key + " text"] = bad.TryGetValue(key + " text", out var k2) ? k2 + 1 : 1; }
                     }
                     last[tx] = cur;
                 }

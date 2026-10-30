@@ -29,11 +29,16 @@ public static class BaseHub
         var rw = SoftProps.Win(root, new Vector3(W / 2 - 0.12f, 1.6f, 0), 2.0f, 1.2f, SoftKit.White, true); rw.localRotation = Quaternion.Euler(0, 90, 0);
         var rc = SoftProps.Curtains(root, new Vector3(W / 2 - 0.22f, 1.85f, 0), 2.0f, 1.7f, SoftKit.PinkD); rc.localRotation = Quaternion.Euler(0, 90, 0);
         SoftKit.Cyl(root, new Vector3(0, H - 0.2f, 0.4f), 0.015f, 0.4f, SoftKit.GreyD, 0.005f);
-        SoftKit.Lath(root, new Vector3(0, H - 0.65f, 0.4f), new[] { new Vector2(0, 0), new Vector2(0.4f, 0), new Vector2(0.25f, 0.3f), new Vector2(0, 0.33f) }, SoftKit.Butter, 20);
+        SoftKit.Lath(root, new Vector3(0, H - 0.62f, 0.4f), new[] { new Vector2(0.36f, 0), new Vector2(0.38f, 0.02f), new Vector2(0.34f, 0.08f), new Vector2(0.26f, 0.18f), new Vector2(0.16f, 0.26f), new Vector2(0.06f, 0.3f), new Vector2(0, 0.31f) }, SoftKit.Butter, 24);   // v0.9.7 bell shade with rolled rim (was a 4-point cone)
+        SoftKit.Ball(root, new Vector3(0, H - 0.6f, 0.4f), Vector3.one * 0.1f, new Color(1f, 0.95f, 0.8f), 10);
         SoftProps.Bed(root, new Vector3(-W / 2 + 1.1f, 0.02f, D / 2 - 1.2f), 180, 1.4f, SoftKit.Wood, SoftKit.Lav, SoftKit.ButterD);
-        SoftProps.Rug(root, new Vector3(0, 0.025f, 0.5f), 1.5f, SoftKit.PinkD, SoftKit.Cream);
-        for (int i = 0; i < 7; i++) { float a = i * 0.9f; SoftKit.Ball(root, new Vector3(Mathf.Cos(a) * 1.05f, 0.065f, 0.5f + Mathf.Sin(a) * 1.05f), new Vector3(0.2f, 0.02f, 0.2f), SoftKit.ButterD, 6); }
-        SoftProps.ContainerBody(root, "drawer", new Vector3(-W / 2 + 2.4f, 0.02f, D / 2 - 0.4f), 180, SoftKit.Pink);
+        SoftProps.Rug(root, new Vector3(0, 0.02f, 0.5f), 1.3f, SoftKit.PinkD, SoftKit.Cream);
+        SoftProps.Nightstand(root, new Vector3(-W / 2 + 2.15f, 0.02f, D / 2 - 0.35f), 180, SoftKit.Wood);
+        SoftProps.LowShelf(root, new Vector3(2.0f, 0.02f, -D / 2 + 0.28f), 0, 1.1f, Lt(SoftKit.Wood, 0.15f), 11);
+        SoftProps.Plant(root, new Vector3(2.35f, 0.99f, -D / 2 + 0.28f), 0.55f);
+        SoftProps.WallFrame(root, new Vector3(0.3f, 1.85f, D / 2 - 0.12f), 180, 0.7f, 0.55f, SoftKit.WoodD, 0);
+        SoftProps.WallFrame(root, new Vector3(1.25f, 1.75f, D / 2 - 0.12f), 180, 0.5f, 0.62f, SoftKit.Coral, 1);
+        SoftProps.ContainerBody(root, "drawer", new Vector3(-W / 2 + 3.4f, 0.02f, D / 2 - 0.4f), 180, SoftKit.Pink);
         SoftProps.ContainerBody(root, "wardrobe", new Vector3(-W / 2 + 0.45f, 0.02f, 1.0f), 90, SoftKit.Wood);
         SoftProps.Plant(root, new Vector3(W / 2 - 0.45f, 0.02f, D / 2 - 0.45f));
         var desk = SoftKit.Group(root, "desk", new Vector3(0, 0.02f, -D / 2 + 0.55f));
@@ -94,7 +99,7 @@ public static class BaseHub
         Station(root, "stash", "展示架（" + S.trophies.Count + "/" + cap + "）", new Vector3(-2.4f, 1.0f, -D / 2 + 0.35f), new Vector3(1.4f, 2f, 0.6f), 1.8f);
         SoftProps.Teddy(root, new Vector3(-W / 2 + 1.1f, 0.74f, D / 2 - 0.75f), 160, 1.0f);
         Station(root, "quest", "熊熊：今天的任務" + (S.hasQuest && S.quest != null && S.quest.done ? "（可以領獎！）" : ""), new Vector3(-W / 2 + 1.1f, 0.9f, D / 2 - 0.9f), new Vector3(0.6f, 0.9f, 0.6f), 1.8f);
-        SoftProps.ToyBlocks(root, new Vector3(-1.0f, 0.02f, 1.7f), 7, new System.Random(7));
+        SoftProps.ToyBlocks(root, new Vector3(-1.35f, 0.02f, 2.35f), 7, new System.Random(7));
         Art.Toonify(root.gameObject, 0.01f);
         spawn = new Vector3(0.8f, 0.1f, 2.2f); yaw = 200;
         return root;
