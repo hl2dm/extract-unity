@@ -147,7 +147,7 @@ public static class SoftProps
         Cyl(g, new Vector3(0, 0.5f, 0), 0.07f, 1f, GreyD); Block(g, new Vector3(0, 1.15f, 0), new Vector3(0.5f, 0.4f, 0.35f), Coral, 0.15f, false);
         Cyl(g, new Vector3(0, 1.35f, 0), 0.175f, 0.5f, Coral, 0.05f, Q(0, 0, 90), 16);   // v0.9.9 rounded mail-box roof
         Block(g, new Vector3(0, 1.22f, 0.176f), new Vector3(0.34f, 0.1f, 0.012f), Dk(Coral, 0.8f), 0.02f, false); Block(g, new Vector3(0, 1.22f, 0.182f), new Vector3(0.26f, 0.025f, 0.01f), Plum, 0.008f, false);   // flap + slot
-        Picture(g, new Vector3(0, 1.03f, 0.184f), Q(0, 180, 0), 0.34f, 0.255f, "art_mail");   // v0.9.9 r3 illustrated MAIL plate
+        Picture(g, new Vector3(0, 1.07f, 0.184f), Q(0, 180, 0), 0.46f, 0.3f, "art_mail");   // v0.9.9 r3 illustrated MAIL plate
         { var fp = Block(g, new Vector3(0.27f, 1.3f, -0.05f), new Vector3(0.02f, 0.32f, 0.03f), GreyD, 0.006f, false); Block(g, new Vector3(0.27f, 1.42f, 0.04f), new Vector3(0.025f, 0.11f, 0.16f), H("e8473f"), 0.01f, false); }   // side flag
         foreach (float ry in new[] { 0.94f, 1.6f }) Block(g, new Vector3(0, ry, 0), new Vector3(0.53f, 0.035f, 0.39f), Dk(Coral, 0.6f), 0.015f, false);   // dark trim bands
         Block(g, new Vector3(0, 0.85f, 0), new Vector3(0.2f, 0.12f, 0.2f), GreyD, 0.03f, false); Cyl(g, new Vector3(0, 0.3f, 0), 0.085f, 0.04f, Dk(GreyD, 0.8f), 0.01f, null, 14);   // post bracket + collar
@@ -191,6 +191,14 @@ public static class SoftProps
         Cyl(g, new Vector3(0, 0.34f, 0.17f), 0.085f, 0.07f, hc, 0.01f, Q(90, 0, 0), 14); Cyl(g, new Vector3(0, 0.34f, 0.215f), 0.095f, 0.035f, brass, 0.008f, Q(90, 0, 0), 6);   // pumper nozzle
         for (int ci = 0; ci < 7; ci++) { float t = ci / 6f; var cp = new Vector3(Mathf.Lerp(0.23f, 0.08f, t), Mathf.Lerp(0.3f, 0.27f, t) - Mathf.Sin(t * Mathf.PI) * 0.07f, Mathf.Lerp(0.03f, 0.2f, t));
             Ring(g, cp, Q(ci % 2 == 0 ? 0 : 90, 30, 0), 0.012f, 0.004f, H("9aa3aa"), 8); }   // cap chain
+        foreach (int sd in new[] { -1, 1 }) for (int ci = 0; ci < 6; ci++) { float t = ci / 5f; Ring(g, new Vector3(sd * Mathf.Lerp(0.25f, 0.15f, t), 0.3f - Mathf.Sin(t * Mathf.PI) * 0.06f, Mathf.Lerp(0.02f, 0.12f, t)), Q(ci % 2 == 0 ? 0 : 90, 60, 0), 0.011f, 0.004f, H("9aa3aa"), 8); }   // v0.9.10 side cap chains
+        Cyl(g, new Vector3(0, 0.44f, 0), 0.152f, 0.05f, H("f4efe6"), 0.006f, null, 16);   // reflective band
+        Cyl(g, new Vector3(0, 0.12f, 0), 0.162f, 0.018f, hd, 0.004f, null, 16); Cyl(g, new Vector3(0, 0.28f, 0), 0.157f, 0.014f, hd, 0.004f, null, 16);   // casting seams
+        for (int ri = 0; ri < 4; ri++) { float a = ri * Mathf.PI / 2 + Mathf.PI / 4; var rb2 = Block(g, new Vector3(Mathf.Cos(a) * 0.15f, 0.28f, Mathf.Sin(a) * 0.15f), new Vector3(0.018f, 0.4f, 0.018f), hd, 0.006f, false); rb2.transform.localRotation = Q(0, -a * Mathf.Rad2Deg, -2); }   // mould ribs
+        Cyl(g, new Vector3(0, 0.665f, 0), 0.06f, 0.035f, hd, 0.006f, null, 12); for (int bi = 0; bi < 5; bi++) { float a = bi * Mathf.PI * 0.4f; Ball(g, new Vector3(Mathf.Cos(a) * 0.05f, 0.69f, Mathf.Sin(a) * 0.05f), Vector3.one * 0.012f, brass, 5); }   // bonnet bolt ring
+        Block(g, new Vector3(0, 0.44f, 0.152f), new Vector3(0.09f, 0.03f, 0.004f), hd, 0.002f, false);   // stencil plate
+        Cyl(g, new Vector3(0, 0.075f, 0), 0.163f, 0.03f, H("8a4a3a"), 0.008f, null, 16); Cyl(g, new Vector3(0, 0.004f, 0), 0.3f, 0.008f, H("9c8f7c"), 0.004f, null, 18);   // v0.9.10 rust/grime ring + damp ground stain
+        for (int ch = 0; ch < 7; ch++) { float a = ch * 2.4f; Ball(g, new Vector3(Mathf.Cos(a) * 0.148f, 0.15f + (ch * 0.053f) % 0.3f, Mathf.Sin(a) * 0.148f), new Vector3(0.03f, 0.02f, 0.03f), H("f0d9c8"), 6); }   // chipped paint flecks
         MatA = om;
         var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.4f, 0.8f, 0.4f); bc.center = new Vector3(0, 0.4f, 0); return g;
     }
@@ -198,6 +206,14 @@ public static class SoftProps
     {
         var g = Group(p, "sk_jar", pos);
         Lath(g, Vector3.zero, new[] { new Vector2(0, 0), new Vector2(0.25f, 0), new Vector2(0.38f, 0.3f), new Vector2(0.32f, 0.62f), new Vector2(0.24f, 0.68f), new Vector2(0.27f, 0.72f), new Vector2(0, 0.72f) }, c, 18, true);
+        {   // v0.9.10: glazed band, rim lip, wooden lid with knob, ladle - reads as a real water urn
+            var om5 = PushM(MatK.Tile); Cyl(g, new Vector3(0, 0.36f, 0), 0.378f, 0.05f, Dk(c, 0.72f), 0.01f, null, 22); Cyl(g, new Vector3(0, 0.44f, 0), 0.366f, 0.018f, H("f4efe6"), 0.005f, null, 22);
+            Cyl(g, new Vector3(0, 0.715f, 0), 0.285f, 0.035f, Dk(c, 0.8f), 0.012f, null, 22); MatA = om5; var om6 = PushM(MatK.Wood);
+            Cyl(g, new Vector3(0, 0.745f, 0), 0.3f, 0.03f, H("b07a4f"), 0.01f, null, 20); for (int pi = -2; pi <= 2; pi++) Block(g, new Vector3(pi * 0.11f, 0.762f, 0), new Vector3(0.006f, 0.004f, 0.5f), H("8a5a38"), 0.001f, false);
+            Ball(g, new Vector3(0, 0.79f, 0), new Vector3(0.07f, 0.05f, 0.07f), H("8a5a38"), 8);
+            var la = Cyl(g, new Vector3(0.16f, 0.82f, 0.08f), 0.012f, 0.32f, H("c9965f"), 0.005f, Q(0, 0, -62), 6); Lath(g, new Vector3(0.02f, 0.76f, 0.08f), new[] { new Vector2(0, 0), new Vector2(0.05f, 0.005f), new Vector2(0.055f, 0.05f), new Vector2(0, 0.05f) }, H("c9965f"), 10);
+            MatA = om6;
+        }
         return g;
     }
 
@@ -450,8 +466,7 @@ public static class SoftProps
             var ab = Art.RenderBounds(awn.gameObject); float atop = fr.InverseTransformPoint(ab.max).y; float sz = 0.14f, hb = sz * 9f;
             string sn = shop ?? new[] { "早餐", "冰店", "書店", "花店" }[rng.Next(4)];
             var st = Text3D(fr, new Vector3(0, atop + 0.12f + hb / 2f, -1.02f), sn, sz, new[] { Rose, Coral, LavD, MintD }[rng.Next(4)]);
-            { float iw = Mathf.Min(0.9f, hb * 0.75f), ix = -Mathf.Min(w * 0.42f - iw / 2, (sn.Length * 0.77f + hb * 0.5f) / 2 + iw / 2 + 0.12f); var ip = Group(fr, "sk_signicon", new Vector3(ix, atop + 0.12f + hb / 2f, -1.0f), 0);   // v0.9.9 illustrated shop icon plaque
-              Block(ip, Vector3.zero, new Vector3(iw + 0.1f, iw + 0.1f, 0.08f), WoodD, 0.03f, false); Picture(ip, new Vector3(0, 0, -0.045f), Quaternion.identity, iw, iw, "art_ic" + ShopIcon(sn)); }
+            // v0.9.10: icon is painted into the gouache sign board itself
             foreach (float bx in new[] { -0.45f, 0.45f }) Block(fr, new Vector3(bx, atop - 0.03f, -0.72f), new Vector3(0.06f, 0.3f, 0.06f), GreyD, 0.015f, false);   // brackets down to the awning
             { int si = ShopIcon(sn); if (si == 0 || si == 1 || si == 4 || si == 5) { var mb = Group(fr, "sk_menuboard", new Vector3(w * 0.36f, 0, -1.35f), 0); var om2 = PushM(MatK.Wood);   // v0.9.9 sidewalk menu easel with illustrated chalkboard
                 foreach (int sx in new[] { -1, 1 }) Block(mb, new Vector3(sx * 0.36f, 0.62f, 0), new Vector3(0.06f, 1.24f, 0.06f), WoodD, 0.012f, false);
@@ -721,11 +736,22 @@ public static class SoftProps
         return c;
     }
     public static int SignCount, SignFails;
+    public static readonly string[] SignNames = { "早餐","冰店","書店","花店","早餐店","書局","麵包","豆花","文具","理髮","阿姨家","柑仔店" };
     /// chunky extruded 3D letters on a puffy pill board. Board height fixed by `size`; glyphs fill ~68% of it,
     /// names longer than 4 chars wrap to two lines; text colour forced to >= 4.5:1 contrast with the board.
     public static Transform Text3D(Transform p, Vector3 pos, string s, float size, Color c)
     {
-        var g = Group(p, "sk_text3d", pos); var om = PushM(0.5f);
+        var g = Group(p, "sk_text3d", pos);
+        int sgi = System.Array.IndexOf(SignNames, s);
+        if (sgi >= 0)
+        {   // v0.9.10 B: one gouache sign system - painted arched board w/ icon + real-font CJK lettering
+            var omp = PushM(MatK.Wood); float Hp = size * 9f * 1.25f, Wp = Hp * (300f + s.Length * 210f) / 300f;
+            Block(g, new Vector3(0, -Hp * 0.06f, 0.3f), new Vector3(Wp * 0.97f, Hp * 0.78f, 0.22f), H("7a5236"), 0.06f, false);
+            Picture(g, new Vector3(0, 0, 0.185f), Quaternion.identity, Wp, Hp, "art_sg" + sgi); MatA = omp; SignCount++;
+            var ht = Text(g, new Vector3(0, 0, 0.3f), Quaternion.identity, s, size / 8f, c); ht.GetComponent<MeshRenderer>().enabled = false;   // keeps name for tests
+            return g;
+        }
+        var om = PushM(0.5f);
         Color board = new Color(1f, 0.98f, 0.94f);
         int n = s.Length, lines = n > 4 ? 2 : 1; int per = (n + lines - 1) / lines;
         string txt = lines == 2 ? s.Substring(0, per) + "\n" + s.Substring(per) : s;
@@ -897,14 +923,14 @@ public static class SoftProps
     /// v0.9.7 picture frame: moulded frame, mat, simple painted scene
     public static int ShopIcon(string n)
     {   string[][] k = { new[]{"早餐"}, new[]{"冰"}, new[]{"書"}, new[]{"花"}, new[]{"麵包","烘焙"}, new[]{"豆花"}, new[]{"文具"}, new[]{"理髮","髮"} };
-        for (int i = 0; i < k.Length; i++) foreach (var t in k[i]) if (n.Contains(t)) return i; return 8; }
+        if (n.Contains("豆花")) return 5; for (int i = 0; i < k.Length; i++) foreach (var t in k[i]) if (n.Contains(t)) return i; return 8; }
     static readonly Dictionary<string, Material> PicMats = new Dictionary<string, Material>();
     public static Transform Picture(Transform p, Vector3 lpos, Quaternion lrot, float w, float h, string art)
     {   
         // v0.9.8: flat artwork is a single illustrated texture on a quad inside a modelled frame
         var q = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(q.GetComponent<Collider>()); q.name = "sk_art";
         q.transform.SetParent(p, false); q.transform.localPosition = lpos; q.transform.localRotation = lrot; q.transform.localScale = new Vector3(w, h, 1);
-        var r = q.GetComponent<MeshRenderer>(); if (!PicMats.TryGetValue(art, out var am) || am == null) { am = Art.Cutout(Resources.Load<Texture2D>("Art/" + art)); am.SetColor("_BaseColor", new Color(0.86f, 0.82f, 0.78f)); if (art.StartsWith("art_menu") || art.StartsWith("art_ic") || art.StartsWith("art_cv") || art.StartsWith("art_tv") || art.StartsWith("art_blk")) am.SetColor("_BaseColor", new Color(1f, 0.97f, 0.92f)); PicMats[art] = am; } r.sharedMaterial = am; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;   // v0.9.9 one shared material per artwork   // unlit, toned to sit in the warm room light r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        var r = q.GetComponent<MeshRenderer>(); if (!PicMats.TryGetValue(art, out var am) || am == null) { am = Art.Cutout(Resources.Load<Texture2D>("Art/" + art)); am.SetColor("_BaseColor", new Color(0.86f, 0.82f, 0.78f)); if (art.StartsWith("art_menu") || art.StartsWith("art_sg") || art.StartsWith("art_plate") || art.StartsWith("art_lbl") || art.StartsWith("art_ic") || art.StartsWith("art_cv") || art.StartsWith("art_tv") || art.StartsWith("art_blk")) am.SetColor("_BaseColor", new Color(1f, 0.97f, 0.92f)); PicMats[art] = am; } r.sharedMaterial = am; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;   // v0.9.9 one shared material per artwork   // unlit, toned to sit in the warm room light r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         return q.transform;
     }
     public static Transform WallFrame(Transform p, Vector3 pos, float yaw, float w, float h, Color frame, int kind)
@@ -960,8 +986,8 @@ public static class SoftProps
     }
     public static Transform Frame(Transform p, Vector3 pos, float yaw, float w, float h, Color frame, Color art)
     {
-        var g = Group(p, "sk_frame", pos, yaw); Block(g, Vector3.zero, new Vector3(w, h, 0.06f), frame, 0.03f, false); Block(g, new Vector3(0, 0, 0.03f), new Vector3(w - 0.12f, h - 0.12f, 0.02f), art, 0.01f, false);
-        Ball(g, new Vector3(-w * 0.15f, -h * 0.1f, 0.05f), new Vector3(w * 0.35f, h * 0.3f, 0.02f), LeafD, 8); Ball(g, new Vector3(w * 0.2f, h * 0.18f, 0.05f), Vector3.one * w * 0.15f, ButterD, 8); return g;
+        var g = Group(p, "sk_frame", pos, yaw); Block(g, Vector3.zero, new Vector3(w, h, 0.06f), frame, 0.03f, false); Block(g, new Vector3(0, 0, 0.03f), new Vector3(w - 0.08f, h - 0.08f, 0.02f), H("f3e6cf"), 0.005f, false);
+        Picture(g, new Vector3(0, 0, 0.045f), Q(0, 180, 0), w - 0.18f, h - 0.18f, "art_frame"); return g;   // v0.9.10 gouache sunflower painting
     }
     public static Transform Clock(Transform p, Vector3 pos, float yaw)
     {
@@ -1060,7 +1086,7 @@ public static class SoftProps
         {   var bb = Group(g, "sk_beachball", new Vector3(-0.05f, 0.09f, 0.36f), 20); float br = 0.09f;
             { var bm = Art.Cutout(Resources.Load<Texture2D>("Art/art_beachball")); var sp = Art.Prim(PrimitiveType.Sphere, bb, Vector3.zero, Vector3.one * br * 2, bm); sp.name = "sk_ballpanels"; sp.transform.localRotation = Q(0, 0, 18); }   // v0.9.9 r3 textured 6-panel ball
         }
-        {   var rb = Group(g, "sk_toyrobot", new Vector3(0.58f, 0, 0.05f), -30); var mc = H("c9d3dc"); var md = H("7d8a96");
+        {   var rb = Group(g, "sk_toyrobot", new Vector3(0.58f, 0, 0.05f), -30); rb.localScale = Vector3.one * 1.25f; var mc = H("d9553f"); var md = H("3f6fa6");   // v0.9.10 painted tin toy: red body, blue limbs
             foreach (int lx in new[] { -1, 1 }) { Block(rb, new Vector3(lx * 0.03f, 0.035f, 0), new Vector3(0.035f, 0.07f, 0.04f), md, 0.008f, false); Block(rb, new Vector3(lx * 0.03f, 0.008f, 0.008f), new Vector3(0.045f, 0.016f, 0.06f), tc[(k0 + 2) % 6], 0.005f, false); }
             Block(rb, new Vector3(0, 0.115f, 0), new Vector3(0.11f, 0.09f, 0.07f), mc, 0.014f, false);
             Block(rb, new Vector3(0, 0.12f, 0.036f), new Vector3(0.06f, 0.045f, 0.004f), H("2b3440"), 0.004f, false);
@@ -1070,6 +1096,14 @@ public static class SoftProps
             foreach (int ex in new[] { -1, 1 }) { Ball(rb, new Vector3(ex * 0.02f, 0.205f, 0.036f), new Vector3(0.022f, 0.022f, 0.008f), H("fff3a0"), 8); Ball(rb, new Vector3(ex * 0.02f, 0.205f, 0.04f), new Vector3(0.009f, 0.009f, 0.004f), H("2b3440"), 6); }
             Block(rb, new Vector3(0, 0.183f, 0.036f), new Vector3(0.04f, 0.006f, 0.004f), H("2b3440"), 0.002f, false);
             Cyl(rb, new Vector3(0, 0.245f, 0), 0.004f, 0.03f, md, 0.002f, null, 6); Ball(rb, new Vector3(0, 0.265f, 0), Vector3.one * 0.016f, tc[k0 % 6], 8);
+            {   // v0.9.10 detail: ear bolts, chest grille, rivets, belt, wind-up key, claw hands
+                foreach (int ex in new[] { -1, 1 }) { Cyl(rb, new Vector3(ex * 0.046f, 0.205f, 0), 0.018f, 0.012f, tc[(k0 + 4) % 6], 0.003f, Q(0, 0, 90), 10); Cyl(rb, new Vector3(ex * 0.053f, 0.205f, 0), 0.007f, 0.01f, md, 0.002f, Q(0, 0, 90), 6); }
+                for (int gi = 0; gi < 4; gi++) Block(rb, new Vector3(0, 0.1f + gi * 0.0f - 0.0f, 0.036f), new Vector3(0.05f, 0.003f, 0.003f), H("9aa6b2"), 0.001f, false).transform.localPosition = new Vector3(0, 0.086f + gi * 0.007f, 0.037f);
+                foreach (int rx in new[] { -1, 1 }) foreach (int ry in new[] { -1, 1 }) Ball(rb, new Vector3(rx * 0.046f, 0.115f + ry * 0.036f, 0.036f), Vector3.one * 0.007f, md, 5);
+                Block(rb, new Vector3(0, 0.073f, 0), new Vector3(0.115f, 0.012f, 0.075f), tc[(k0 + 1) % 6], 0.004f, false); Block(rb, new Vector3(0, 0.162f, 0), new Vector3(0.04f, 0.014f, 0.04f), md, 0.004f, false);   // belt + neck
+                Cyl(rb, new Vector3(0, 0.12f, -0.045f), 0.005f, 0.03f, H("e8b84a"), 0.002f, Q(90, 0, 0), 6); foreach (int kx in new[] { -1, 1 }) Ball(rb, new Vector3(kx * 0.014f, 0.12f, -0.062f), new Vector3(0.018f, 0.012f, 0.005f), H("e8b84a"), 6);   // wind-up key
+                foreach (int ax in new[] { -1, 1 }) foreach (int cz in new[] { -1, 1 }) Block(rb, new Vector3(ax * 0.085f, 0.064f, cz * 0.008f), new Vector3(0.008f, 0.02f, 0.006f), md, 0.002f, false);   // claws
+            }
         }
         MatA = om; return g;
     }
@@ -1106,8 +1140,7 @@ public static class SoftProps
                 foreach (int s in new[] { -1, 1 }) { var fl = Block(g, new Vector3(s * 0.41f, 0.61f, 0), new Vector3(0.4f, 0.015f, 0.8f), Lt(kr, 0.06f), 0.005f, false); fl.transform.localPosition = new Vector3(s * 0.5f, 0.68f, 0); fl.transform.localRotation = Q(0, 0, s * 35); }
                 foreach (int s in new[] { -1, 1 }) { var fl = Block(g, new Vector3(0, 0.61f, s * 0.41f), new Vector3(0.8f, 0.015f, 0.36f), Dk(kr, 0.9f), 0.005f, false); fl.transform.localPosition = new Vector3(0, 0.66f, s * 0.47f); fl.transform.localRotation = Q(s * -28, 0, 0); }
                 Block(g, new Vector3(0, 0.45f, 0.415f), new Vector3(0.16f, 0.32f, 0.008f), H("e9dcb0"), 0.003f, false);   // tape strip
-                Block(g, new Vector3(0.18f, 0.25f, 0.416f), new Vector3(0.26f, 0.17f, 0.008f), White, 0.004f, false); for (int ln = 0; ln < 3; ln++) Block(g, new Vector3(0.16f, 0.29f - ln * 0.045f, 0.421f), new Vector3(0.18f - ln * 0.03f, 0.014f, 0.004f), Plum, 0.002f, false);
-                Block(g, new Vector3(-0.22f, 0.22f, 0.416f), new Vector3(0.12f, 0.12f, 0.006f), Coral, 0.004f, false);   // fragile stamp
+                Picture(g, new Vector3(0.12f, 0.24f, 0.418f), Q(0, 180, 0), 0.4f, 0.27f, "art_lbl");   // v0.9.10 painted fragile label
                 Ball(g, new Vector3(0.05f, 0.6f, 0.05f), new Vector3(0.22f, 0.16f, 0.22f), Coral, 10); Ball(g, new Vector3(-0.15f, 0.62f, -0.05f), new Vector3(0.18f, 0.14f, 0.18f), Butter, 10);   // goodies peeking out
                 MatA = om2; break;
             }
@@ -1137,6 +1170,17 @@ public static class SoftProps
             case "register":
                 Block(g, new Vector3(0, 0.13f, 0), new Vector3(0.52f, 0.26f, 0.42f), Coral, 0.07f, false); Block(g, new Vector3(0, 0.3f, -0.1f), new Vector3(0.36f, 0.18f, 0.1f), Butter, 0.04f, false).transform.localRotation = Q(-25, 0, 0);
                 for (int i = 0; i < 6; i++) Ball(g, new Vector3(-0.12f + (i % 3) * 0.12f, 0.28f, 0.03f + (i / 3) * 0.1f), new Vector3(0.07f, 0.03f, 0.07f), White, 6); break;
+            case "toolchest":
+            {   // v0.9.10: rolling metal tool chest - drawers, pulls, lid handle, casters, rivets
+                var om3 = PushM(MatK.Metal); var tcC = H("c8443a"); var tcD = Dk(tcC, 0.75f); var st = H("b9c2c9");
+                Block(g, new Vector3(0, 0.36f, 0), new Vector3(0.66f, 0.56f, 0.4f), tcC, 0.03f, false);
+                Block(g, new Vector3(0, 0.66f, 0), new Vector3(0.69f, 0.06f, 0.42f), tcD, 0.02f, false);
+                for (int i = 0; i < 4; i++) { float y = 0.17f + i * 0.13f; Block(g, new Vector3(0, y, 0.2f), new Vector3(0.6f, 0.11f, 0.02f), Lt(tcC, 0.08f), 0.01f, false); Block(g, new Vector3(0, y + 0.02f, 0.215f), new Vector3(0.3f, 0.018f, 0.02f), st, 0.006f, false); Block(g, new Vector3(0.22f, y, 0.212f), new Vector3(0.07f, 0.04f, 0.006f), White, 0.003f, false); }
+                foreach (int s in new[] { -1, 1 }) { Cyl(g, new Vector3(s * 0.36f, 0.5f, 0), 0.012f, 0.2f, st, 0.005f, Q(90, 0, 0), 8); foreach (int z in new[] { -1, 1 }) { Cyl(g, new Vector3(s * 0.25f, 0.05f, z * 0.15f), 0.04f, 0.035f, H("333a40"), 0.01f, Q(0, 0, 90), 10); Block(g, new Vector3(s * 0.25f, 0.085f, z * 0.15f), new Vector3(0.05f, 0.02f, 0.05f), st, 0.005f, false); } }
+                for (int i = 0; i < 4; i++) Ball(g, new Vector3(-0.3f + (i % 2) * 0.6f, i < 2 ? 0.62f : 0.1f, 0.205f), Vector3.one * 0.015f, st, 6);
+                Block(g, new Vector3(-0.1f, 0.71f, 0.05f), new Vector3(0.22f, 0.03f, 0.08f), H("e8b84a"), 0.01f, false);   // wrench on top
+                MatA = om3; break;
+            }
             default:
                 Block(g, new Vector3(0, sz.y / 2, 0), sz, accent, Mathf.Min(0.12f, sz.y * 0.3f), false); break;
         }

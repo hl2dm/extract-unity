@@ -32,7 +32,7 @@ public static class BaseHub
         for (int i = 0; i < 9; i++) { float bx = -3.6f + i * 0.9f, by = 2.5f - 0.12f * Mathf.Sin((i % 3 + 0.5f) / 3f * Mathf.PI); SoftKit.Block(root, new Vector3(bx, by - 0.11f, -D / 2 + 0.13f), new Vector3(0.22f, 0.24f, 0.01f), i % 2 == 0 ? SoftKit.ButterD : SoftKit.Rose, 0.004f, false, 0, -1, 0.92f).transform.localRotation = Quaternion.Euler(0, 0, 180); }   // v0.9.5 bunting flags (were wall balls)
         for (int i = 0; i < 8; i++) { float x0 = -3.6f + i * 0.9f; var sg = SoftKit.Cyl(root, new Vector3(x0 + 0.45f, 2.47f, -D / 2 + 0.125f), 0.008f, 0.92f, SoftKit.White, 0.002f, Quaternion.Euler(0, 0, 90), 5); }
         for (int i = 0; i < 4; i++) { var pz = -2.2f + i * 0.75f; float py = 2.1f + (i % 2) * 0.25f; SoftKit.Block(root, new Vector3(-W / 2 + 0.12f, py, pz), new Vector3(0.03f, 0.36f, 0.3f), SoftKit.Wood, 0.008f, false); SoftKit.Block(root, new Vector3(-W / 2 + 0.135f, py, pz), new Vector3(0.02f, 0.3f, 0.24f), SoftKit.White, 0.003f, false); SoftProps.Picture(root, new Vector3(-W / 2 + 0.147f, py, pz), Quaternion.Euler(0, -90, 0), 0.2f, 0.2f, "art_s" + i); }   // v0.9.8 illustrated prints   // v0.9.5 framed drawings (were wall balls)
-        var qw = SoftProps.RoundWin(root, new Vector3(2.7f, 1.95f, -D / 2 + 0.12f), 0.7f, SoftKit.White, true); qw.localRotation = Quaternion.Euler(0, 180, 0);
+        { var pl = SoftKit.Group(root, "sk_plate", new Vector3(2.7f, 1.95f, -D / 2 + 0.1f), 0); SoftKit.Ring(pl, Vector3.zero, Quaternion.identity, 0.72f, 0.07f, SoftKit.WoodD, 28); SoftProps.Picture(pl, new Vector3(0, 0, 0.02f), Quaternion.Euler(0, 180, 0), 1.44f, 1.44f, "art_plate"); }   // v0.9.10 painted wreath plate (was concentric medallion)
         var qc = SoftProps.Curtains(root, new Vector3(2.7f, 1.95f, -D / 2 + 0.2f), 1.5f, 1.6f, SoftKit.PinkD); qc.localRotation = Quaternion.Euler(0, 180, 0);
         var rw = SoftProps.Win(root, new Vector3(W / 2 - 0.12f, 1.6f, 0), 2.0f, 1.2f, SoftKit.White, true); rw.localRotation = Quaternion.Euler(0, 90, 0);
         var rc = SoftProps.Curtains(root, new Vector3(W / 2 - 0.22f, 1.85f, 0), 2.0f, 1.7f, SoftKit.PinkD); rc.localRotation = Quaternion.Euler(0, 90, 0);
@@ -66,10 +66,10 @@ public static class BaseHub
         var poster = SoftKit.Group(root, "map_poster", new Vector3(0, 1.95f, -D / 2 + 0.13f), 0);
         SoftKit.Block(poster, Vector3.zero, new Vector3(2.5f, 1.48f, 0.05f), SoftKit.Wood, 0.04f, false);
         SoftKit.Block(poster, new Vector3(0, 0, 0.03f), new Vector3(2.38f, 1.36f, 0.02f), SoftKit.Cream, 0.006f, false);
-        { var mq = SoftProps.Picture(poster, new Vector3(0, -0.08f, 0.042f), Quaternion.Euler(0, 180, 0), 2.16f, 1.2f, "art_map"); var mr = mq.GetComponent<MeshRenderer>(); if (mr) mr.material.SetColor("_BaseColor", new Color(1f, 0.97f, 0.92f));   // v0.9.9 bigger + full-brightness town map
+        { var mq = SoftProps.Picture(poster, new Vector3(0, 0, 0.042f), Quaternion.Euler(0, 180, 0), 2.3f, 1.3f, "art_map"); var mr = mq.GetComponent<MeshRenderer>(); if (mr) mr.material.SetColor("_BaseColor", new Color(1f, 0.97f, 0.92f));   // v0.9.9 bigger + full-brightness town map
           var sl = new GameObject("map_light").AddComponent<Light>(); sl.transform.SetParent(poster, false); sl.transform.localPosition = new Vector3(0, 0.9f, 0.9f); sl.transform.localRotation = Quaternion.Euler(50, 180, 0); sl.type = LightType.Spot; sl.spotAngle = 80; sl.range = 3.5f; sl.intensity = 2.2f; sl.color = new Color(1f, 0.93f, 0.82f); sl.shadows = LightShadows.None; }   // v0.9.8 illustrated town map (was coloured blocks)
         SoftKit.Block(poster, new Vector3(0.45f, 0.05f, 0.05f), new Vector3(0.04f, 0.04f, 0.02f), SoftKit.Rose, 0.003f, false, 0, -1, 0.9f);   // map pin
-        SoftKit.Text(poster, new Vector3(0, 0.61f, 0.07f), Quaternion.Euler(0, 180, 0), "小鎮地圖", 0.03f, SoftKit.Plum);
+        
         Station(root, "deploy", "書桌上的地圖：出發去玩", new Vector3(0, 0.6f, -D / 2 + 0.55f), new Vector3(1.8f, 1.2f, 0.9f), 1.8f);
         var chest = SoftKit.Group(root, "toychest", new Vector3(-W / 2 + 0.55f, 0.02f, -1.2f), 90);
         SoftKit.Block(chest, new Vector3(0, 0.33f, 0), new Vector3(1.4f, 0.64f, 0.8f), SoftKit.Coral, 0.14f, true, 0, 0.02f);

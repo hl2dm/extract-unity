@@ -166,9 +166,9 @@ public static partial class LevelGen
         foreach (var r in rooms) Field(h, new Vector3((r.x0 + r.x1) / 2, FY, (r.z0 + r.z1) / 2), r.x1 - r.x0, r.z1 - r.z0, 0.55f, r.floor, true, "floor_" + r.name);
         var ceil = Block(h, new Vector3(0, FY + AWH + 0.07f, 6), new Vector3(18.4f, 0.14f, 12.4f), Cream, 0.05f, true, 0, 0.01f); NoShadow(ceil);
         // toy-diorama massing: fat rounded corner pillars + pillowy cornice + chunky base bumper (visual only)
-        foreach (var cx in new[] { -9.2f, 9.2f }) foreach (var cz in new[] { -0.2f, 12.2f }) { Cyl(h, new Vector3(cx, FY + AWH / 2 + 0.2f, cz), 0.8f, AWH + 0.6f, Butter, 0.35f, null, 24); Ball(h, new Vector3(cx, FY + AWH + 0.6f, cz), new Vector3(1.5f, 0.8f, 1.5f), Rose, 16); }
+        foreach (var cx in new[] { -9.2f, 9.2f }) foreach (var cz in new[] { -0.2f, 12.2f }) { Cyl(h, new Vector3(cx, FY + AWH / 2 + 0.2f, cz), 0.8f, AWH + 0.6f, Lite(ButterD, 0.25f), 0.35f, null, 24); Ball(h, new Vector3(cx, FY + AWH + 0.6f, cz), new Vector3(1.5f, 0.8f, 1.5f), Rose, 16); }
         Block(h, new Vector3(0, FY + AWH + 0.35f, -0.35f), new Vector3(18.6f, 0.6f, 0.7f), White, 0.3f, false);
-        foreach (var px in new[] { -3.05f, 3.05f }) { Cyl(h, new Vector3(px, FY + AWH / 2, -0.3f), 0.5f, AWH, Butter, 0.25f, null, 20); Ball(h, new Vector3(px, FY + AWH + 0.15f, -0.3f), new Vector3(1.1f, 0.6f, 1.1f), Mint, 14); }
+        foreach (var px in new[] { -3.05f, 3.05f }) { Cyl(h, new Vector3(px, FY + AWH / 2, -0.3f), 0.42f, AWH, Lite(Wood, 0.45f), 0.12f, null, 20); Cyl(h, new Vector3(px, FY + 0.15f, -0.3f), 0.52f, 0.3f, WoodD, 0.06f, null, 20); Cyl(h, new Vector3(px, FY + AWH - 0.12f, -0.3f), 0.5f, 0.2f, WoodD, 0.05f, null, 20); for (int fl = 0; fl < 10; fl++) { float a = fl * Mathf.PI / 5; Block(h, new Vector3(px + Mathf.Cos(a) * 0.415f, FY + AWH / 2, -0.3f + Mathf.Sin(a) * 0.415f), new Vector3(0.035f, AWH - 0.7f, 0.035f), Lite(Wood, 0.2f), 0.012f, false); } /* v0.9.10 painted-wood porch column */ Ball(h, new Vector3(px, FY + AWH + 0.15f, -0.3f), new Vector3(1.1f, 0.6f, 1.1f), Mint, 14); }
         Block(h, new Vector3(4.6f, 0.3f, -0.35f), new Vector3(8.2f, 0.6f, 0.6f), LavD, 0.28f, false);
 
         // ---- structural walls (outer pink, partitions cream) + room skins
@@ -283,7 +283,7 @@ public static partial class LevelGen
         SoftProps.Plant(h, new Vector3(2.45f, FY, 0.5f));
         SoftProps.Clock(h, new Vector3(0.4f, FY + 2.7f, 5.82f), 180);
         SoftProps.Frame(h, new Vector3(-2.82f, FY + 2.0f, 4.0f), 90, 1.1f, 0.8f, ButterD, Sky);
-        { var mr = Ring(h, new Vector3(-2.8f, FY + 2.15f, 5.05f), Quaternion.Euler(0, 90, 0), 0.32f, 0.07f, Coral, 24); Ball(h, new Vector3(-2.83f, FY + 2.15f, 5.05f), new Vector3(0.04f, 0.6f, 0.6f), Lite(Sky, 0.5f), 14); Ball(h, new Vector3(-2.79f, FY + 2.25f, 4.97f), new Vector3(0.02f, 0.12f, 0.08f), White, 6); // round mirror
+        { var mr = Ring(h, new Vector3(-2.8f, FY + 2.15f, 5.05f), Quaternion.Euler(0, 90, 0), 0.33f, 0.05f, WoodD, 24); SoftProps.Picture(h, new Vector3(-2.79f, FY + 2.15f, 5.05f), Quaternion.Euler(0, -90, 0), 0.66f, 0.66f, "art_plate"); // v0.9.10 painted wreath plate
           Block(h, new Vector3(-2.7f, FY + 1.95f, 2.85f), new Vector3(0.3f, 0.1f, 0.9f), Lite(Wood, 0.2f), 0.05f, false); foreach (int sx in new[] { -1, 1 }) Ball(h, new Vector3(-2.76f, FY + 1.85f, 2.85f + sx * 0.35f), new Vector3(0.1f, 0.14f, 0.1f), WoodD, 6);
           Cyl(h, new Vector3(-2.7f, FY + 2.12f, 2.6f), 0.09f, 0.22f, Lite(Mint, 0.2f), 0.04f, null, 12); Goods.Shrub(h, new Vector3(-2.7f, FY + 2.22f, 2.6f), 0.13f, 0.2f, Leaf, null, 7); Goods.PotPlant(h, new Vector3(-2.7f, FY + 2.0f, 3.08f), 0.16f, LeafD, Rose, 9); { var v = Cyl(h, new Vector3(-2.7f, FY + 2.06f, 3.28f), 0.05f, 0.16f, ButterD, 0.03f, null, 12, false, "sk_vase"); SoftKit.Tag(v.transform, MatK.Plastic); } } // little wall shelf
         // ---- KITCHEN
