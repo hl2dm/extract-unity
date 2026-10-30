@@ -22,7 +22,7 @@ public class Game : MonoBehaviour
         I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
-        foreach (var a in args) { if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; if (a == "-polyonly") polyOnly = true; if (a == "-lightonly") lightOnly = true; }
+        foreach (var a in args) { if (a == "-matdbg") Shader.SetGlobalFloat("_MatDbg", 1); if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; if (a == "-polyonly") polyOnly = true; if (a == "-lightonly") lightOnly = true; }
         { var u0 = Application.absoluteURL ?? ""; int gi = u0.IndexOf("geo="); if (gi >= 0 && gi + 4 < u0.Length) GeoQ.Force = u0[gi + 4] - '0'; }
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-lite" && args[i + 1] == "0") LightQ.Legacy = true;
         if ((Application.absoluteURL ?? "").Contains("lite=0")) LightQ.Legacy = true;
@@ -30,6 +30,8 @@ public class Game : MonoBehaviour
         if ((Application.absoluteURL ?? "").Contains("soft=0")) LightQ.NoSoft = true;
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-soft2" && args[i + 1] == "0") LightQ.NoSoft2 = true;
         if ((Application.absoluteURL ?? "").Contains("soft2=0")) LightQ.NoSoft2 = true;
+        for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-dusk" && args[i + 1] == "0") LightQ.NoDusk = true;
+        if ((Application.absoluteURL ?? "").Contains("dusk=0")) LightQ.NoDusk = true;
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-geo") int.TryParse(args[i + 1], out GeoQ.Force);
         if (autoshots) { SaveSys.Key = "casual_autoshot"; PlayerPrefs.DeleteKey(SaveSys.Key); }
         Art.Init(); gameObject.AddComponent<Sfx>(); gameObject.AddComponent<Bgm>();
@@ -495,6 +497,18 @@ public class Game : MonoBehaviour
             if (hs) yield return CamShot(hs.TransformPoint(new Vector3(2.6f, 0.12f + E, 1.2f)), hs.TransformPoint(new Vector3(-2.35f, 0.7f, 4.0f)), "L_interior", 0.5f);
             { var pp = new Vector3(-14f, 0, 0); yield return CamShot(pp + new Vector3(0, 16f, -3f), pp, "L_topdown", 0.5f); }
             { var pp = new Vector3(-20f, 0, 0); yield return CamShot(pp + new Vector3(-6f, 9f, -8f), pp + new Vector3(4f, 0, 2f), "L_overview", 0.5f); }
+            {   // v0.9.3 visible sources: low sun disc + street lamp in one frame
+                var sl = RenderSettings.sun;
+                if (sl) { var sd = -sl.transform.forward; var cp = new Vector3(-6f, 0.12f + E, -2.6f); yield return Aim(cp, cp + sd * 30f + Vector3.down * 4f); yield return new WaitForSeconds(0.6f); yield return Shot("L_sun"); }
+            }
+            {   // v0.9.3 material close-ups: interior door vs wall vs floor, shop door vs facade vs sidewalk
+                var dr = level.root.GetComponentsInChildren<Transform>().FirstOrDefault(t => t.name == "Door");
+                if (dr) { var b = Art.RenderBounds(dr.gameObject); var f = dr.forward; yield return CamShot(b.center - f * 2.4f + dr.right * 1.1f + Vector3.up * 0.5f, b.center + Vector3.down * 0.5f, "L_matdoor", 0.5f); }
+                var sdir = RenderSettings.sun ? -RenderSettings.sun.transform.forward : Vector3.up;
+                var dv = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_doorvis").OrderByDescending(t => Mathf.Abs(Vector3.Dot(t.forward, sdir)) - Vector3.Distance(t.position, new Vector3(-14f, 0, 0)) * 0.004f).FirstOrDefault();
+                if (dv) { var b = Art.RenderBounds(dv.gameObject); var nn = dv.forward * Mathf.Sign(Vector3.Dot(dv.forward, sdir)); nn.y = 0; nn.Normalize(); var rt = Vector3.Cross(Vector3.up, nn);
+                    yield return CamShot(b.center + nn * 3.4f + rt * 1.8f + Vector3.up * 0.3f, b.center + Vector3.down * 0.6f - rt * 0.4f, "L_matshop", 0.5f); }
+            }
             Debug.Log("[casual] lightOnly done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
         }
         if (doorOnly)

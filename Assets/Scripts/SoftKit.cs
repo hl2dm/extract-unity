@@ -41,6 +41,25 @@ public static class SoftKit
     static Color Mottle(Color c, Vector3 p, int s) { float k = 0.985f + 0.025f * VN(p * 0.6f, s + 5); return new Color(c.r * k, c.g * k, c.b * k, MatA); }
     /// material class in vertex alpha: 1 matte clay, 0.5 glossy plastic, 0.1 felt
     public static float MatA = 1f; public static float PushM(float a) { var o = MatA; MatA = a; return o; }
+    /// v0.9.3 material library (vertex alpha id = a*20, decoded in Casual/Toon): each class has its own spec / sheen / fresnel / metal response
+    public static class MatK { public const float Plaster = 1f, Wood = 0.95f, Floor = 0.9f, Tile = 0.85f, Asphalt = 0.8f, Glass = 0.75f, Metal = 0.7f, Foliage = 0.65f, Roof = 0.6f, Plastic = 0.5f, Fabric = 0.2f, Felt = 0.1f; }
+    static readonly System.Collections.Generic.Dictionary<(Material, float), Material> matCache = new System.Collections.Generic.Dictionary<(Material, float), Material>();
+    public static void Tag(Transform g, float a)
+    {
+        if (!g) return;
+        foreach (var mf in g.GetComponentsInChildren<MeshFilter>(true))
+        {
+            var m = mf.sharedMesh; var mr = mf.GetComponent<MeshRenderer>(); if (!m || !mr || !mr.sharedMaterial || !mr.sharedMaterial.HasProperty("_UseVC")) continue;
+            if (mr.sharedMaterial.GetFloat("_UseVC") < 0.5f)
+            {   // v0.9.3: non-vertex-colour material -> cached clone carrying the class id (keeps SRP batching)
+                var ms = mr.sharedMaterials;
+                for (int k = 0; k < ms.Length; k++) { var src = ms[k]; if (!src || !src.HasProperty("_MatA")) continue; var key = (src, a); if (!matCache.TryGetValue(key, out var cl)) { cl = new Material(src); cl.name = src.name + "_m" + a; cl.SetFloat("_MatA", a); matCache[key] = cl; } ms[k] = cl; }
+                mr.sharedMaterials = ms; continue;
+            }
+            if (!m.isReadable) continue; var cs = m.colors; if (cs.Length == 0) continue;
+            for (int i = 0; i < cs.Length; i++) cs[i].a = a; m.colors = cs;
+        }
+    }
     static float PF(float u) { return Mathf.Pow(Mathf.Max(0, 1 - Mathf.Pow(Mathf.Abs(u), 4)), 0.35f); }
     /// inflated wall panel in XY, back at z=0, bulging toward -Z by b
     public static Mesh PillowMesh(float w, float h, float b, Color c, int seed)

@@ -19,7 +19,7 @@ Shader "Casual/PastelSky"
             #pragma vertex vert
             #pragma fragment frag
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
-            float4 _Top, _Mid, _Horizon, _Ground, _Cloud;
+            float4 _Top, _Mid, _Horizon, _Ground, _Cloud; float4 _SkySunDir, _SkySunCol;
             struct A { float4 pos:POSITION; };
             struct V { float4 cs:SV_POSITION; float3 d:TEXCOORD0; };
             float h21(float2 p) { p = frac(p * float2(123.34, 456.21)); p += dot(p, p + 45.32); return frac(p.x * p.y); }
@@ -36,6 +36,12 @@ Shader "Casual/PastelSky"
                 float cl = vn(uv * 1.3 + _Time.x * 0.3) * 0.6 + vn(uv * 3.1) * 0.3 + vn(uv * 7) * 0.1;
                 cl = smoothstep(0.55, 0.75, cl) * smoothstep(0.02, 0.2, y);
                 c = lerp(c, _Cloud.rgb, cl * 0.85);
+                float sd = saturate(dot(d, normalize(_SkySunDir.xyz + 1e-4)));   // v0.9.3 soft sun halo (capped, never white-clips)
+                c = lerp(c, min(_SkySunCol.rgb, 0.96), _SkySunCol.a * (0.4 * pow(sd, 3) + 0.6 * pow(sd, 40)) * step(-0.05, y));
+                c = lerp(c, min(_SkySunCol.rgb, 0.96), _SkySunCol.a * 0.35 * smoothstep(0.25, 0.0, abs(y - 0.03)));   // warm horizon glow band all round
+                float dk = smoothstep(0.998, 0.9988, sd) * step(0.001, _SkySunCol.a);   // v0.9.3 visible sun disc (core only, feeds bloom)
+                c = lerp(c, float3(1.0, 0.78, 0.46) * 1.9, dk);
+                c += _SkySunCol.a * float3(1.0, 0.72, 0.45) * 0.45 * pow(sd, 300);
                 float g = vn(i.cs.xy * 0.9) * 0.5 + vn(float2(i.cs.x * 0.15, i.cs.y * 1.8)) * 0.5;   // screen-space crayon grain
                 c *= lerp(0.995, 1.005, g);
                 return half4(c, 1);

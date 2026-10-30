@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
@@ -7,7 +8,7 @@ using UnityEngine.Rendering.Universal;
 /// "-lite 0" (or ?lite=0) keeps the v0.7 lighting for before/after shots.
 public static class LightQ
 {
-    public static bool Legacy, NoSoft, NoSoft2, NoVivid;   // NoVivid = v0.9.1 look   // NoSoft2 = v0.9 look (before v0.9.1 overcast-soft pass)   // NoSoft = v0.8 look (before v0.8.1 softening)
+    public static bool Legacy, NoSoft, NoSoft2, NoVivid, NoDusk;   // NoDusk = v0.9.2 look   // NoVivid = v0.9.1 look   // NoSoft2 = v0.9 look (before v0.9.1 overcast-soft pass)   // NoSoft = v0.8 look (before v0.8.1 softening)
     static Light fill;
     public static void Apply(Transform root)
     {
@@ -47,7 +48,9 @@ public static class LightQ
             st.shadows.Override(new Color(0.62f, 0.72f, 0.76f)); st.highlights.Override(new Color(1f, 0.9f, 0.78f)); st.balance.Override(20f);
         }
         RenderSettings.fogColor = new Color(0.95f, 0.93f, 0.87f); RenderSettings.fogDensity *= 1.25f;
+        Shader.SetGlobalVector("_ToonDusk", Vector4.zero); Shader.SetGlobalVector("_SkySunCol", Vector4.zero);
         if (S2 > 0) Soft2(root, prof, sun);
+        PoolK = 1f; if (S2 > 0 && !NoVivid && !NoDusk) { Dusk(prof, sun); PoolK = 1.7f; }
         if (root && t >= 1) Pools(root, t);
     }
     // v0.9.1 "overcast-bright afternoon": very light shadows, no glare, matte materials, low contrast/saturation, gentle warm haze. Same on every tier (only cost-free params).
@@ -75,6 +78,44 @@ public static class LightQ
         }
         Art.SetSoftBaseVig(K_Vig);
         if (root) Matte(root);
+        if (root) Materials(root); if (root && !NoDusk && !NoVivid) Glows(root);
+    }
+    // v0.9.3 nostalgic golden-hour dusk: low warm sun, orange->peach->lavender sky, blue-violet soft shadows, warm haze, gentle glow. Cost-free params, same on every tier.
+    public static float D_Elev = 20f, D_Yaw = 72f, D_Sun = 1.08f, D_Temp = 4f, D_Exp = -0.12f, D_Fog = 0.8f, D_Bloom = 0.13f, D_Shadow = 0.6f, D_Sat = 50f, D_Con = 28f;
+    static void Dusk(VolumeProfile prof, Light sun)
+    {
+        var e = sun.transform.eulerAngles; sun.transform.rotation = Quaternion.Euler(D_Elev, D_Yaw, 0);
+        sun.color = new Color(1f, 0.82f, 0.62f); sun.intensity *= D_Sun; sun.shadowStrength = D_Shadow;
+        RenderSettings.ambientSkyColor = new Color(0.52f, 0.48f, 0.6f); RenderSettings.ambientEquatorColor = new Color(0.74f, 0.58f, 0.52f); RenderSettings.ambientGroundColor = new Color(0.5f, 0.41f, 0.4f);
+        Shader.SetGlobalColor("_ToonFillCol", new Color(0.22f, 0.21f, 0.3f));
+        Shader.SetGlobalVector("_ToonDusk", new Vector4(0.56f, 0.53f, 0.8f, 1f));
+        RenderSettings.fogColor = new Color(0.97f, 0.78f, 0.68f); RenderSettings.fogDensity *= D_Fog;
+        var sk = RenderSettings.skybox;
+        if (sk && sk.HasProperty("_Horizon")) { sk.SetColor("_Top", new Color(0.62f, 0.6f, 0.86f)); sk.SetColor("_Mid", new Color(1f, 0.78f, 0.6f)); sk.SetColor("_Horizon", new Color(1f, 0.62f, 0.34f)); sk.SetColor("_Ground", new Color(0.86f, 0.66f, 0.58f)); sk.SetColor("_Cloud", new Color(1f, 0.8f, 0.72f)); }
+        Shader.SetGlobalVector("_SkySunDir", -sun.transform.forward); Shader.SetGlobalVector("_SkySunCol", new Vector4(1f, 0.84f, 0.6f, 0.55f));
+        if (prof)
+        {
+            if (prof.TryGet<Bloom>(out var bl)) { bl.threshold.Override(1.0f); bl.intensity.Override(D_Bloom); bl.scatter.Override(0.78f); bl.tint.Override(new Color(1f, 0.85f, 0.7f)); }
+            if (prof.TryGet<ColorAdjustments>(out var c)) { c.postExposure.Override(D_Exp); c.saturation.Override(D_Sat); c.contrast.Override(D_Con); }
+            if (prof.TryGet<WhiteBalance>(out var wb)) { wb.temperature.Override(D_Temp); wb.tint.Override(2f); }
+            if (prof.TryGet<SplitToning>(out var st)) { st.shadows.Override(new Color(0.47f, 0.45f, 0.53f)); st.highlights.Override(new Color(0.56f, 0.52f, 0.47f)); st.balance.Override(-20f); }
+            if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) smh.highlights.Override(new Vector4(1f, 1f, 1f, -0.16f));
+        }
+    }
+    // v0.9.3 per-material response: tag procedural meshes by what they are (walls stay matte plaster by default)
+    static readonly (string k, float a)[] MatMap = {
+        ("floor_shop", SoftKit.MatK.Tile), ("floor", SoftKit.MatK.Floor), ("sidewalk", SoftKit.MatK.Tile), ("park_path", SoftKit.MatK.Tile), ("road", SoftKit.MatK.Asphalt),
+        ("grass", SoftKit.MatK.Foliage), ("lawn", SoftKit.MatK.Foliage), ("sk_tree", SoftKit.MatK.Foliage), ("sk_bush", SoftKit.MatK.Foliage), ("sk_plant", SoftKit.MatK.Foliage), ("clump", SoftKit.MatK.Foliage), ("Vegetation", SoftKit.MatK.Foliage),
+        ("hinge", SoftKit.MatK.Wood), ("sk_bench", SoftKit.MatK.Wood), ("bookcase", SoftKit.MatK.Wood), ("desk", SoftKit.MatK.Wood), ("chair", SoftKit.MatK.Wood), ("sidetable", SoftKit.MatK.Wood), ("crafttable", SoftKit.MatK.Wood), ("sk_counter", SoftKit.MatK.Wood),
+        ("sk_scooter", SoftKit.MatK.Metal), ("shop_sign", SoftKit.MatK.Metal), ("sk_ac", SoftKit.MatK.Metal), ("sk_tank", SoftKit.MatK.Metal), ("sk_mailbox", SoftKit.MatK.Metal), ("sk_hydrant", SoftKit.MatK.Metal), ("sk_bin", SoftKit.MatK.Metal), ("PalletRack", SoftKit.MatK.Metal), ("sk_lamp", SoftKit.MatK.Metal),
+        ("sk_rug", SoftKit.MatK.Fabric), ("sk_sofa", SoftKit.MatK.Fabric), ("sk_bed", SoftKit.MatK.Fabric), ("sk_curtain", SoftKit.MatK.Fabric), ("sk_petbed", SoftKit.MatK.Fabric), ("sk_awning", SoftKit.MatK.Fabric),
+        ("glass", SoftKit.MatK.Glass) };
+    public static int Materials(Transform root)
+    {
+        int n = 0;
+        foreach (var t in root.GetComponentsInChildren<Transform>(true))
+            foreach (var (k, a) in MatMap) if (t.name.StartsWith(k)) { SoftKit.Tag(t, a); n++; break; }
+        Debug.Log("[light] mat tagged " + n); return n;
     }
     public static int Matte(Transform root)
     {   // standard-lit materials: kill gloss/metal glare (toon shader handles its own via _ToonSoft.y)
@@ -96,10 +137,51 @@ public static class LightQ
         if (f?.GetValue(urp) is ScriptableRendererData[] list)
             foreach (var rd in list) if (rd) foreach (var ft in rd.rendererFeatures) if (ft && ft.GetType().Name.Contains("AmbientOcclusion")) ft.SetActive(on);
     }
+    public static float PoolK = 1f;
     static Light Pt(Transform at, Vector3 local, Color c, float range, float inten)
-    {
+    {   inten *= PoolK; if (PoolK > 1) { c = Color.Lerp(c, new Color(1f, 0.7f, 0.42f), 0.45f); range *= 1.2f; }
         var g = new GameObject("lq_pool"); g.transform.SetParent(at, false); g.transform.localPosition = local;
         var l = g.AddComponent<Light>(); l.type = LightType.Point; l.color = c; l.range = range; l.intensity = inten; l.shadows = LightShadows.None; l.renderMode = LightRenderMode.ForcePixel; l.intensity *= (NoSoft2 ? 1f : 0.7f); return l;
+    }
+    static Material glowB, glowF, lampM; static Transform glowRoot; static readonly HashSet<Transform> glowed = new HashSet<Transform>();
+    static Material GlowM(bool bill, Color c, float a)
+    {
+        var sh = Resources.Load<Shader>("Shaders/Glow") ?? Shader.Find("Soft/Glow"); if (!sh) return null;
+        var m = new Material(sh); m.SetColor("_Color", new Color(c.r, c.g, c.b, a)); m.SetFloat("_Bill", bill ? 1 : 0); return m;
+    }
+    static void G(Transform p, Vector3 lp, float size, Material m, bool flat)
+    {
+        // parented to a separate root (not the prop) so prop bounds / placement + scale audits are unaffected
+        if (!glowRoot) { glowRoot = new GameObject("lq_glows").transform; glowRoot.SetParent(p.root, false); }
+        var q = Art.Prim(PrimitiveType.Quad, glowRoot, Vector3.zero, Vector3.one * size, m); q.name = "lq_glow"; q.transform.position = p.TransformPoint(lp);
+        if (flat) q.transform.rotation = Quaternion.Euler(90, 0, 0);
+        var r = q.GetComponent<Renderer>(); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;
+    }
+    // v0.9.3 visible motivated light sources: lamp bulb halo + ground pool, warm window glows (all tiers; cheap quads, static, no flicker)
+    public static int Glows(Transform root)
+    {
+        glowRoot = null;
+        if (!glowB) glowB = GlowM(true, new Color(1f, 0.72f, 0.4f), 0.85f);
+        if (!glowF) glowF = GlowM(false, new Color(1f, 0.66f, 0.36f), 0.22f);
+        if (!glowB) return 0; var wg = GlowM(true, new Color(1f, 0.7f, 0.4f), 0.16f);
+        int n = 0, w = 0;
+        foreach (var tr in root.GetComponentsInChildren<Transform>().Where(x => x.name == "sk_lamp" || x.name == "sk_flamp").ToList())
+        {
+            if (glowed.Contains(tr)) continue; glowed.Add(tr);
+            if (tr.name == "sk_lamp") { G(tr, new Vector3(0, 3.45f, 0), 3.2f, glowB, false); if (!lampM) lampM = Art.Emissive(new Color(1f, 0.86f, 0.6f), 1.35f);
+                foreach (var rr in tr.GetComponentsInChildren<Renderer>()) { var ly = tr.InverseTransformPoint(rr.bounds.center).y; if (ly > 3.2f && ly < 3.7f && rr.name != "lq_glow" && rr.bounds.size.y < 1.2f) rr.sharedMaterial = lampM; } G(tr, new Vector3(0, 0.04f, 0), 6f, glowF, true); }
+            else G(tr, new Vector3(0, 1.5f, 0), 1.4f, glowB, false);
+            n++;
+        }
+        foreach (var r in root.GetComponentsInChildren<Renderer>().Where(x => x.name.StartsWith("glass")).ToList())
+        {
+            if (w >= 90) break; var b = r.bounds; if (b.size.y < 0.3f) continue;
+            if (!glowRoot) { glowRoot = new GameObject("lq_glows").transform; glowRoot.SetParent(root.root, false); }
+            if (glowed.Contains(r.transform)) continue; glowed.Add(r.transform);
+            var q = Art.Prim(PrimitiveType.Quad, glowRoot, Vector3.zero, Vector3.one * Mathf.Max(b.size.x, b.size.y, b.size.z) * 1.5f, wg); q.name = "lq_glow"; q.transform.position = b.center;
+            q.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; w++;
+        }
+        Debug.Log("[light] glows lamps " + n + " windows " + w); return n + w;
     }
     public static int Pools(Transform root, int t)
     {
