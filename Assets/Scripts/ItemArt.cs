@@ -20,9 +20,15 @@ public static class ItemArt
         q.AddComponent<Billboard>();
         if (!blobM) { var bs = Resources.Load<Shader>("Shaders/Blob") ?? Shader.Find("Soft/Blob"); if (bs) { blobM = new Material(bs) { name = "ItemBlob" }; blobM.SetColor("_BaseColor", new Color(0.28f, 0.2f, 0.14f, 0.3f)); } }
         if (blobM) { var bq = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(bq.GetComponent<Collider>()); bq.name = "item_blob"; bq.transform.SetParent(root, false); bq.transform.localPosition = new Vector3(0, 0.012f, 0); bq.transform.localRotation = Quaternion.Euler(90, 0, 0); bq.transform.localScale = Vector3.one * 0.36f; var br = bq.GetComponent<Renderer>(); br.sharedMaterial = blobM; br.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; br.receiveShadows = false; }   // v0.9.9 soft blob (opaque black cylinder read as a hole in the rug)
+        if (!glowM) { var gs = Resources.Load<Shader>("Shaders/Blob") ?? Shader.Find("Soft/Blob"); if (gs) { glowM = new Material(gs) { name = "ItemGlow" }; glowM.SetColor("_BaseColor", new Color(1f, 0.86f, 0.42f, 0.55f)); glowM.renderQueue = 3001; } }
+        if (glowM) { var gq = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(gq.GetComponent<Collider>()); gq.name = "item_glow"; gq.transform.SetParent(root, false); gq.transform.localPosition = new Vector3(0, 0.008f, 0); gq.transform.localRotation = Quaternion.Euler(90, 0, 0); gq.transform.localScale = Vector3.one * 0.7f; var gr = gq.GetComponent<Renderer>(); gr.sharedMaterial = glowM; gr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; gq.AddComponent<GlowPulse>(); }   // v0.9.11 soft gold loot ring so floating pickups read as markers
         return root;
     }
+    static Material glowM;
 }
+
+/// v0.9.11 slow breathing scale for the loot glow
+public class GlowPulse : MonoBehaviour { void Update() { transform.localScale = Vector3.one * (0.7f + 0.06f * Mathf.Sin(Time.time * 2f + transform.parent.GetInstanceID())); } }
 
 /// v0.8.1: steady, gentle item feedback (off = v0.8 pulsing/blinking, kept for before/after tests)
 public static class Calm { public static bool On = true; }

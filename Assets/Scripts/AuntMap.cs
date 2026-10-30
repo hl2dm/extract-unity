@@ -137,12 +137,12 @@ public static partial class LevelGen
         var wallOut = Pink; var trim = White; var ops = new List<Op>();
         System.Func<float, float, Color> wood = (x, z) => Color.Lerp((Mathf.FloorToInt(x / 0.55f) & 1) == 0 ? Wood : Lite(Wood, 0.1f), WoodD, 0.28f * VN(new Vector3(x * 0.5f, 0, z * 0.5f), 3));
         System.Func<float, float, Color> Tiles(Color a, Color b) => (x, z) => ((Mathf.FloorToInt(x / 0.6f) + Mathf.FloorToInt(z / 0.6f)) & 1) == 0 ? a : b;
-        rooms.Add(new ARoom { name = "garage", x0 = -9, x1 = -3, z0 = 0, z1 = 6, wall = Lite(Sky, 0.45f), trim = SkyD, floor = Tiles(Lite(Grey, 0.55f), Lite(Grey, 0.4f)) });
-        rooms.Add(new ARoom { name = "living", x0 = -3, x1 = 3, z0 = 0, z1 = 6, wall = Lite(Peach, 0.3f), trim = Rose, floor = wood });
-        rooms.Add(new ARoom { name = "kitchen", x0 = 3, x1 = 9, z0 = 0, z1 = 6, wall = Lite(Mint, 0.35f), trim = MintD, floor = Tiles(Mint, White) });
-        rooms.Add(new ARoom { name = "bath", x0 = -9, x1 = -3, z0 = 6, z1 = 12, wall = Lite(Sky, 0.25f), trim = SkyD, floor = Tiles(Sky, White) });
-        rooms.Add(new ARoom { name = "bedroom", x0 = -3, x1 = 3, z0 = 6, z1 = 12, wall = Lite(Lav, 0.35f), trim = LavD, floor = (x, z) => (Mathf.FloorToInt(z / 0.55f) & 1) == 0 ? Lite(Wood, 0.22f) : Lite(Wood, 0.32f) });
-        rooms.Add(new ARoom { name = "aunt", x0 = 3, x1 = 9, z0 = 6, z1 = 12, wall = Lite(Pink, 0.35f), trim = PinkD, floor = Tiles(Lav, Lite(Lav, 0.5f)) });
+        rooms.Add(new ARoom { name = "garage", x0 = -9, x1 = -3, z0 = 0, z1 = 6, wall = H("d9b08a"), trim = SkyD, floor = Tiles(Lite(Grey, 0.55f), Lite(Grey, 0.4f)) });
+        rooms.Add(new ARoom { name = "living", x0 = -3, x1 = 3, z0 = 0, z1 = 6, wall = H("eba684"), trim = Rose, floor = wood });
+        rooms.Add(new ARoom { name = "kitchen", x0 = 3, x1 = 9, z0 = 0, z1 = 6, wall = H("c3cf8e"), trim = MintD, floor = Tiles(Mint, White) });
+        rooms.Add(new ARoom { name = "bath", x0 = -9, x1 = -3, z0 = 6, z1 = 12, wall = H("8fcab8"), trim = SkyD, floor = Tiles(Sky, White) });
+        rooms.Add(new ARoom { name = "bedroom", x0 = -3, x1 = 3, z0 = 6, z1 = 12, wall = H("e7a49a"), trim = Coral, floor = (x, z) => (Mathf.FloorToInt(z / 0.55f) & 1) == 0 ? Lite(Wood, 0.22f) : Lite(Wood, 0.32f) });
+        rooms.Add(new ARoom { name = "aunt", x0 = 3, x1 = 9, z0 = 6, z1 = 12, wall = H("efc77a"), trim = PinkD, floor = Tiles(Lav, Lite(Lav, 0.5f)) });
 
         // ---- openings
         ops.Add(new Op { ax = true, fc = 0, c = -6, w = 4.4f, y0 = 0, y1 = 2.5f });            // garage mouth
@@ -281,7 +281,7 @@ public static partial class LevelGen
         petSpots.Add(h.TransformPoint(new Vector3(1.6f, FY, 1.3f)));
         SoftProps.FloorLamp(h, new Vector3(-2.5f, FY, 0.55f));
         SoftProps.Plant(h, new Vector3(2.45f, FY, 0.5f));
-        SoftProps.Clock(h, new Vector3(0.4f, FY + 2.7f, 5.82f), 180);
+        SoftProps.Clock(h, new Vector3(0.4f, FY + 2.25f, 5.82f), 180);
         SoftProps.Frame(h, new Vector3(-2.82f, FY + 2.0f, 4.0f), 90, 1.1f, 0.8f, ButterD, Sky);
         { var mr = Ring(h, new Vector3(-2.8f, FY + 2.15f, 5.05f), Quaternion.Euler(0, 90, 0), 0.33f, 0.05f, WoodD, 24); SoftProps.Picture(h, new Vector3(-2.79f, FY + 2.15f, 5.05f), Quaternion.Euler(0, -90, 0), 0.66f, 0.66f, "art_plate"); // v0.9.10 painted wreath plate
           Block(h, new Vector3(-2.7f, FY + 1.95f, 2.85f), new Vector3(0.3f, 0.1f, 0.9f), Lite(Wood, 0.2f), 0.05f, false); foreach (int sx in new[] { -1, 1 }) Ball(h, new Vector3(-2.76f, FY + 1.85f, 2.85f + sx * 0.35f), new Vector3(0.1f, 0.14f, 0.1f), WoodD, 6);
@@ -295,7 +295,7 @@ public static partial class LevelGen
         for (int i = 0; i < 3; i++) { float a = i * 2.1f + 0.4f; SoftProps.Stool(h, new Vector3(5.6f + Mathf.Cos(a) * 1.05f, FY, 3.0f + Mathf.Sin(a) * 1.05f), i == 0 ? Rose : i == 1 ? Mint : Lav); }
         Goods.Meal(h, new Vector3(5.6f, FY + 0.76f, 3.0f));   // v0.9.4: plate + rice bowl + dish (was balls)
 
-        SoftProps.Clock(h, new Vector3(5.0f, FY + 2.6f, 0.17f), 0);
+        SoftProps.Clock(h, new Vector3(5.0f, FY + 2.2f, 0.17f), 0);
         // ---- BATH
         SoftProps.Bathtub(h, new Vector3(-7.6f, FY, 11.35f), 180);
         SoftProps.Toilet(h, new Vector3(-3.7f, FY, 11.45f), 180);

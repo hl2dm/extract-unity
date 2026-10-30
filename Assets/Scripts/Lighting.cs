@@ -86,9 +86,9 @@ public static class LightQ
     {
         var e = sun.transform.eulerAngles; sun.transform.rotation = Quaternion.Euler(D_Elev, D_Yaw, 0);
         sun.color = new Color(1f, 0.82f, 0.62f); sun.intensity *= D_Sun; sun.shadowStrength = D_Shadow;
-        RenderSettings.ambientSkyColor = new Color(0.5f, 0.45f, 0.56f); RenderSettings.ambientEquatorColor = new Color(0.8f, 0.57f, 0.42f); RenderSettings.ambientGroundColor = new Color(0.56f, 0.44f, 0.42f);
-        Shader.SetGlobalColor("_ToonFillCol", new Color(0.15f, 0.14f, 0.26f));
-        Shader.SetGlobalVector("_ToonDusk", new Vector4(0.54f, 0.5f, 0.84f, 1f));
+        RenderSettings.ambientSkyColor = new Color(0.54f, 0.47f, 0.5f); RenderSettings.ambientEquatorColor = new Color(0.8f, 0.57f, 0.42f); RenderSettings.ambientGroundColor = new Color(0.56f, 0.44f, 0.42f);
+        Shader.SetGlobalColor("_ToonFillCol", new Color(0.22f, 0.15f, 0.14f));
+        Shader.SetGlobalVector("_ToonDusk", new Vector4(0.72f, 0.6f, 0.66f, 1f)   /* v0.9.11 warm rose shade (was blue-violet: interiors read lavender) */);
         RenderSettings.fogColor = new Color(0.97f, 0.78f, 0.68f); RenderSettings.fogDensity *= D_Fog;
         var sk = RenderSettings.skybox;
         if (sk && sk.HasProperty("_Horizon")) { sk.SetColor("_Top", new Color(0.62f, 0.6f, 0.86f)); sk.SetColor("_Mid", new Color(1f, 0.78f, 0.6f)); sk.SetColor("_Horizon", new Color(1f, 0.62f, 0.34f)); sk.SetColor("_Ground", new Color(0.86f, 0.66f, 0.58f)); sk.SetColor("_Cloud", new Color(1f, 0.8f, 0.72f)); }
