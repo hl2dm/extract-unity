@@ -135,13 +135,13 @@ public static partial class LevelGen
     {
         var h = new GameObject("House").transform; h.SetParent(root, false); h.localPosition = origin;
         var wallOut = Pink; var trim = White; var ops = new List<Op>();
-        System.Func<float, float, Color> wood = (x, z) => (Mathf.FloorToInt(x / 0.55f) & 1) == 0 ? Wood : Lite(Wood, 0.25f);
+        System.Func<float, float, Color> wood = (x, z) => Color.Lerp((Mathf.FloorToInt(x / 0.55f) & 1) == 0 ? Wood : Lite(Wood, 0.1f), WoodD, 0.28f * VN(new Vector3(x * 0.5f, 0, z * 0.5f), 3));
         System.Func<float, float, Color> Tiles(Color a, Color b) => (x, z) => ((Mathf.FloorToInt(x / 0.6f) + Mathf.FloorToInt(z / 0.6f)) & 1) == 0 ? a : b;
         rooms.Add(new ARoom { name = "garage", x0 = -9, x1 = -3, z0 = 0, z1 = 6, wall = Lite(Sky, 0.45f), trim = SkyD, floor = Tiles(Lite(Grey, 0.55f), Lite(Grey, 0.4f)) });
         rooms.Add(new ARoom { name = "living", x0 = -3, x1 = 3, z0 = 0, z1 = 6, wall = Lite(Peach, 0.3f), trim = Rose, floor = wood });
         rooms.Add(new ARoom { name = "kitchen", x0 = 3, x1 = 9, z0 = 0, z1 = 6, wall = Lite(Mint, 0.35f), trim = MintD, floor = Tiles(Mint, White) });
         rooms.Add(new ARoom { name = "bath", x0 = -9, x1 = -3, z0 = 6, z1 = 12, wall = Lite(Sky, 0.25f), trim = SkyD, floor = Tiles(Sky, White) });
-        rooms.Add(new ARoom { name = "bedroom", x0 = -3, x1 = 3, z0 = 6, z1 = 12, wall = Lite(Lav, 0.35f), trim = LavD, floor = (x, z) => (Mathf.FloorToInt(z / 0.55f) & 1) == 0 ? Lite(Wood, 0.2f) : Lite(Wood, 0.4f) });
+        rooms.Add(new ARoom { name = "bedroom", x0 = -3, x1 = 3, z0 = 6, z1 = 12, wall = Lite(Lav, 0.35f), trim = LavD, floor = (x, z) => (Mathf.FloorToInt(z / 0.55f) & 1) == 0 ? Lite(Wood, 0.22f) : Lite(Wood, 0.32f) });
         rooms.Add(new ARoom { name = "aunt", x0 = 3, x1 = 9, z0 = 6, z1 = 12, wall = Lite(Pink, 0.35f), trim = PinkD, floor = Tiles(Lav, Lite(Lav, 0.5f)) });
 
         // ---- openings
@@ -269,7 +269,7 @@ public static partial class LevelGen
         SoftProps.Cone(h, new Vector3(-3.6f, FY, 0.6f));
         SoftProps.WaterJar(h, new Vector3(-5.2f, FY, 5.5f), Butter);
         // ---- LIVING
-        SoftProps.Rug(h, new Vector3(0, FY + 0.004f, 3.2f), 1.1f, Lite(Pink, 0.2f), White); Ring(h, new Vector3(0, FY + 0.03f, 3.2f), Quaternion.Euler(90, 0, 0), 1.12f, 0.05f, Rose, 40);
+        SoftProps.Rug(h, new Vector3(0, FY + 0.004f, 3.2f), 1.1f, PinkD, Cream); Ring(h, new Vector3(0, FY + 0.03f, 3.2f), Quaternion.Euler(90, 0, 0), 1.12f, 0.05f, Rose, 40);
         SoftProps.Sofa(h, new Vector3(-2.35f, FY, 4.0f), 90, Rose, Mint);
         SoftProps.RoundTable(h, new Vector3(0, FY, 3.2f), 0.55f, 0.45f, White, WoodD); Cyl(h, new Vector3(0, FY + 0.22f, 3.2f), 0.14f, 0.42f, WoodD, 0.05f, null, 16); Cyl(h, new Vector3(0, FY + 0.05f, 3.2f), 0.34f, 0.1f, WoodD, 0.05f, null, 20); // chunky pedestal
         Ball(h, new Vector3(0, FY + 0.5f, 3.2f), new Vector3(0.36f, 0.12f, 0.36f), Butter, 12);
@@ -303,7 +303,7 @@ public static partial class LevelGen
         SCont(h, "box", new Vector3(-4.0f, FY, 7.0f), -90, Lite(Lav, 0.2f), "洗衣籃");
         Ball(h, new Vector3(-6.5f, FY + 0.02f, 8.8f), new Vector3(1.1f, 0.04f, 0.7f), Mint, 12);
         // ---- BEDROOM
-        SoftProps.Rug(h, new Vector3(0.4f, FY + 0.004f, 8.6f), 1.2f, Lite(Lav, 0.2f), Butter);
+        SoftProps.Rug(h, new Vector3(0.4f, FY + 0.004f, 8.6f), 1.2f, Lav, Butter);
         SoftProps.Bed(h, new Vector3(-1.83f, FY, 9.9f), 90, 1.3f, Wood, Lav, ButterD);
         SCont(h, "wardrobe", new Vector3(1.7f, FY, 11.55f), 180, Lite(Wood, 0.1f), "衣櫃");
         SCont(h, "drawer", new Vector3(-2.45f, FY, 11.5f), 180, Pink, "床頭小抽屜");
@@ -311,7 +311,7 @@ public static partial class LevelGen
         SoftProps.Teddy(h, new Vector3(-1.4f, FY + 0.75f, 10.3f), 90, 0.8f);
         SoftProps.ToyBlocks(h, new Vector3(0.6f, FY, 7.3f), 6, rng);
         // ---- AUNT'S LOCKED ROOM
-        SoftProps.Rug(h, new Vector3(6.0f, FY + 0.004f, 8.4f), 1.1f, Lite(Pink, 0.1f), White);
+        SoftProps.Rug(h, new Vector3(6.0f, FY + 0.004f, 8.4f), 1.1f, PinkD, Cream);
         SoftProps.Bed(h, new Vector3(7.83f, FY, 9.6f), -90, 1.7f, PinkD, Rose, White, false);
         SCont(h, "safe", new Vector3(8.4f, FY, 11.45f), 180, LavD, "床頭保險箱", true, lockedC);
         SCont(h, "wardrobe", new Vector3(4.0f, FY, 11.6f), 180, Lav, "阿姨的大衣櫃", true, lockedC);
@@ -422,8 +422,8 @@ public static partial class LevelGen
         Openings.Clear(); NoRide.Clear(); TrimCrossBefore = TrimPieces = 0;
         var root = L.root; blocks.Clear(); var deco = new System.Random(20260424);   // fixed layout; loot varies by seed
         // ---- ground, road, sidewalks
-        Field(root, Vector3.zero, 130, 130, 2f, (x, z) => Color.Lerp(H("c4ec9f"), H("ade08c"), VN(new Vector3(x * 0.06f, 0, z * 0.06f), 9)), true, "grass_ground");
-        Field(root, new Vector3(0, 0.02f, 0), 130, 8, 1f, (x, z) => Color.Lerp(H("dcd8d0"), H("ccc7bd"), VN(new Vector3(x * 0.3f, 0, z * 0.3f), 5)), false, "road");
+        Field(root, Vector3.zero, 130, 130, 2f, (x, z) => Color.Lerp(H("b2e58a"), H("8fd06a"), VN(new Vector3(x * 0.06f, 0, z * 0.06f), 9)), true, "grass_ground");
+        Field(root, new Vector3(0, 0.02f, 0), 130, 8, 1f, (x, z) => Color.Lerp(H("d2bea6"), H("8e7c6a"), Mathf.Clamp01(0.35f * VN(new Vector3(x * 0.3f, 0, z * 0.3f), 5) + 0.65f * VN(new Vector3(x * 0.05f, 0, z * 0.05f), 11) + (Mathf.Abs(z) > 2.6f ? 0.18f : 0f))), false, "road");
         for (float x = -60; x < 60; x += 6) if (Mathf.Abs(x + 6) > 3) Block(root, new Vector3(x, 0.035f, 0), new Vector3(2.5f, 0.03f, 0.22f), ButterD, 0.01f, false, 0, 0);
         for (float z = -3.3f; z <= 3.31f; z += 0.85f) Block(root, new Vector3(-6, 0.035f, z), new Vector3(2.8f, 0.03f, 0.45f), White, 0.01f, false, 0, 0);
         System.Func<float, float, Color> tiles = (x, z) => ((Mathf.FloorToInt(x) + Mathf.FloorToInt(z)) & 1) == 0 ? Cream : Color.Lerp(Cream, H("e9e2d4"), 0.5f);

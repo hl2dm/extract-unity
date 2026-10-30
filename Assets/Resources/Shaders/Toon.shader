@@ -73,7 +73,8 @@ Shader "Casual/Toon"
                 float3 alb = lerp(float3(1,1,1), avg, _UseAvg) * _BaseColor.rgb * lerp(1, clamp(lt / la, 0.6, 1.4), _TexAmt) * lerp(float3(1,1,1), i.vc.rgb, _UseVC);   // realistic detail reduced to a faint wash
                 // pastelise: gentle saturation lift, then raise value toward paper white, then nudge toward palette
                 float l = dot(alb, float3(.3,.59,.11)); alb = saturate(lerp(l.xxx, alb, 1.15 + 0.25 * _UseVC));
-                alb = lerp(alb, 1, 0.12 * (1 - _UseVC) * (1 - 0.85 * _ToonSoft.y)); alb = max(alb, 0.28); alb = min(alb, 1 - 0.2 * _ToonSoft.z) * lerp(1, float3(1.0, 0.97, 0.92), _ToonSoft.z * saturate((dot(alb, 0.333) - 0.7) * 3.3));
+                alb = lerp(alb, 1, 0.12 * (1 - _UseVC) * (1 - 0.85 * _ToonSoft.y)); alb = max(alb, 0.28); float Vv = _ToonSoft.w; alb = min(alb, 1 - 0.2 * _ToonSoft.z * (1 - Vv)) * lerp(1, float3(1.0, 0.97, 0.92), (1 - Vv) * _ToonSoft.z * saturate((dot(alb, 0.333) - 0.7) * 3.3));
+                { float lv = dot(alb, float3(.3,.59,.11)); alb = saturate(lerp(lv.xxx, alb, 1 + 0.4 * Vv)); lv = dot(alb, float3(.3,.59,.11)); alb *= lerp(1, min(1, 0.66 / max(lv, 0.01)), Vv); float chv = max(alb.r, max(alb.g, alb.b)) - min(alb.r, min(alb.g, alb.b)); alb *= lerp(1, float3(1.0, 0.91, 0.78), Vv * saturate((0.2 - chv) * 7) * saturate((lv - 0.45) * 4)); }
                 alb = lerp(alb, snapPalette(alb), _PaletteAmt * (1 - _UseVC)) * lerp(0.92, 0.9, _UseVC);
                 float grain = _Grain * lerp(0.12, 0.0, _UseVC);
 
@@ -93,7 +94,7 @@ Shader "Casual/Toon"
                 float lw = lit + (g - 0.5) * 0.12 * grain;
                 float b1 = smoothstep(0.36 - 0.2 * S - 0.1 * S2, 0.46 + 0.2 * S + 0.1 * S2, lw), b2 = smoothstep(0.66 - 0.2 * S - 0.1 * S2, 0.76 + 0.2 * S + 0.1 * S2, lw);
                 float band = b1 * 0.55 + b2 * 0.45;                                          // 0 shade, .55 mid, 1 lit
-                float3 shade = alb * lerp(lerp(_ShadeColor.rgb, float3(1, 0.98, 0.95), 0.32 * S), float3(0.86, 0.83, 0.8), S2);
+                float3 shade = alb * lerp(lerp(lerp(_ShadeColor.rgb, float3(1, 0.98, 0.95), 0.32 * S), float3(0.86, 0.83, 0.8), S2), float3(0.82, 0.74, 0.86), _ToonSoft.w);
                 float3 col = lerp(shade, alb, band);
                 col *= lerp(float3(1,1,1), L.color.rgb / max(1, max(L.color.r, max(L.color.g, L.color.b))), 0.35);
                 col += SampleSH(n) * alb * (0.08 + 0.1 * S);
@@ -104,7 +105,7 @@ Shader "Casual/Toon"
                 // crayon tooth: grain darkens slightly, paper peeks through in the gaps
                 col *= lerp(0.84, 1.04, g * grain + (1 - grain) * 0.6);
                 float tooth = pow(saturate(1 - g2 * 1.35), 3);
-                col = lerp(col, float3(1, 0.98, 0.94), tooth * 0.22 * grain * (1 - 0.6 * S2));
+                col = lerp(col, float3(1, 0.98, 0.94), tooth * 0.22 * grain * (1 - 0.6 * S2) * (1 - _ToonSoft.w));
                 // toy material classes from vertex alpha: 1 matte clay, 0.5 glossy plastic, ~0.1 felt
                 float3 vd = normalize(GetWorldSpaceViewDir(ws));
                 float ma = lerp(1, i.vc.a, _UseVC);
@@ -136,7 +137,7 @@ Shader "Casual/Toon"
                 if (_ToonLight.y > 0)
                 {
                     AmbientOcclusionFactor ao = GetScreenSpaceAmbientOcclusion(GetNormalizedScreenSpaceUV(i.cs));
-                    col *= lerp(1, lerp(lerp(0.45, 0.72, S2), 1, ao.indirectAmbientOcclusion), _ToonLight.y);
+                    col *= lerp(1, lerp(lerp(lerp(0.45, 0.72, S2), 0.58, _ToonSoft.w), 1, ao.indirectAmbientOcclusion), _ToonLight.y);
                 }
                 #endif
                 float sunSide = saturate(dot(normalize(cross(cross(vd, L.direction), vd) + 1e-4), n) * 0.5 + 0.5);

@@ -7,7 +7,7 @@ using UnityEngine.Rendering.Universal;
 /// "-lite 0" (or ?lite=0) keeps the v0.7 lighting for before/after shots.
 public static class LightQ
 {
-    public static bool Legacy, NoSoft, NoSoft2;   // NoSoft2 = v0.9 look (before v0.9.1 overcast-soft pass)   // NoSoft = v0.8 look (before v0.8.1 softening)
+    public static bool Legacy, NoSoft, NoSoft2, NoVivid;   // NoVivid = v0.9.1 look   // NoSoft2 = v0.9 look (before v0.9.1 overcast-soft pass)   // NoSoft = v0.8 look (before v0.8.1 softening)
     static Light fill;
     public static void Apply(Transform root)
     {
@@ -15,7 +15,7 @@ public static class LightQ
         var urp = GraphicsSettings.currentRenderPipeline as UniversalRenderPipelineAsset;
         SetSSAO(urp, Legacy || t >= 1);
         if (Legacy || !sun) { Shader.SetGlobalVector("_ToonLight", Vector4.zero); Shader.SetGlobalVector("_ToonSoft", Vector4.zero); return; }
-        float S = NoSoft ? 0f : 1f; float S2 = (NoSoft || NoSoft2) ? 0f : K_S2; Shader.SetGlobalVector("_ToonSoft", new Vector4(S, S2, (NoSoft || NoSoft2) ? 0f : 1f, 0));
+        float S = NoSoft ? 0f : 1f; float S2 = (NoSoft || NoSoft2) ? 0f : K_S2; Shader.SetGlobalVector("_ToonSoft", new Vector4(S, S2, (NoSoft || NoSoft2) ? 0f : 1f, (NoSoft || NoSoft2 || NoVivid) ? 0f : 1f));
         // soft shadows: resolution / cascades / filter quality per tier
         if (urp)
         {
@@ -52,26 +52,26 @@ public static class LightQ
     }
     // v0.9.1 "overcast-bright afternoon": very light shadows, no glare, matte materials, low contrast/saturation, gentle warm haze. Same on every tier (only cost-free params).
     public static bool K_Aces = true;
-    public static float K_Shadow = 0.3f, K_Bloom = 0.04f, K_Exposure = -0.1f, K_Contrast = 24f, K_Sat = 22f, K_S2 = 0.3f, K_Vig = 0.12f, K_Fog = 0.15f;
+    public static float K_Shadow = 0.26f, K_Bloom = 0.04f, K_Exposure = -0.3f, K_Contrast = 16f, K_Sat = 46f, K_S2 = 0.3f, K_Vig = 0.12f, K_Fog = 0.03f;
     static void Soft2(Transform root, VolumeProfile prof, Light sun)
     {
         sun.shadowStrength = K_Shadow; sun.color = new Color(1f, 0.96f, 0.9f); sun.intensity *= 0.85f;
         var ad = sun.GetComponent<UniversalAdditionalLightData>(); if (ad && GeoQ.Tier >= 1) ad.softShadowQuality = SoftShadowQuality.High;
         RenderSettings.ambientMode = AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = new Color(0.74f, 0.76f, 0.78f); RenderSettings.ambientEquatorColor = new Color(0.76f, 0.71f, 0.64f); RenderSettings.ambientGroundColor = new Color(0.6f, 0.55f, 0.48f);
+        RenderSettings.ambientSkyColor = new Color(0.62f, 0.72f, 0.88f); RenderSettings.ambientEquatorColor = new Color(0.86f, 0.72f, 0.62f); RenderSettings.ambientGroundColor = new Color(0.62f, 0.5f, 0.42f);
         Shader.SetGlobalColor("_ToonFillCol", new Color(0.26f, 0.25f, 0.23f)); Shader.SetGlobalColor("_ToonSkyCol", new Color(0.03f, 0.03f, 0.03f));
-        RenderSettings.fogColor = new Color(0.9f, 0.85f, 0.78f); RenderSettings.fogDensity *= K_Fog;
+        RenderSettings.fogColor = new Color(0.78f, 0.84f, 0.92f); RenderSettings.fogDensity *= K_Fog;
         var sk = RenderSettings.skybox;
-        if (sk && sk.HasProperty("_Horizon")) { sk.SetColor("_Top", new Color(0.64f, 0.75f, 0.86f)); sk.SetColor("_Mid", new Color(0.74f, 0.82f, 0.89f)); sk.SetColor("_Horizon", new Color(0.9f, 0.87f, 0.82f)); sk.SetColor("_Ground", new Color(0.86f, 0.82f, 0.76f)); sk.SetColor("_Cloud", new Color(0.92f, 0.91f, 0.89f)); }
+        if (sk && sk.HasProperty("_Horizon")) { sk.SetColor("_Top", new Color(0.36f, 0.6f, 0.92f)); sk.SetColor("_Mid", new Color(0.54f, 0.74f, 0.95f)); sk.SetColor("_Horizon", new Color(0.8f, 0.85f, 0.95f)); sk.SetColor("_Ground", new Color(0.86f, 0.82f, 0.76f)); sk.SetColor("_Cloud", new Color(0.92f, 0.91f, 0.89f)); }
         if (prof)
         {
             if (prof.TryGet<Tonemapping>(out var tm)) tm.mode.Override(K_Aces ? TonemappingMode.ACES : TonemappingMode.Neutral);
             if (prof.TryGet<Bloom>(out var bl)) { bl.threshold.Override(1.4f); bl.intensity.Override(K_Bloom); bl.scatter.Override(0.6f); }
-            if (prof.TryGet<ColorAdjustments>(out var c)) { c.contrast.Override(K_Contrast); c.postExposure.Override(K_Exposure); c.saturation.Override(K_Sat); c.colorFilter.Override(new Color(1f, 0.99f, 0.975f)); }
+            if (prof.TryGet<ColorAdjustments>(out var c)) { c.contrast.Override(K_Contrast); c.postExposure.Override(K_Exposure); c.saturation.Override(K_Sat); c.colorFilter.Override(Color.white); }
             if (prof.TryGet<Vignette>(out var v)) v.intensity.Override(K_Vig);
-            if (prof.TryGet<WhiteBalance>(out var wb)) { wb.temperature.Override(9f); wb.tint.Override(0f); }
-            if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) { smh.shadows.Override(new Vector4(1f, 0.97f, 0.93f, 0f)); smh.highlights.Override(new Vector4(1f, 0.98f, 0.95f, -0.08f)); }
-            if (prof.TryGet<SplitToning>(out var st)) { st.shadows.Override(new Color(0.5f, 0.5f, 0.5f)); st.highlights.Override(new Color(0.56f, 0.5f, 0.45f)); st.balance.Override(0f); }
+            if (prof.TryGet<WhiteBalance>(out var wb)) { wb.temperature.Override(7f); wb.tint.Override(0f); }
+            if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) { smh.shadows.Override(new Vector4(0.97f, 0.96f, 1f, 0f)); smh.highlights.Override(new Vector4(1f, 1f, 1f, -0.12f)); }
+            if (prof.TryGet<SplitToning>(out var st)) { st.shadows.Override(new Color(0.5f, 0.5f, 0.5f)); st.highlights.Override(new Color(0.5f, 0.5f, 0.5f)); st.balance.Override(0f); }
         }
         Art.SetSoftBaseVig(K_Vig);
         if (root) Matte(root);

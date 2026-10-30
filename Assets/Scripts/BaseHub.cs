@@ -9,7 +9,7 @@ public static class BaseHub
         float W = 9, D = 8, H = 3.0f; SoftKit.GlobalSeed = 606;
         System.Func<Color, float, Color> Lt = (c, k) => Color.Lerp(c, Color.white, k);
         SoftKit.Block(root, new Vector3(0, -0.1f, 0), new Vector3(40, 0.2f, 40), SoftKit.Leaf, 0.05f, true, 0, 0, 0, null, "ground");
-        SoftKit.Field(root, new Vector3(0, 0.02f, 0), W, D, 0.5f, (x, z) => (Mathf.FloorToInt(x / 0.6f) & 1) == 0 ? SoftKit.Wood : Lt(SoftKit.Wood, 0.25f), true, "floor");
+        SoftKit.Field(root, new Vector3(0, 0.02f, 0), W, D, 0.5f, (x, z) => (Mathf.FloorToInt(x / 0.6f) & 1) == 0 ? SoftKit.Wood : Lt(SoftKit.Wood, 0.1f), true, "floor");
         var walls = new GameObject("walls").transform; walls.SetParent(root, false);
         void Wall(Vector3 c, Vector3 size, bool alongX)
         {
@@ -30,7 +30,7 @@ public static class BaseHub
         SoftKit.Cyl(root, new Vector3(0, H - 0.2f, 0.4f), 0.015f, 0.4f, SoftKit.GreyD, 0.005f);
         SoftKit.Lath(root, new Vector3(0, H - 0.65f, 0.4f), new[] { new Vector2(0, 0), new Vector2(0.4f, 0), new Vector2(0.25f, 0.3f), new Vector2(0, 0.33f) }, SoftKit.Butter, 20);
         SoftProps.Bed(root, new Vector3(-W / 2 + 1.1f, 0.02f, D / 2 - 1.2f), 180, 1.4f, SoftKit.Wood, SoftKit.Lav, SoftKit.ButterD);
-        SoftProps.Rug(root, new Vector3(0, 0.025f, 0.5f), 1.5f, Lt(SoftKit.Pink, 0.1f), SoftKit.White);
+        SoftProps.Rug(root, new Vector3(0, 0.025f, 0.5f), 1.5f, SoftKit.PinkD, SoftKit.Cream);
         for (int i = 0; i < 7; i++) { float a = i * 0.9f; SoftKit.Ball(root, new Vector3(Mathf.Cos(a) * 1.05f, 0.065f, 0.5f + Mathf.Sin(a) * 1.05f), new Vector3(0.2f, 0.02f, 0.2f), SoftKit.ButterD, 6); }
         SoftProps.ContainerBody(root, "drawer", new Vector3(-W / 2 + 2.4f, 0.02f, D / 2 - 0.4f), 180, SoftKit.Pink);
         SoftProps.ContainerBody(root, "wardrobe", new Vector3(-W / 2 + 0.45f, 0.02f, 1.0f), 90, SoftKit.Wood);

@@ -8,7 +8,7 @@ public static class SoftKit
 {
     public static Color H(string s) => Data.H(s);
     // ---- palette (art bible §3)
-    public static readonly Color Pink = H("f3e3d0"), PinkD = H("dfb596"), Rose = H("d6ab84"), Mint = H("c8ddc0"), MintD = H("98b98e"), Butter = H("ffe9a3"), ButterD = H("ffd06a"),
+    public static readonly Color Pink = H("f3e3d0"), PinkD = H("eab0b4"), Rose = H("df9aa6"), Mint = H("c8ddc0"), MintD = H("98b98e"), Butter = H("ffe9a3"), ButterD = H("ffd06a"),
         Lav = H("d2e2ea"), LavD = H("b4c6a6"), Sky = H("c6e0f0"), SkyD = H("85c6f0"), Peach = H("f6dcc0"), Coral = H("e4b282"), Cream = H("fff3df"), White = H("fffaf2"),
         Wood = H("f2c995"), WoodD = H("cf9a68"), Leaf = H("a6db7c"), LeafD = H("78c25e"), Plum = H("6e4d5e"), Grey = H("ddd6ca"), GreyD = H("b3a998"), Roof = H("d9876a"), Teal = H("8fd8cf");
 
