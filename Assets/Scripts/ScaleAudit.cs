@@ -34,6 +34,7 @@ public static class ScaleAudit
             if (!r.enabled || r is ParticleSystemRenderer || r.gameObject.layer == Art.VMLayer) continue;
             var mf = r.GetComponent<MeshFilter>(); Bounds mb; Transform t = r.transform;
             if (mf && mf.sharedMesh) mb = mf.sharedMesh.bounds; else if (r is SkinnedMeshRenderer s && s.sharedMesh) mb = s.sharedMesh.bounds; else continue;
+            if (mb.size.sqrMagnitude < 1e-8f || (mf && mf.sharedMesh && mf.sharedMesh.vertexCount == 0)) continue;   // v0.9.5: empty text meshes (pet "!" mark) are not geometry
             for (int i = 0; i < 8; i++)
             {
                 var c = mb.center + Vector3.Scale(mb.extents, new Vector3((i & 1) * 2 - 1, ((i >> 1) & 1) * 2 - 1, ((i >> 2) & 1) * 2 - 1));

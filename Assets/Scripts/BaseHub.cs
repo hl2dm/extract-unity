@@ -21,8 +21,9 @@ public static class BaseHub
         Wall(new Vector3(-W / 2, 0, 0), new Vector3(0.2f, 0, D), false); Wall(new Vector3(W / 2, 0, 0), new Vector3(0.2f, 0, D), false);
         SoftKit.Block(walls, new Vector3(0, H + 0.1f, 0), new Vector3(W + 0.4f, 0.2f, D + 0.4f), SoftKit.Cream, 0.08f, true, 0, 0.01f, 0, null, "ceiling");
         foreach (var r in walls.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        for (int i = 0; i < 9; i++) SoftKit.Ball(root, new Vector3(-3.6f + i * 0.9f, 2.45f + Mathf.Sin(i * 1.7f) * 0.25f, -D / 2 + 0.12f), new Vector3(0.16f, 0.16f, 0.03f), i % 2 == 0 ? SoftKit.ButterD : SoftKit.White, 8);
-        for (int i = 0; i < 6; i++) SoftKit.Ball(root, new Vector3(-W / 2 + 0.12f, 2.2f + Mathf.Sin(i * 2.1f) * 0.3f, -2.8f + i * 1.1f), new Vector3(0.03f, 0.15f, 0.15f), i % 2 == 0 ? SoftKit.ButterD : SoftKit.Lav, 8);
+        for (int i = 0; i < 9; i++) { float bx = -3.6f + i * 0.9f, by = 2.5f - 0.12f * Mathf.Sin((i % 3 + 0.5f) / 3f * Mathf.PI); SoftKit.Block(root, new Vector3(bx, by - 0.11f, -D / 2 + 0.13f), new Vector3(0.22f, 0.24f, 0.01f), i % 2 == 0 ? SoftKit.ButterD : SoftKit.Rose, 0.004f, false, 0, -1, 0.92f).transform.localRotation = Quaternion.Euler(0, 0, 180); }   // v0.9.5 bunting flags (were wall balls)
+        for (int i = 0; i < 8; i++) { float x0 = -3.6f + i * 0.9f; var sg = SoftKit.Cyl(root, new Vector3(x0 + 0.45f, 2.47f, -D / 2 + 0.125f), 0.008f, 0.92f, SoftKit.White, 0.002f, Quaternion.Euler(0, 0, 90), 5); }
+        for (int i = 0; i < 4; i++) { var pz = -2.2f + i * 0.75f; float py = 2.1f + (i % 2) * 0.25f; SoftKit.Block(root, new Vector3(-W / 2 + 0.12f, py, pz), new Vector3(0.03f, 0.36f, 0.3f), SoftKit.Wood, 0.008f, false); SoftKit.Block(root, new Vector3(-W / 2 + 0.135f, py, pz), new Vector3(0.02f, 0.28f, 0.22f), new[] { SoftKit.Sky, SoftKit.Butter, SoftKit.Lav, SoftKit.Mint }[i], 0.004f, false); SoftKit.Block(root, new Vector3(-W / 2 + 0.15f, py - 0.05f, pz), new Vector3(0.01f, 0.1f, 0.14f), SoftKit.Rose, 0.003f, false); }   // v0.9.5 framed drawings (were wall balls)
         var qw = SoftProps.RoundWin(root, new Vector3(2.7f, 1.95f, -D / 2 + 0.12f), 0.7f, SoftKit.White, true); qw.localRotation = Quaternion.Euler(0, 180, 0);
         var qc = SoftProps.Curtains(root, new Vector3(2.7f, 1.95f, -D / 2 + 0.2f), 1.5f, 1.6f, SoftKit.PinkD); qc.localRotation = Quaternion.Euler(0, 180, 0);
         var rw = SoftProps.Win(root, new Vector3(W / 2 - 0.12f, 1.6f, 0), 2.0f, 1.2f, SoftKit.White, true); rw.localRotation = Quaternion.Euler(0, 90, 0);
@@ -38,12 +39,12 @@ public static class BaseHub
         var desk = SoftKit.Group(root, "desk", new Vector3(0, 0.02f, -D / 2 + 0.55f));
         SoftKit.Block(desk, new Vector3(0, 0.76f, 0), new Vector3(1.8f, 0.1f, 0.85f), SoftKit.Wood, 0.05f, true);
         foreach (int sx in new[] { -1, 1 }) SoftKit.Block(desk, new Vector3(sx * 0.7f, 0.36f, 0), new Vector3(0.4f, 0.72f, 0.8f), SoftKit.Pink, 0.08f, true);
-        foreach (int sx in new[] { -1, 1 }) SoftKit.Ball(desk, new Vector3(sx * 0.7f, 0.45f, 0.41f), Vector3.one * 0.08f, SoftKit.ButterD, 8);
+        foreach (int sx in new[] { -1, 1 }) SoftKit.Block(desk, new Vector3(sx * 0.7f, 0.45f, 0.415f), new Vector3(0.16f, 0.035f, 0.03f), SoftKit.ButterD, 0.008f, false);
         float ty = 0.83f;
         SoftKit.Block(desk, new Vector3(0, ty, 0), new Vector3(1.2f, 0.02f, 0.7f), SoftKit.Mint, 0.01f, false, 0, 0);
         SoftKit.Block(desk, new Vector3(0, ty + 0.005f, 0), new Vector3(1.15f, 0.02f, 0.08f), SoftKit.Lav, 0.01f, false, 0, 0);
         Color[] pinC = { SoftKit.Coral, SoftKit.ButterD, SoftKit.SkyD, SoftKit.LavD };
-        for (int i = 0; i < 4; i++) SoftKit.Ball(desk, new Vector3(-0.45f + i * 0.3f, ty + 0.06f, -0.1f + (i % 2) * 0.2f), Vector3.one * 0.08f, pinC[i], 8);
+        for (int i = 0; i < 4; i++) { var cp = new Vector3(-0.45f + i * 0.1f, ty + 0.03f, 0.22f); SoftKit.Cyl(desk, cp, 0.012f, 0.16f, pinC[i], 0.003f, Quaternion.Euler(0, 15 * i, 90), 6); SoftKit.Lath(desk, cp + Quaternion.Euler(0, 15 * i, 0) * new Vector3(0.08f, 0, 0), new[] { new Vector2(0, 0), new Vector2(0.012f, 0), new Vector2(0, 0.03f) }, pinC[i], 6, false, Quaternion.Euler(0, 15 * i, -90)); }   // v0.9.5 crayons (were balls)
         SoftKit.Lath(desk, new Vector3(0.75f, ty, -0.2f), new[] { new Vector2(0, 0), new Vector2(0.12f, 0), new Vector2(0.03f, 0.05f), new Vector2(0.03f, 0.3f), new Vector2(0.15f, 0.32f), new Vector2(0.08f, 0.48f), new Vector2(0, 0.5f) }, SoftKit.Sky, 14);
         var chair = SoftKit.Group(root, "chair", new Vector3(0, 0.02f, -D / 2 + 1.35f), 180);
         SoftKit.Block(chair, new Vector3(0, 0.48f, 0), new Vector3(0.55f, 0.1f, 0.5f), SoftKit.Rose, 0.05f, true);
@@ -55,18 +56,18 @@ public static class BaseHub
         SoftKit.Block(poster, new Vector3(0, -0.05f, 0.045f), new Vector3(1.5f, 0.1f, 0.01f), SoftKit.Lav, 0.005f, false);
         Color[] hc = { SoftKit.Pink, SoftKit.Butter, SoftKit.Sky, SoftKit.Lav, SoftKit.Peach };
         for (int i = 0; i < 5; i++) SoftKit.Block(poster, new Vector3(-0.6f + i * 0.3f, 0.18f - (i % 2) * 0.45f, 0.05f), new Vector3(0.2f, 0.18f, 0.02f), hc[i], 0.03f, false);
-        SoftKit.Ball(poster, new Vector3(-0.15f, 0.2f, 0.06f), new Vector3(0.12f, 0.12f, 0.03f), SoftKit.Rose, 8);
+        SoftKit.Block(poster, new Vector3(-0.15f, 0.2f, 0.06f), new Vector3(0.06f, 0.1f, 0.01f), SoftKit.Rose, 0.003f, false, 0, -1, 0.9f);   // map pin
         SoftKit.Text(poster, new Vector3(0, 0.38f, 0.07f), Quaternion.Euler(0, 180, 0), "小鎮地圖", 0.025f, SoftKit.Plum);
         Station(root, "deploy", "書桌上的地圖：出發去玩", new Vector3(0, 0.6f, -D / 2 + 0.55f), new Vector3(1.8f, 1.2f, 0.9f), 1.8f);
         var chest = SoftKit.Group(root, "toychest", new Vector3(-W / 2 + 0.55f, 0.02f, -1.2f), 90);
         SoftKit.Block(chest, new Vector3(0, 0.33f, 0), new Vector3(1.4f, 0.64f, 0.8f), SoftKit.Coral, 0.14f, true, 0, 0.02f);
         var lid = SoftKit.Cyl(chest, new Vector3(0, 0.66f, 0), 0.42f, 1.46f, SoftKit.Rose, 0.1f, Quaternion.Euler(0, 0, 90), 20); lid.transform.localScale = new Vector3(0.35f, 1, 1);
-        SoftKit.Ball(chest, new Vector3(0, 0.45f, 0.41f), new Vector3(0.26f, 0.24f, 0.06f), SoftKit.ButterD, 12);
+        SoftKit.Block(chest, new Vector3(0, 0.5f, 0.41f), new Vector3(0.2f, 0.16f, 0.04f), SoftKit.ButterD, 0.02f, false); SoftKit.Cyl(chest, new Vector3(0, 0.5f, 0.435f), 0.025f, 0.01f, SoftKit.GreyD, 0.003f, Quaternion.Euler(90, 0, 0), 8);   // v0.9.5 latch plate
         foreach (int s in new[] { -1, 1 }) SoftKit.Block(chest, new Vector3(s * 0.45f, 0.33f, 0.41f), new Vector3(0.1f, 0.6f, 0.03f), SoftKit.Butter, 0.03f, false);
         Station(root, "stash", "玩具箱：我的寶貝", new Vector3(-W / 2 + 0.55f, 0.4f, -1.2f), new Vector3(0.9f, 0.9f, 1.5f), 1.8f);
         var st = SoftKit.Group(root, "sidetable", new Vector3(W / 2 - 0.5f, 0.02f, -2.6f), -90);
         SoftKit.Block(st, new Vector3(0, 0.3f, 0), new Vector3(0.6f, 0.6f, 0.5f), SoftKit.Mint, 0.1f, true);
-        for (int i = 0; i < 2; i++) { SoftKit.Block(st, new Vector3(0, 0.18f + i * 0.26f, 0.25f), new Vector3(0.5f, 0.2f, 0.03f), Lt(SoftKit.Mint, 0.3f), 0.04f, false); SoftKit.Ball(st, new Vector3(0, 0.18f + i * 0.26f, 0.27f), Vector3.one * 0.06f, SoftKit.ButterD, 6); }
+        for (int i = 0; i < 2; i++) { SoftKit.Block(st, new Vector3(0, 0.18f + i * 0.26f, 0.25f), new Vector3(0.5f, 0.2f, 0.03f), Lt(SoftKit.Mint, 0.3f), 0.04f, false); SoftKit.Block(st, new Vector3(0, 0.2f + i * 0.26f, 0.27f), new Vector3(0.14f, 0.03f, 0.03f), SoftKit.ButterD, 0.008f, false); }
         SoftProps.Piggy(root, new Vector3(W / 2 - 0.5f, 0.82f, -2.6f), -90);
         Station(root, "shop", "小豬撲滿：買零食和裝備", new Vector3(W / 2 - 0.5f, 0.6f, -2.6f), new Vector3(0.8f, 1.2f, 0.8f), 1.8f);
         var ct = SoftKit.Group(root, "crafttable", new Vector3(W / 2 - 0.9f, 0.02f, 2.2f));

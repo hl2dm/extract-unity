@@ -160,9 +160,27 @@ public static class PlaceAudit
         Hidden = Fixed = 0; Run(root, false); pp0 = PropHits; pw0 = WallHits; pd0 = DoorHits; int s0 = SignHits;
         Run(root, true); BeforeSign = s0;
         int left = Run(root, false);
+        DressBefore = Dress(root, false); Dress(root, true); DressAfter = Dress(root, false); Debug.Log("[dressaudit] door-vs-dressing overlaps before " + DressBefore + " after " + DressAfter);
         Debug.Log("[placeaudit] before props " + pp0 + " wall " + pw0 + " door " + pd0 + " signs " + s0 + " | fixed " + Fixed + " hidden " + Hidden + " | after props " + PropHits + " wall " + WallHits + " door " + DoorHits + " signs " + SignHits);
     }
 
+    /// v0.9.5 dressing audit: facade/interior dressing pieces (shutters, pipes, lamps, signs, planters) must not cut through doors.
+    public static int DressBefore, DressAfter;
+    public static int Dress(Transform root, bool fix)
+    {
+        int n = 0;
+        foreach (var dv in root.GetComponentsInChildren<Transform>()) if (dv.name == "sk_doorvis" && dv.parent)
+        {
+            var db = Art.RenderBounds(dv.gameObject); db.Expand(new Vector3(-0.06f, -0.06f, 0.1f));
+            foreach (var r in dv.parent.GetComponentsInChildren<Renderer>())
+            {
+                if (!r.enabled || r.transform.IsChildOf(dv) || r.name.StartsWith("wall") || r.name == "front" || r.name.Contains("glow") || r.name.Contains("pool")) continue;
+                var b = r.bounds; if (b.max.y < db.min.y + 0.25f) continue; /* steps / sills */ if (b.size.x > 3f || b.size.y > 3.5f || b.size.x * b.size.y * b.size.z < 1e-5f) continue;
+                if (b.Intersects(db)) { n++; if (!fix) Debug.Log("[dressaudit] " + r.name + " @" + b.center.ToString("F1") + " cuts door @" + db.center.ToString("F1")); else r.enabled = false; }
+            }
+        }
+        return n;
+    }
     // v0.8.1 contact shadows: one soft radial blob under every street prop / furniture piece (grounds them, no hard shadow acne)
     static Material blobM; public static int Blobs;
     public static void ContactShadows(Transform root)

@@ -118,8 +118,8 @@ Shader "Casual/Toon"
                 if (D > 0)
                 {   // v0.9.3 material library (vertex alpha id): soft, dusk-coloured, capped spec so nothing glares or sparkles
                     float id = round(ma * 20), ks = 0.005, ex = 4, fr = 0, mt = 0, sh = 0.1, bk = 0, gs = 0;
-                    if (id > 19.5)      { ks = 0.02; ex = 6;  fr = 0.03; sh = 0; col *= (0.93 + 0.1 * vn(ws * 3.7)) * (0.95 + 0.08 * vn(ws * 14)); }                      // plaster / painted wall: matte
-                    else if (id > 18.5) { ks = 0.26 * (0.5 + g1); ex = 18; fr = 0.12; sh = 0; float gr = frac((ws.x + ws.z) * 0.6 + ws.y * 7.0 + vn(ws * float3(2, 0.4, 2)) * 1.6); col *= float3(0.97, 0.88, 0.78) * (0.74 + 0.3 * smoothstep(0.2, 0.8, gr) + 0.12 * g1); }     // wood door/furniture: satin, grain sheen
+                    if (id > 19.5)      { ks = 0.02; ex = 6;  fr = 0.03; sh = 0; col *= 0.98 + 0.03 * vn(ws * 3.7); }                      // plaster / painted wall: matte
+                    else if (id > 18.5) { ks = 0.26 * (0.5 + g1); ex = 18; fr = 0.12; sh = 0; float gr = frac((ws.x + ws.z) * 0.6 + ws.y * 7.0 + vn(ws * float3(2, 0.4, 2)) * 1.6); col *= 0.97 + 0.03 * smoothstep(0.3, 0.7, gr); }   // v0.9.5: no forced grain texture, just a faint sheen variation     // wood door/furniture: satin, grain sheen
                     else if (id > 17.5) { ks = 0.2 * (0.8 + 0.4 * g1); ex = 14; fr = 0.32; sh = 0; }     // varnished floor: broad soft gloss
                     else if (id > 16.5) { ks = 0.3; ex = 44; fr = 0.4; sh = 0; float2 jj = abs(frac(ws.xz * 1.6) - 0.5); col *= 1 - 0.22 * smoothstep(0.43, 0.49, max(jj.x, jj.y)); col *= 0.95 + 0.1 * vn(ws * 6); }                         // tile / terrazzo
                     else if (id > 15.5) { ks = 0; ex = 4; fr = 0.01; sh = 0; col *= (0.86 + 0.2 * vn(ws * 9)) * (0.9 + 0.16 * step(0.82, vn(ws * 37))); }                            // asphalt: very rough

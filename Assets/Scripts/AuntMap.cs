@@ -75,7 +75,7 @@ public static partial class LevelGen
 
     static LootContainer SCont(Transform parent, string kind, Vector3 lp, float yaw, Color accent, string label = null, bool special = false, List<LootContainer> bucket = null)
     {
-        var g = SoftProps.ContainerBody(parent, kind, lp, yaw, accent);
+        var g = SoftProps.ContainerBody(parent, kind, lp, yaw, accent, label);
         var lc = g.AddComponent<LootContainer>(); lc.Init(kind, rng, L.theme, L.vmult, luck, label); lc.special = special; L.containers.Add(lc); bucket?.Add(lc); return lc;
     }
 

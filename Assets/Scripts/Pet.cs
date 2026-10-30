@@ -282,7 +282,7 @@ public class PetToy : MonoBehaviour
     public static PetToy Build(Transform root, bool dog, float h)
     {
         var g = SoftKit.Group(root, "toy", Vector3.zero); var t = g.gameObject.AddComponent<PetToy>(); t.dog = dog;
-        float k = h / 0.55f; g.localScale = Vector3.one * k; // authored at cat height 0.55
+        float k = h / (dog ? 0.68f : 0.55f); g.localScale = Vector3.one * k; // authored at cat height 0.55; v0.9.5 dog head top is ~0.68 authored (was measuring 1.00 m)
         Color fur = dog ? H("e9b07a") : H("ffb877"), furD = dog ? H("c98b55") : H("f08f4e"), cream = H("fff3e2"), ink = H("4a3540"), pink = H("ff9fb4");
         var b = SoftKit.Group(g, "body", Vector3.zero); t.body = b;
         // body: smooth pill, cream tummy

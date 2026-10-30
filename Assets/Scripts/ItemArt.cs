@@ -39,7 +39,7 @@ public class HintRing : MonoBehaviour
     static Mesh RingMesh()
     {
         if (ring) return ring; int n = 48; var v = new Vector3[n * 2]; var tr = new int[n * 6];
-        for (int i = 0; i < n; i++) { float a = i * Mathf.PI * 2 / n; var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)); v[i * 2] = d * 0.86f; v[i * 2 + 1] = d; int j = (i + 1) % n; tr[i * 6] = i * 2; tr[i * 6 + 1] = j * 2; tr[i * 6 + 2] = i * 2 + 1; tr[i * 6 + 3] = i * 2 + 1; tr[i * 6 + 4] = j * 2; tr[i * 6 + 5] = j * 2 + 1; }
+        for (int i = 0; i < n; i++) { float a = i * Mathf.PI * 2 / n; var d = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)); v[i * 2] = d * 0.94f; v[i * 2 + 1] = d; int j = (i + 1) % n; tr[i * 6] = i * 2; tr[i * 6 + 1] = j * 2; tr[i * 6 + 2] = i * 2 + 1; tr[i * 6 + 3] = i * 2 + 1; tr[i * 6 + 4] = j * 2; tr[i * 6 + 5] = j * 2 + 1; }
         ring = new Mesh { vertices = v, triangles = tr }; ring.RecalculateNormals(); ring.RecalculateBounds(); return ring;
     }
     public static HintRing Add(Interactable owner, Vector3 worldFloor, float radius, Color c)
@@ -85,9 +85,9 @@ public class HintRing : MonoBehaviour
         if (mr.enabled)
         {
             float pulse = Calm.On ? 0.92f + 0.08f * Mathf.Sin(t * 1.4f) : 0.75f + 0.25f * Mathf.Sin(t * 3.2f);
-            var c = searched ? Color.Lerp(col, Color.gray, 0.55f) : col; float tgt = (foc ? (Calm.On ? 1.25f : 4.5f) : (Calm.On ? 0.8f : 1.6f)) * pulse * vis * (searched ? 0.6f : 1f);
+            var c = searched ? Color.Lerp(col, Color.gray, 0.55f) : col; float tgt = (foc ? (Calm.On ? 0.75f : 1.6f) : (Calm.On ? 0.4f : 0.7f))   /* v0.9.5: subtler hint ring */ * pulse * vis * (searched ? 0.6f : 1f);
             float inten = Calm.On ? (fi = Mathf.MoveTowards(fi, tgt, Time.deltaTime * 3f)) : tgt;   // below bloom threshold, eased focus change
-            Level = c.grayscale * inten; mpb.SetColor("_EmissionColor", c * inten); mpb.SetColor("_BaseColor", c * 0.5f * vis); mr.SetPropertyBlock(mpb);
+            Level = c.grayscale * inten; mpb.SetColor("_EmissionColor", c * inten); mpb.SetColor("_BaseColor", c * 0.35f * vis); mr.SetPropertyBlock(mpb);
             float s = foc ? (Calm.On ? 1.06f : 1.08f + 0.04f * Mathf.Sin(t * 6)) : 1f; mr.transform.localScale = new Vector3(radius * s / Mathf.Max(transform.lossyScale.x, 1e-3f), 1, radius * aspect * s / Mathf.Max(transform.lossyScale.z, 1e-3f));
         }
         mk.enabled = foc && !empty;

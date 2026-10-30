@@ -510,6 +510,18 @@ public class Game : MonoBehaviour
                 if (dv) { var b = Art.RenderBounds(dv.gameObject); var nn = dv.forward * Mathf.Sign(Vector3.Dot(dv.forward, sdir)); nn.y = 0; nn.Normalize(); var rt = Vector3.Cross(Vector3.up, nn);
                     yield return CamShot(b.center + nn * 3.4f + rt * 1.8f + Vector3.up * 0.3f, b.center + Vector3.down * 0.6f - rt * 0.4f, "L_matshop", 0.5f); }
             }
+            {   // v0.9.5 the three user reference views: townhouse door head-on, cookie shelf close-up, bush close-up
+                var dv2 = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_doorvis").OrderBy(t => Vector3.Distance(t.position, new Vector3(-14f, 0, 0))).FirstOrDefault();
+                if (dv2) { var b = Art.RenderBounds(dv2.gameObject); var nn = dv2.forward; nn.y = 0; nn.Normalize(); if (Physics.Raycast(b.center + nn * 0.3f, nn, 2.6f)) nn = -nn;
+                    yield return CamShot(b.center + nn * 2.9f + Vector3.up * 0.2f, b.center + Vector3.up * 0.1f, "L_ref_door", 0.5f); }
+                var ck = Object.FindObjectsByType<LootContainer>(FindObjectsSortMode.None).FirstOrDefault(c => c.label != null && c.label.Contains("餅乾")) ?? Object.FindObjectsByType<LootContainer>(FindObjectsSortMode.None).FirstOrDefault(c => c.kind == "shelf");
+                if (ck) { var b = new Bounds(ck.transform.position + Vector3.up * 1.0f, Vector3.one * 0.1f); foreach (var r in ck.GetComponentsInChildren<Renderer>()) if (r.enabled && r.bounds.size.magnitude < 3f && Vector3.Distance(r.bounds.center, ck.transform.position) < 1.6f) b.Encapsulate(r.bounds);
+                    var f = ck.transform.forward; f.y = 0; f.Normalize(); var eye = b.center - f * (b.extents.z + 1.6f) + Vector3.up * 0.1f; var tgt = b.center;
+                    if (Physics.Linecast(tgt, eye, out var hh)) { var eye2 = b.center + f * (b.extents.z + 1.6f) + Vector3.up * 0.1f; if (!Physics.Linecast(tgt, eye2)) eye = eye2; }
+                    Debug.Log("[ref] shelf " + ck.label + " @" + ck.transform.position + " f " + f + " b " + b.center + " sz " + b.size + " eye " + eye); yield return Aim(eye, tgt); yield return new WaitForSeconds(0.8f); yield return CamShot(eye, tgt, "L_ref_shelf", 0.5f); }
+                var bu = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_bush").OrderBy(t => Physics.OverlapSphere(t.position + Vector3.up * 0.6f, 1.3f).Count(c => !c.transform.IsChildOf(t) && c.bounds.max.y > 0.3f) * 100 + Vector3.Distance(t.position, new Vector3(-14f, 0, 0))).FirstOrDefault();
+                if (bu) { var b = Art.RenderBounds(bu.gameObject); yield return CamShot(b.center + new Vector3(0.5f, 1.3f, -0.9f) * Mathf.Max(1f, b.size.x), b.center, "L_ref_bush", 0.5f); }
+            }
             {   // v0.9.4 dressing close-ups: shop windows per type + table settings
                 var all = level.root.GetComponentsInChildren<Transform>();
                 var seen = new HashSet<string>();
