@@ -1,0 +1,23 @@
+## Art Direction Review — /workspace/rev912 (26 screenshots)
+
+**1. Curtains are not real pleated cloth — direct brief violation.**
+`L_cu_curtain_0.png`, `L_cu_curtain_1.png`, `L_cu_curtain_b1.png` — the window treatments read as hard, uniformly-ridged plastic/vinyl blind slats (flat fluting, no cloth weight, no irregular fold spacing, hems cut dead straight) rather than fabric. This sits right next to curtains that *are* done correctly (`L_cu_curtain_2.png`, `L_cu_curtain_b0.png`, visible in `L_bedroom.png`) with proper soft pleats and tasseled tiebacks — so the studio clearly has the right asset, it's just not used consistently. The brief explicitly calls this out ("Curtains must be real pleated cloth on rods, no boxes") and roughly a third of curtain instances still fail it.
+
+**2. Primitive blockout props still present — direct brief violation.**
+`L_cu_hydrant.png` — flat, unpainted light-gray box sitting left of the hydrant with zero surface detail, pure blockout. `L_cu_scooter.png` — plain orange wedge/crate with flat shading and no texture next to the scooter, and the scooter itself here (thin cylinder handlebars, flat slab seat, no body panel sculpting) is a noticeably lower-detail model than the nicely detailed scooters parked on the street in `L_st_3.png`/`L_st_1.png`. Same prop type, two very different quality bars — reads as an unfinished pass.
+
+**3. 2D menu/price-board icons break style cohesion with the rest of the world.**
+`L_cu_menu.png` (and the same board duplicated in `L_st_1.png` and `L_street.png`) — the four food icons (豆花/剉冰/紅茶/包子) are glossy, soft-gradient "app icon" renders, totally different rendering language from the flat gouache illustration used everywhere else (the town map in `L_cu_map_b.png`, the landscape paintings in `L_frames.png`, the TV cartoon in `L_cu_tv.png`, even the pizza plate in `L_tab_fruit.png` which is correctly painted). Since this board is reused at least 3 times, it's a systemic inconsistency, not a one-off.
+
+**4. Undetailed placeholder-looking geometry visible through a shop window.**
+`L_cu_curtain_0.png` — through the glass behind the ribbed blind there's a plain brown rounded blob with no surface detail or silhouette logic, reading as unfinished interior geometry rather than a readable object. Hurts polish on a hero-facing shop front.
+
+**5. Floating/ambiguous prop near the coffee table.**
+`L_interior.png` — a round disc (pizza-patterned pouf or decal?) is shown tilted on its edge hovering above the rug with a shadow ring beneath it, not resting flush on any surface. Reads as a clipping/floating asset rather than a seated piece of furniture.
+
+**6. Inconsistent finishing on book spines.**
+`L_shelf.png` / visible again in `L_bedroom.png` — most spines are flat, unlabeled color bars while only two or three carry actual title text (e.g. 小王子). Half-finished prop set, inconsistent legibility across what should be one uniform shelf asset.
+
+**What's working well (for balance):** the town map poster, wall landscape frames, cat portrait, and TV cartoon image all hit the gouache storybook look with a correctly locked golden-hour palette and clean, correct Traditional Chinese (小鎮地圖、花店、豆花、冰店、郵/信箱, etc.). Street-level shop signage and the hero hydrant/toy-robot models are also at a shippable bar. The problems are concentrated in a handful of reused/duplicated assets (curtains, blockout filler props, menu icon set) rather than being pervasive.
+
+SCORE: 5/10

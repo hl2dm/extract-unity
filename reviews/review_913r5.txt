@@ -1,0 +1,16 @@
+Reviewed all 26 screenshots in /workspace/rev912. Findings, worst first:
+
+**1. Curtains are not consistently "real pleated cloth" — the brief's #1 called-out defect still exists on exterior shop windows.**
+`L_cu_curtain_1.png` — the four window panes behind the lattice fretwork are flat, uniform cream rectangles with zero fold, drape, or fabric shading — they read as solid color-filled boxes, not cloth. `L_cu_curtain_0.png` — the valance reads as rigid angular bunting rather than soft gouache fabric, and the body of the "curtain" is a perfectly uniform mauve stripe pattern with no drape dimensionality, like a printed blind rather than modeled cloth. This is a direct contradiction of the brief, and it's especially damaging because the game clearly knows how to do this right — `L_cu_curtain_2.png`, `L_cu_curtain_b0.png`, and `L_cu_curtain_b1.png` all show proper pleated fabric on rods with tiebacks and soft folds. The inconsistency between these assets is the single biggest cohesion failure in the set.
+
+**2. Primitive blockout prop survives in a finished room.** `L_cu_scooter.png` — the flat-shaded orange cube sitting next to the moped has no flaps, seams, tape lines, or wear — it's an untextured placeholder box, exactly what the brief says must not ship. The stacked grey/tan cylinders visible through the doorway in the same shot read the same way (plain paint-bucket primitives, no labels or detail).
+
+**3. Duplicate shop signage suggests an un-fixed placeholder, not a real second storefront.** `L_shops.png` shows "花店" (flower shop) on the foreground building and again on a nearly identical awning sign further down the same block. Unless intentionally the same shop spanning two frontages, this reads as a copy-pasted sign that was never swapped for a distinct business name — breaks the sense of a varied, handcrafted street (compare the correctly varied `豆花` / `冰店` / `阿焿家` signage in `L_street.png`).
+
+**4. Palette lock broken on the menu board.** `L_cu_menu.png` (recurring also in `L_st_1.png`, `L_street.png`) — the saturated cool green chalkboard sits awkwardly against the amber/pink golden-hour palette used everywhere else; it's legible and well-illustrated internally, but it's the one 2D surface that doesn't feel color-matched to the world the way the map poster, cat portrait, and TV screen do.
+
+**5. Minor framing/legibility nit.** `L_st_1.png` / `L_st_3.png` — the "早餐店" sign is cropped at the very top edge of frame to just a sliver of character; likely just camera angle rather than an asset bug, but worth a pass to confirm it isn't clipping against the ceiling geometry at that camera position.
+
+**What's working well (for balance):** the map poster (`L_cu_map_b.png`), cat portrait, framed landscape pictures (`L_frames.png`), and TV cartoon (`L_cu_tv.png`) are genuinely excellent — same warm gouache linework, same palette, crisp correct Traditional Chinese throughout (`小鎮地圖`, `商店街`, `土地公廟`, `郵/信箱`, etc.), nicely themed to the Taiwanese-town setting. The fire hydrant and toy robot, which the brief worried about as blockout risks, are actually well detailed (rivets, caps, chrome, screen panel) and are not a problem. No white blowouts or obvious z-fighting/clipping were observed in this set.
+
+SCORE: 7/10

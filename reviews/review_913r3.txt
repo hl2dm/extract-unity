@@ -1,0 +1,11 @@
+I reviewed all 26 screenshots in `/workspace/rev912`. This revision clearly fixes several things earlier passes likely flagged — curtains are now real pleated cloth on rods throughout (L_cu_curtain_b0/b1/0/1/2), the hydrant (L_cu_hydrant, L_spot) and robot (L_toys, L_atoys, L_cu_blocks) read as detailed models rather than primitives, and the painted signage (menu board, map poster, flower shop sign, street shop signs) is in a cohesive gouache style with correct, legible Traditional Chinese. Remaining issues, worst first:
+
+1. **L_shelf.png** (bookshelf, also visible in L_cu_curtain_b0.png) — Book spines are just soft color blobs with no resolvable Traditional Chinese characters; this is one of the explicitly-named 2D surfaces in the brief and currently reads as texture noise, not text.
+2. **L_bedroom.png / L_spot.png / L_st_1.png** — Small bottles/jars on the display racks are plain flat-shaded cylinders with no painted labels or gouache illustration, breaking the "packaging labels styled like the rest of the world" requirement and reading as leftover blockout props next to otherwise detailed shelving.
+3. **L_cu_mailbox.png** — Signage composition is cramped: the "郵" glyph sits awkwardly above the envelope icon which crowds "信箱" underneath; legible but noticeably less polished than the menu board/map poster typography elsewhere.
+4. **L_cu_curtain_0.png / L_cu_curtain_1.png** vs **L_cu_curtain_b0.png / L_cu_curtain_b1.png** — Minor cross-building inconsistency: the exterior shop window valance uses a sharp, spiky "teeth" trim that reads stiffer/more plastic, while the bedroom tie-back curtains have soft rounded tube pleats. Both are real cloth (good — no boxes), but the silhouette language doesn't quite match.
+5. **L_interior.png** — The wall clock is small and low-contrast at normal viewing distance; couldn't confirm numeral legibility/correctness, worth a closer pass to be sure it isn't muddy in actual play.
+
+No white blowouts, no z-fighting/overlap, and no floating/clipping props were observed in this set, and the golden-hour palette is consistently honored across 2D and 3D surfaces.
+
+SCORE: 7/10

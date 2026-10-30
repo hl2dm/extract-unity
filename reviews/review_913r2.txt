@@ -1,0 +1,25 @@
+Reviewed all 26 screenshots in `/workspace/rev912`. Findings worst first:
+
+**1. Curtains are inconsistent — real pleated cloth in some rooms, fake flat strips in others.**
+`L_cu_curtain_0.png` and `L_cu_curtain_1.png` show window treatments that read as thin, flat vertical ribbon/blind strips rather than gathered cloth — no soft fold shading, just alternating light/dark planes. `L_cu_curtain_1.png` is worse: the window is mostly bare glass with only a token pleated valance at the top, and there's an unexplained flat brown silhouette behind the glass that looks like an unfinished placeholder shadow. Compare this to `L_cu_curtain_b0.png` and `L_cu_curtain_2.png`, which do show convincing gathered/pleated fabric on a rod — so the studio clearly has the right curtain asset, it's just not used consistently. This directly violates the "real pleated cloth, no boxes" requirement in several rooms.
+
+**2. Recurring flat-white "blockout" planter/bench boxes in street scenes.**
+In `L_cu_hydrant.png` and `L_street.png`, the long rectangular planter/bench prop next to the hydrant and near the ice shop is pure flat white with no gouache paint, no linework shading, and no texture — it visually reads as a placeholder primitive next to fully painted buildings and signage around it. It shows up in multiple shots, so it's not a one-off miss.
+
+**3. Plain cardboard box props break the "no primitive blockout" rule.**
+`L_cu_scooter.png` and `L_cu_mailbox.png` both contain a flat orange box with no flaps, texture, or shading sitting next to otherwise detailed props (scooter, mailbox) — exactly the kind of blockout prop the brief calls out as forbidden.
+
+**4. Flower-medallion wall relief looks like an unfinished decal, reused across rooms.**
+The circular flower/lattice "window" motif appears in `L_cu_curtain_2.png`, `L_cu_scooter.png`, and `L_interior.png` as a totally flat line-art shape with no dimensional modeling — it doesn't read as glass, vent, or carving, just a 2D decal slapped on a 3D wall. Because it recurs identically in three different interiors, it looks like a shared placeholder asset rather than a finished piece.
+
+**5. Shop sign text gets clipped to the point of misreading.**
+`L_st_3.png` shows a sign reading "日餐" where it's almost certainly meant to be "早餐店" ("breakfast shop") — the top stroke of 早 is cropped off by the camera/sign bounds, turning it into a different (wrong) character. Even if this is a camera framing issue rather than the texture itself, it produces incorrect-looking Traditional Chinese text on screen, which the brief explicitly disallows.
+
+**6. Toy robot and jars/bottles are only partially past "blockout."**
+The robot in `L_toys.png`/`L_atoys.png`/`L_cu_blocks.png` has bolts and joint details, so it's not a pure gray-box, but its big flat-colored capsule torso and tube limbs still read closer to a simple plastic toy sketch than a fully painted gouache prop — borderline given the brief explicitly names "toy robot" as an example to avoid. Shelf jars/bottles in `L_spot.png`, `L_tab_fruit.png`, and `L_interior.png` are rendered too small/flat to confirm individual painted labels — risk of being undetailed placeholder jars as called out in the brief.
+
+**What's working well:** the town map poster (`L_cu_map_b.png`), menu board (`L_cu_menu.png`), mailbox plate, TV cartoon insert, wall frames (`L_frames.png`), and most shop signage (花店, 豆花, 冰店) share a cohesive gouache palette locked to the golden-hour scene, with crisp, correct Traditional Chinese text — these are genuinely strong and show the target style is achievable; it's just not applied uniformly everywhere.
+
+The problems aren't isolated one-off bugs — the same categories (fake curtains, blockout boxes, flat decal reuse) repeat across 3+ separate screenshots each, which signals incomplete polish pass rather than a couple of overlooked assets.
+
+SCORE: 5/10

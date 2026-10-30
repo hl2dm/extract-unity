@@ -1,0 +1,26 @@
+Reviewed all 26 screenshots. Here are the findings, worst first:
+
+**1. Toy robot is still a primitive blockout — explicitly forbidden by the brief.** (`L_atoys.png`, `L_toys.png`, `L_bedroom.png`) It's a red cylinder torso, plain tube limbs, a ball-tip antenna, and box hands with zero paint detailing, panel lines, face, or wear. This is the single clearest brief violation in the set — the prop the brief specifically calls out as needing to *not* look like this.
+
+**2. Cardboard boxes are literal blockout cuboids.** (`L_cu_scooter.png` — orange box behind the scooter; `L_cu_curtain_b1.png` — box near the table) Plain rounded orange boxes with no flaps, tape, labels, or stylization. Brief explicitly calls out "boxes must look like detailed models."
+
+**3. Fire hydrant reads as under-modeled.** (`L_cu_hydrant.png`) Flat-shaded cylinder with simple caps and bolt nubs — lacks the seams, rust streaks, and painterly highlight language used on the shop facades right behind it. Also named directly in the brief as a known offender.
+
+**4. Toy blocks/stacking set are flat primitive shapes with pasted-on zhuyin decals, and their saturated primary colors (pure red/blue/green/purple) break the golden-hour palette lock.** (`L_cu_blocks.png`, `L_abed.png`, `L_atoys.png`, `L_toys.png`) They look like generic plastic preschool asset-store props dropped into a painterly scene rather than gouache-styled toys.
+
+**5. More uncredited blockouts in the street dressing.** Traffic cone behind the mailbox (`L_cu_mailbox.png`) is a flat cone with no stripe bands; lamp-post bases (`L_st_1.png`, `L_st_3.png`) are plain two-tone cylinder/cone stacks, noticeably less detailed than the ornate facades surrounding them.
+
+**6. Wall picture frames break style cohesion with the rest of the 2D surfaces.** (`L_frames.png`) The sunset-landscape and rainbow-house paintings are flat and low-detail compared to the clearly higher-fidelity gouache brushwork on the town map poster (`L_cu_map_b.png`) and TV cartoon (`L_cu_tv.png`) — looks like a placeholder pass that didn't get the final paint treatment. Bookshelf spines (`L_bedroom.png`, `L_shelf.png`, `L_cu_curtain_1.png`) use the same overly saturated rainbow palette as the toy blocks, clashing with the warm-lock elsewhere.
+
+**7. Mailbox label has an awkward, non-standard text layout.** (`L_cu_mailbox.png`) "郵" sits oversized above "信箱" as if two separate labels were stacked rather than one coherent plate — reads as a layout mistake, not a stylistic choice.
+
+**8. Curtain execution is inconsistent, despite the brief's explicit cloth-on-rod requirement.** The exterior/shopfront curtains (`L_street.png`, `L_shops.png`, `L_cu_curtain_1.png`) are convincing pleated cloth. But the ceiling medallion curtain (`L_cu_curtain_0.png`) has stiff, flat golden fin shapes that read as cardboard rather than fabric, plus a short second curtain segment hanging disconnected below the tiebacks that looks clipped/duplicated rather than one continuous drape. In `L_abed.png`, the blue diamond-lattice insert looks like a flat decal rather than integrated fabric, and the right curtain rod runs off past the window with no end finial, reading as unfinished/clipped.
+
+**9. Minor geometry/shading nits.** Slight double-outline jitter where the curtain rod meets its wall bracket (`L_cu_curtain_b0.png`); a few flat, slightly blown-out white ceiling patches with no gradient (`L_cu_curtain_0.png`, `L_bedroom.png`) — not full blowouts, but they stand out against the otherwise warm-toned lighting.
+
+**What's working well (keep this as the bar):** shop signage (花店, 豆花, 冰店, 早餐店, 阿塗家), the menu board, the town map poster, and the TV cartoon insert are all crisp, correct Traditional Chinese, consistently painted in one gouache language, and well palette-matched to the golden-hour exteriors. These prove the target style is achievable — the problem is inconsistent application, not a missing art direction.
+
+The street-level signage and map/menu/TV assets are close to shippable quality, but several props the brief explicitly flagged (robot, boxes, hydrant) are still unmissable blockouts, and secondary 2D surfaces (frames, book spines, curtain details) don't match the fidelity of the best pieces. That's a cohesion failure, not just polish.
+
+SCORE: 5/10
+done
