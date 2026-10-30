@@ -22,3 +22,10 @@
 | TV antennas | TVStand | ball tips | — | OPEN |
 | Pink diamond marker over bedroom rug | hub (likely ItemArt marker cube) | rotated cube | — | OPEN (source not pinned) |
 | Blue cable line near desk | BaseHub | thin line on floor | — | OPEN |
+
+## v0.9.8 status (final build e51)
+- FIXED pink diamond over bedroom rug: rug backing block (12 mm, bevelled) poked through the patterned top; now 6 mm under the field. Verified by per-renderer isolation + before/after shot.
+- FIXED blue line by desk: HintRing floor ring shown under hub Stations; hidden for Stations.
+- Wall frames (bedroom 2 + hub 4) and the town-map poster are now single illustrated storybook PNGs on quads inside modelled frames (Assets/Resources/Art).
+- Real conifer, TV antennas with ball tips (TV ≤1.6 m), leaf-cluster foliage, skirting/crown/wainscot, toy-block colour jitter + relief letters.
+- Remaining: shop signs, menus, book spines and packaging are still primitive/procedural (not converted to illustrated art this round); map poster reads small/dark at distance.

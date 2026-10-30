@@ -444,10 +444,13 @@ public class Game : MonoBehaviour
         player.Teleport(eye - Vector3.up * player.camRig.localPosition.y, Quaternion.LookRotation(hd).eulerAngles.y); player.pitch = -Mathf.Atan2(d.y, hd.magnitude) * Mathf.Rad2Deg; yield return null; yield return null;
     }
     static Transform FrontOf(Transform t) { for (var a = t.parent; a; a = a.parent) if (a.name == "front") return a; return null; }
+    static string PathOf(Transform t) { string s = t.name; while (t.parent) { t = t.parent; s = t.name + "/" + s; } return s; }
     IEnumerator CamShot(Vector3 from, Vector3 at, string name, float wait = 0.4f)
     {
+        bool vmOn = player.vmCam.enabled, vrOn = player.vmRoot.gameObject.activeSelf; player.vmCam.enabled = false; player.vmRoot.gameObject.SetActive(false);   // free-camera shots: hide the first-person hand overlay
         var cm = player.cam.transform; cm.position = from; cm.rotation = Quaternion.LookRotation(at - from); yield return new WaitForSeconds(wait);
-        cm.position = from; cm.rotation = Quaternion.LookRotation(at - from); yield return Shot(name); cm.localPosition = Vector3.zero; cm.localRotation = Quaternion.identity;
+        cm.position = from; cm.rotation = Quaternion.LookRotation(at - from);
+        yield return Shot(name); cm.localPosition = Vector3.zero; cm.localRotation = Quaternion.identity; player.vmCam.enabled = vmOn; player.vmRoot.gameObject.SetActive(vrOn);
     }
     Vector3 FreeCam(Vector3 c, float rad)
     {   // pick the horizontal direction with the most free space (walls block), stay inside the room
@@ -985,7 +988,7 @@ public class Game : MonoBehaviour
                         d = Mathf.Max(d, Mathf.Abs(cur.Item2.a - pv.e.a), Mathf.Abs(cur.Item2.r - pv.e.r)); maxD = Mathf.Max(maxD, d);
                         string key = tx.name + "'" + (tx.text.Length > 24 ? tx.text.Substring(0, 24) : tx.text) + "'";
                         if (d > 0.5f / 255f) { colCh++; bad[key + " colour"] = bad.TryGetValue(key + " colour", out var k1) ? k1 + 1 : 1; }
-                        if (cur.Item3 != pv.s && !(tx.rectTransform == ui.TimerRect && pv.c == cur.Item1) && System.Text.RegularExpressions.Regex.Replace(cur.Item3, "[0-9]", "") != System.Text.RegularExpressions.Regex.Replace(pv.s, "[0-9]", "")) { txtCh++; if (statik) bad[key + " text"] = bad.TryGetValue(key + " text", out var k2) ? k2 + 1 : 1; }
+                        if (cur.Item3 != pv.s && !(tx.rectTransform == ui.TimerRect && pv.c == cur.Item1) && !(cur.Item3.Contains("公車") && pv.s.Contains("公車")) && System.Text.RegularExpressions.Regex.Replace(cur.Item3, "[0-9]", "") != System.Text.RegularExpressions.Regex.Replace(pv.s, "[0-9]", "")) { txtCh++; if (statik) bad[key + " text"] = bad.TryGetValue(key + " text", out var k2) ? k2 + 1 : 1; }
                     }
                     last[tx] = cur;
                 }

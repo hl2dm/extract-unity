@@ -36,6 +36,16 @@ public class HintRing : MonoBehaviour
     public static Interactable focused;
     public Interactable owner; public Color col = new Color(1f, 0.85f, 0.45f); public float radius = 0.6f, aspect = 1f;
     public float Level; MeshRenderer mr, mk; Transform marker; float fi; MaterialPropertyBlock mpb; float t0; static Mesh ring;
+    static Mesh gem;
+    static Mesh GemMesh()
+    {   // flat-shaded octagonal bipyramid: short crown, long pavilion pointing at the prop
+        if (gem) return gem; int n = 8; var v = new List<Vector3>(); var tr = new List<int>();
+        Vector3 top = new Vector3(0, 0.55f, 0), bot = new Vector3(0, -1.1f, 0); Vector3 R(int i) { float a = i * Mathf.PI * 2 / n; return new Vector3(Mathf.Cos(a) * 0.5f, 0.15f, Mathf.Sin(a) * 0.5f); }
+        Vector3 T(int i) { float a = (i + 0.5f) * Mathf.PI * 2 / n; return new Vector3(Mathf.Cos(a) * 0.28f, 0.55f, Mathf.Sin(a) * 0.28f); }
+        void Tri(Vector3 a, Vector3 b, Vector3 c) { int k = v.Count; v.Add(a); v.Add(b); v.Add(c); tr.Add(k); tr.Add(k + 1); tr.Add(k + 2); k = v.Count; v.Add(a); v.Add(c); v.Add(b); tr.Add(k); tr.Add(k + 1); tr.Add(k + 2); }
+        for (int i = 0; i < n; i++) { int j = (i + 1) % n; Tri(R(i), bot, R(j)); Tri(R(j), T(i), R(i)); Tri(T(i), R(j), T(j)); Tri(T(i), T(j), top); }
+        gem = new Mesh(); gem.SetVertices(v); gem.SetTriangles(tr, 0); gem.RecalculateNormals(); gem.RecalculateBounds(); return gem;
+    }
     static Mesh RingMesh()
     {
         if (ring) return ring; int n = 48; var v = new Vector3[n * 2]; var tr = new int[n * 6];
@@ -53,10 +63,13 @@ public class HintRing : MonoBehaviour
         var rg = new GameObject("ring"); rg.transform.SetParent(transform, false); rg.AddComponent<MeshFilter>().sharedMesh = RingMesh();
         mr = rg.AddComponent<MeshRenderer>(); mr.sharedMaterial = Art.Emissive(Color.white, 1f); mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
         var lossy = transform.lossyScale; rg.transform.localScale = new Vector3(radius / Mathf.Max(lossy.x, 1e-3f), 1, radius * aspect / Mathf.Max(lossy.z, 1e-3f));
-        var m = GameObject.CreatePrimitive(PrimitiveType.Cube); Destroy(m.GetComponent<Collider>()); marker = m.transform; marker.SetParent(transform, true); marker.localScale = new Vector3(0.09f / Mathf.Max(lossy.x, 1e-3f), 0.09f / Mathf.Max(lossy.y, 1e-3f), 0.09f / Mathf.Max(lossy.z, 1e-3f));
+        var m = new GameObject("focusGem"); m.AddComponent<MeshFilter>().sharedMesh = GemMesh(); m.AddComponent<MeshRenderer>(); marker = m.transform;   // v0.9.8 faceted down-pointing gem (was a spinning cube)
+        marker.localScale = Vector3.one * 0.11f;   // world-space, unparented: owner scale (flat rugs etc.) no longer stretches it
         mk = m.GetComponent<MeshRenderer>(); mk.sharedMaterial = Art.Emissive(Color.white, 1f); mk.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
     // shrink the ring until its outline no longer passes through neighbouring props / walls
+    void OnDestroy() { if (marker) Destroy(marker.gameObject); }
+    void OnDisable() { if (mk) mk.enabled = false; }
     public int shrinks;
     void FitClear()
     {
@@ -80,7 +93,7 @@ public class HintRing : MonoBehaviour
         var lc = owner as LootContainer; bool empty = lc && lc.Empty; bool searched = lc && lc.opened;
         var cam = Camera.main; float d = cam ? Vector3.Distance(cam.transform.position, transform.position) : 0;
         bool foc = focused == owner;
-        float vis = empty ? 0 : Mathf.Clamp01((14f - d) / 5f); if (foc) vis = 1;
+        float vis = empty ? 0 : Mathf.Clamp01((14f - d) / 5f); if (foc) vis = 1; if (owner is Station) vis = 0;   /* v0.9.8: hub stations (desk map, bed...) use their prompt only: no floor ring / floating gem */
         mr.enabled = vis > 0.01f; float t = Time.time + t0;
         if (mr.enabled)
         {
@@ -90,10 +103,10 @@ public class HintRing : MonoBehaviour
             Level = c.grayscale * inten; mpb.SetColor("_EmissionColor", c * inten); mpb.SetColor("_BaseColor", c * 0.35f * vis); mr.SetPropertyBlock(mpb);
             float s = foc ? (Calm.On ? 1.06f : 1.08f + 0.04f * Mathf.Sin(t * 6)) : 1f; mr.transform.localScale = new Vector3(radius * s / Mathf.Max(transform.lossyScale.x, 1e-3f), 1, radius * aspect * s / Mathf.Max(transform.lossyScale.z, 1e-3f));
         }
-        mk.enabled = foc && !empty;
+        mk.enabled = foc && !empty && !(owner is Station);
         if (mk.enabled)
         {
-            var b = owner.TopPoint; marker.position = b + Vector3.up * (Calm.On ? 0.28f + 0.03f * Mathf.Sin(t * 1.6f) : 0.28f + 0.06f * Mathf.Sin(t * 4)); marker.rotation = Quaternion.Euler(45, t * (Calm.On ? 25 : 120), 45);
+            var b = owner.TopPoint; marker.position = b + Vector3.up * (Calm.On ? 0.28f + 0.03f * Mathf.Sin(t * 1.6f) : 0.28f + 0.06f * Mathf.Sin(t * 4)); marker.rotation = Quaternion.Euler(0, t * (Calm.On ? 25 : 90), 0);
             mpb.SetColor("_EmissionColor", col * (Calm.On ? 1.2f : 5f)); mpb.SetColor("_BaseColor", col); mk.SetPropertyBlock(mpb);
         }
     }

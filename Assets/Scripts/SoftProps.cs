@@ -36,12 +36,29 @@ public static class SoftProps
             foreach (var t in tips)
             {
                 float cs = (kind == 0 ? 1.5f : 1.35f) * s * (0.85f + 0.3f * F());
-                Ball(g, t + Vector3.up * 0.25f * cs, new Vector3(1.15f, 0.8f, 1.15f) * cs, Dk(cr, 0.72f), 12, false, null, "sk_leafcore", 0.08f);   // shaded inner mass
-                Goods.Bush(g, t - Vector3.up * 0.3f * cs, cs * 1.5f, Color.Lerp(cr, Dk(cr, 0.85f), F()), null, tr);
+                int sub = 2 + tr.Next(2);   // v0.9.8: irregular sub-clusters of leaf sprays, no smooth core blob
+                for (int q = 0; q < sub; q++) { var off = new Vector3(F() - 0.5f, F() * 0.5f, F() - 0.5f) * cs * 0.9f; Goods.Bush(g, t + off - Vector3.up * 0.35f * cs, cs * (0.9f + 0.6f * F()), Color.Lerp(cr, q == 0 ? Dk(cr, 0.8f) : Lt(cr, 0.06f), F()), null, tr); }
             }
             MatA = om; Merge(g, 0, "treemesh");
         }
-        if (kind == 2) { for (int i = 0; i < 3; i++) Lath(g, new Vector3(0, (2.0f + i * 0.9f) * s, 0), new[] { new Vector2(0, 0), new Vector2(1.3f - i * 0.3f, 0.05f) * s, new Vector2(1.1f - i * 0.28f, 0.35f * s), new Vector2(0.15f, 1.2f * s), new Vector2(0, 1.25f * s) }, LeafD); }
+        if (kind == 2)
+        {   // v0.9.8 conifer: tapered trunk, dark inner cone, 7 tiers of drooping needle branches (were 3 stacked cones)
+            var om2 = PushM(MatK.Foliage);
+            Lath(g, new Vector3(0, 1.0f * s, 0), new[] { new Vector2(0, 0), new Vector2(0.75f, 0.1f), new Vector2(0.12f, 3.0f), new Vector2(0, 3.1f) }.Scale(s), Dk(LeafD, 0.6f), 12);
+            for (int i = 0; i < 7; i++)
+            {
+                float y = (1.15f + i * 0.45f) * s, R = (1.45f - i * 0.18f) * s; int nb = 11 - i;
+                for (int k = 0; k < nb; k++)
+                {
+                    float a = (k + (i % 2) * 0.5f) * 360f / nb + F() * 12f; var rot = Q(0, a, 0) * Q(14 + F() * 10, 0, 0);
+                    var col = Color.Lerp(LeafD, Dk(LeafD, 0.75f), F()); if (i > 4) col = Color.Lerp(col, Lt(LeafD, 0.12f), 0.5f);
+                    Ball(g, new Vector3(0, y, 0) + rot * new Vector3(0, 0, R * 0.5f), new Vector3(R * 0.42f, 0.16f * s, R * 1.0f), col, 8, false, rot, "sk_leaf", 0.03f);
+                    Ball(g, new Vector3(0, y + 0.08f * s, 0) + rot * new Vector3(0, 0, R * 0.45f), new Vector3(R * 0.22f, 0.1f * s, R * 0.8f), Lt(col, 0.08f), 6, false, rot, "sk_leaf", 0.02f);   // sunlit upper sprig
+                }
+            }
+            Cyl(g, new Vector3(0, 4.35f * s, 0), 0.05f * s, 0.5f * s, LeafD, 0.02f, null, 6);   // leader shoot
+            MatA = om2; Merge(g, 0, "treemesh");
+        }
         var cc = g.gameObject.AddComponent<CapsuleCollider>(); cc.radius = 0.25f * s; cc.height = 3f * s; cc.center = new Vector3(0, 1.5f * s, 0);
         return g;
     }
@@ -719,7 +736,7 @@ public static class SoftProps
             return Mathf.Abs(u) + Mathf.Abs(v) < 0.18f ? a : b;   // small diamond repeat in the corners
         };
         Field(g, new Vector3(0, 0.012f, 0), sx, sz, 0.04f, pat, false, "sk_rugtop", 0.004f);
-        Block(g, new Vector3(0, 0.005f, 0), new Vector3(sx + 0.02f, 0.012f, sz + 0.02f), dk, 0.004f, false);   // backing / edge binding
+        Block(g, new Vector3(0, 0.003f, 0), new Vector3(sx + 0.02f, 0.006f, sz + 0.02f), dk, 0.002f, false);   // v0.9.8: was 0.012 thick and poked through the field (the "pink diamond")   // backing / edge binding
         foreach (int s2 in new[] { -1, 1 }) for (int i = 0; i < Mathf.RoundToInt(sz / 0.07f); i++) Block(g, new Vector3(s2 * (sx / 2 + 0.05f), 0.006f, -sz / 2 + 0.04f + i * 0.07f), new Vector3(0.09f, 0.01f, 0.025f), Lt(b, 0.3f), 0.003f, false);   // fringe
         MatA = om; return g;
     }
@@ -728,10 +745,19 @@ public static class SoftProps
         var g = Group(p, "sk_tv", pos, yaw); var om = PushM(0.5f);
         Block(g, new Vector3(0, 0.73f, -0.05f), new Vector3(1.25f, 0.92f, 0.5f), Lav, 0.34f, false);                    // chunky rounded bezel body
         Block(g, new Vector3(0, 0.75f, 0.12f), new Vector3(0.95f, 0.64f, 0.1f), Dk(SkyD, 0.75f), 0.16f, false);           // screen
-        Ball(g, new Vector3(-0.25f, 0.90f, 0.17f), new Vector3(0.28f, 0.12f, 0.03f), Lt(Sky, 0.4f), 10, false, Q(0, 0, -20)); // screen glint
-        foreach (int s in new[] { -1, 1 }) { Cyl(g, new Vector3(s * 0.2f, 1.28f, -0.05f), 0.065f, 0.26f, LavD, 0.03f, Q(0, 0, s * 25), 10); Ball(g, new Vector3(s * 0.27f, 1.45f, -0.05f), Vector3.one * 0.17f, s < 0 ? Coral : ButterD, 10); } // stubby ball-tipped antennae
-        foreach (int s in new[] { -1, 1 }) Ball(g, new Vector3(s * 0.4f, 0.30f, -0.05f), new Vector3(0.18f, 0.12f, 0.18f), LavD, 10);   // round feet
-        Ball(g, new Vector3(0.5f, 0.43f, 0.15f), Vector3.one * 0.09f, Coral, 8); Ball(g, new Vector3(0.36f, 0.43f, 0.15f), Vector3.one * 0.07f, Mint, 8);   // knobs
+        // v0.9.8: retro CRT details — reflection strip, speaker slots + dials on a control strip, antenna base with telescoping rabbit ears, tapered legs (were balls)
+        var gl = Block(g, new Vector3(-0.22f, 0.9f, 0.172f), new Vector3(0.3f, 0.035f, 0.005f), Lt(Sky, 0.35f), 0.01f, false); gl.transform.localRotation = Q(0, 0, -18);
+        Block(g, new Vector3(0, 0.37f, 0.2f), new Vector3(1.0f, 0.13f, 0.02f), Dk(Lav, 0.88f), 0.03f, false);   // control strip
+        for (int i = 0; i < 6; i++) Block(g, new Vector3(-0.42f + i * 0.05f, 0.37f, 0.212f), new Vector3(0.018f, 0.08f, 0.006f), Dk(LavD, 0.7f), 0.004f, false);   // speaker slots
+        foreach (var (x, c) in new[] { (0.28f, Coral), (0.42f, Mint) }) { Cyl(g, new Vector3(x, 0.37f, 0.225f), 0.045f, 0.035f, c, 0.01f, Q(90, 0, 0), 14); Block(g, new Vector3(x, 0.395f, 0.244f), new Vector3(0.008f, 0.03f, 0.004f), White, 0.002f, false); }   // dials with pointer
+        Lath(g, new Vector3(0, 1.19f, -0.08f), new[] { new Vector2(0.14f, 0), new Vector2(0.13f, 0.04f), new Vector2(0.09f, 0.08f), new Vector2(0, 0.09f) }, Dk(LavD, 0.85f), 16);   // antenna base
+        foreach (int sd in new[] { -1, 1 })
+        {
+            var dir = Q(0, 0, -sd * 32) * Vector3.up; var b0 = new Vector3(sd * 0.03f, 1.26f, -0.08f); float[] rad = { 0.014f, 0.01f, 0.007f }; float[] len = { 0.12f, 0.11f, 0.09f };   // collapsed telescopes: keeps tv-on-stand under the 1.6 m scale rule
+            for (int k = 0; k < 3; k++) { var b1 = b0 + dir * len[k]; Cyl(g, (b0 + b1) / 2, rad[k], len[k], Lt(GreyD, 0.55f), 0.002f, Quaternion.FromToRotation(Vector3.up, dir), 8); if (k < 2) Cyl(g, b1, rad[k] * 1.4f, 0.015f, GreyD, 0.002f, Quaternion.FromToRotation(Vector3.up, dir), 8); b0 = b1; }
+            Cyl(g, b0 + dir * 0.008f, 0.012f, 0.016f, GreyD, 0.004f, Quaternion.FromToRotation(Vector3.up, dir), 8);   // tip cap
+        }
+        foreach (int sd in new[] { -1, 1 }) foreach (float z in new[] { -0.22f, 0.12f }) { var lg = Cyl(g, new Vector3(sd * 0.48f, 0.14f, z), 0.025f, 0.28f, WoodD, 0.01f, Q(z < 0 ? -8 : 8, 0, sd * 8), 8); }   // splayed legs
         MatA = om;
         return g;
     }
@@ -820,6 +846,13 @@ public static class SoftProps
         MatA = om; var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(w, h, d); bc.center = new Vector3(0, h / 2, 0); return g;
     }
     /// v0.9.7 picture frame: moulded frame, mat, simple painted scene
+    public static Transform Picture(Transform p, Vector3 lpos, Quaternion lrot, float w, float h, string art)
+    {   // v0.9.8: flat artwork is a single illustrated texture on a quad inside a modelled frame
+        var q = GameObject.CreatePrimitive(PrimitiveType.Quad); Object.Destroy(q.GetComponent<Collider>()); q.name = "sk_art";
+        q.transform.SetParent(p, false); q.transform.localPosition = lpos; q.transform.localRotation = lrot; q.transform.localScale = new Vector3(w, h, 1);
+        var r = q.GetComponent<MeshRenderer>(); var am = Art.Cutout(Resources.Load<Texture2D>("Art/" + art)); am.SetColor("_BaseColor", new Color(0.86f, 0.82f, 0.78f)); r.sharedMaterial = am;   // unlit, toned to sit in the warm room light r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return q.transform;
+    }
     public static Transform WallFrame(Transform p, Vector3 pos, float yaw, float w, float h, Color frame, int kind)
     {
         var g = Group(p, "sk_frame", pos, yaw); var om = PushM(MatK.Wood);
@@ -827,19 +860,7 @@ public static class SoftProps
         Block(g, new Vector3(0, 0, 0.022f), new Vector3(w - 0.08f, h - 0.08f, 0.01f), White, 0.002f, false);
         float iw = w - 0.18f, ih = h - 0.18f; Color sky = kind == 0 ? Lt(Sky, 0.3f) : Lt(Butter, 0.3f);
         Block(g, new Vector3(0, 0, 0.03f), new Vector3(iw, ih, 0.005f), sky, 0.001f, false);
-        if (kind == 0)
-        {   // hills + sun
-            var hl = Cyl(g, new Vector3(-iw * 0.15f, -ih / 2, 0.034f), iw * 0.42f, 0.004f, Leaf, 0.001f, Q(90, 0, 0), 20); hl.transform.localScale = new Vector3(1, 1, 0.55f);
-            var h2 = Cyl(g, new Vector3(iw * 0.25f, -ih / 2, 0.036f), iw * 0.35f, 0.004f, LeafD, 0.001f, Q(90, 0, 0), 20); h2.transform.localScale = new Vector3(1, 1, 0.45f);
-            Cyl(g, new Vector3(iw * 0.25f, ih * 0.22f, 0.034f), ih * 0.12f, 0.004f, ButterD, 0.001f, Q(90, 0, 0), 16);
-        }
-        else
-        {   // kid drawing of a house
-            Block(g, new Vector3(0, -ih * 0.12f, 0.034f), new Vector3(iw * 0.42f, ih * 0.38f, 0.004f), Coral, 0.001f, false);
-            var rf = Block(g, new Vector3(0, ih * 0.14f, 0.035f), new Vector3(iw * 0.32f, iw * 0.32f, 0.004f), PinkD, 0.001f, false); rf.transform.localRotation = Q(0, 0, 45);
-            Block(g, new Vector3(0, -ih * 0.2f, 0.037f), new Vector3(iw * 0.1f, ih * 0.2f, 0.004f), WoodD, 0.001f, false);
-            Block(g, new Vector3(0, -ih / 2 + 0.03f, 0.036f), new Vector3(iw, 0.06f, 0.004f), Leaf, 0.001f, false);
-        }
+        Picture(g, new Vector3(0, 0, 0.034f), Q(0, 180, 0), iw, ih, kind == 0 ? "art_hills" : "art_kid");   // v0.9.8 painted illustration (was primitive hills / house shapes)
         MatA = om; return g;
     }
     public static Transform Counter(Transform p, Vector3 pos, float yaw, float w, Color body, Color top, string kind)
@@ -942,11 +963,15 @@ public static class SoftProps
         void Cube(Vector3 at, float yaw, Color c)
         {
             var cb = Group(g, "sk_toyblock", at, yaw);
-            Block(cb, new Vector3(0, s / 2, 0), Vector3.one * s, Lt(Wood, 0.25f), 0.018f, false);   // raw beech core shows at the bevels
+            c = Color.Lerp(Dk(c, 0.12f), c, (float)rng.NextDouble()); var wood = Color.Lerp(Lt(Wood, 0.2f), Lt(Wood, 0.35f), (float)rng.NextDouble());
+            Block(cb, new Vector3(0, s / 2, 0), Vector3.one * s, wood, 0.032f, false);   // v0.9.8 deep bevel: raw beech core shows at the rounded edges
             foreach (var (fp, fr) in new[] { (new Vector3(0, s / 2, -s / 2 - 0.001f), Q(0, 0, 0)), (new Vector3(0, s / 2, s / 2 + 0.001f), Q(0, 180, 0)), (new Vector3(-s / 2 - 0.001f, s / 2, 0), Q(0, 90, 0)), (new Vector3(s / 2 + 0.001f, s / 2, 0), Q(0, -90, 0)) })
             {
-                var f = Block(cb, fp, new Vector3(s * 0.8f, s * 0.8f, 0.004f), c, 0.002f, false); f.transform.localRotation = fr;
-                Text(cb, fp + fr * new Vector3(0, -0.005f, -0.004f), fr, gl[li++ % gl.Length], 0.028f, White);
+                var f = Block(cb, fp, new Vector3(s * 0.74f, s * 0.74f, 0.006f), c, 0.012f, false); f.transform.localRotation = fr;   // painted panel with soft edge
+                var f2 = Block(cb, fp + fr * new Vector3(0, 0, -0.003f), new Vector3(s * 0.6f, s * 0.6f, 0.004f), Lt(c, 0.18f), 0.008f, false); f2.transform.localRotation = fr;   // raised inner field
+                string ch = gl[li++ % gl.Length];
+                Text(cb, fp + fr * new Vector3(0.0015f, -0.0065f, -0.0062f), fr, ch, 0.026f, Dk(c, 0.6f));   // v0.9.8 embossed letter: dark relief shadow
+                Text(cb, fp + fr * new Vector3(0, -0.005f, -0.0075f), fr, ch, 0.026f, Lt(c, 0.55f));
             }
             Block(cb, new Vector3(0, s + 0.001f, 0), new Vector3(s * 0.8f, 0.004f, s * 0.8f), Lt(c, 0.25f), 0.002f, false);
         }
