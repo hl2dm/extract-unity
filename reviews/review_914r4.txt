@@ -1,0 +1,28 @@
+Reviewed all 26 screenshots in /workspace/rev912. Here are the problems, worst first:
+
+**1. Recurring blockout toy robot — multiple files (L_atoys.png, L_bedroom.png, L_cu_blocks.png, L_interior.png, L_toys.png)**
+The red/blue robot toy is flat primary-colored cylinders and boxes with almost no paint texture or linework compared to everything around it. It shows up in five separate shots (toybox, bedroom overview, blocks close-up, living room, toy room), so this isn't a one-off — it's a recurring asset that directly contradicts the brief's explicit "no primitive-blockout props (toy robot...)" instruction. Biggest, most repeated offender.
+
+**2. Curtain in L_cu_curtain_1.png reads as a rigid shell/fan valance, not cloth**
+Unlike the nicely pleated, rod-hung fabric seen in L_cu_curtain_0.png, L_cu_curtain_b0.png, and L_cu_curtain_b1.png, this window's drapery is four stiff quarter-circle "fan" panels packed into the corners — it looks like a carved wood or shell decoration, not flowing fabric. The brief specifically calls out "no boxes" for curtains, and this asset is inconsistent with the better curtain treatments used elsewhere in the same game.
+
+**3. Unlabeled, flat-shaded jars/bottles — L_spot.png (shop shelf) and L_bedroom.png (bookshelf trinkets)**
+The bottles lined up on the shop shelf and the small objects on the bedroom shelf are plain solid-color blobs with no label art or paint detail — straight placeholder geometry in an otherwise painted scene, violating the "jars...must look like detailed models" requirement.
+
+**4. Paint buckets beside the scooter — L_cu_scooter.png**
+Same issue as #3: flat-shaded cylinders with zero label or surface detail sitting right next to a nicely outlined crate and scooter, breaking the illusion.
+
+**5. Scooter and the green dresser look under-detailed — L_cu_scooter.png, L_st_3.png**
+Both render with flatter shading and thinner linework than the walls/signage/furniture around them (compare to the warmly painted bed/wardrobe in L_toys.png or L_bedroom.png). Not a blockout exactly, but a visible polish/detail gap against the rest of the room.
+
+**6. Mild style split between shop signage and painted wall art**
+Signs like 花店 (L_shops.png), 豆花/冰店 (L_street.png) use a flatter vector-poster treatment with crisp sans-serif-ish lettering, while the map poster, cat portrait, and TV cartoon use visibly looser gouache brushwork. Both are on-palette and legible, so this is a cohesion nit rather than a failure — but strictly speaking it's two sub-styles living under one "gouache storybook" umbrella.
+
+**7. "卡牌" cat sketch icon — L_tab_fruit.png**
+The pickup card art is a rough pencil-style scribble, noticeably less finished than the rest of the 2D surface work (menu board, map, frames).
+
+**What's working well:** every piece of Traditional Chinese text I could read (郵信箱, 今日菜單/豆花/剉冰/紅茶/包子, 小鎮地圖 + its location labels, 花店, 豆花, 冰店, the 阿姨家 dialogue line, even book spines 小王子/星空) is crisp, correctly rendered, and contextually appropriate — no legibility or wrong-character issues anywhere. No white blowouts and no z-fighting/clipping observed. The map poster, cat portrait, picture frames, and TV cartoon are a genuinely strong, cohesive gouache-golden-hour set and should be the reference bar for the rest.
+
+The world has a real, well-executed painterly identity, but shippable polish is undercut by the same handful of blockout-grade props (robot, jars, buckets) repeating across many shots, plus one curtain asset that breaks the "pleated cloth, no boxes" rule the brief leads with.
+
+SCORE: 6/10

@@ -1,0 +1,25 @@
+## Art Review — /workspace/rev912 (26 screenshots)
+
+**Worst problems first:**
+
+1. **Primitive blockout box survives next to the scooter (`L_cu_scooter.png`).** The crate behind the moped is a bare tan rectangular box with no panel lines, printing, or wear — exactly the "primitive blockout" the brief calls out by name. Everything else in that garage (scooter, drawers) has sculpted toon detail; this box reads as an unfinished placeholder.
+
+2. **Menu/price board breaks style cohesion (`L_cu_menu.png`, `L_st_1.png`).** The "今日菜單" board uses flat, clip-art vector icons (plain-filled bowl, shaved-ice cone, cup, bun) with no gouache brush texture or painterly shading. Sitting a few feet from the hand-painted "小鎮地圖" poster (`L_cu_map_b.png`) and the framed landscape art (`L_frames.png`), the mismatch in rendering language is immediately obvious — two different illustration styles in the same world.
+
+3. **Curtains are inconsistent and partly non-compliant (`L_cu_curtain_0.png`, `L_cu_curtain_1.png`).** `curtain_0` renders as a flat striped plane behind the glass with no pleat geometry — reads as a printed texture, not cloth. `curtain_1` has only a scalloped wood valance/shutter lattice with no fabric drape at all. Compare this to `L_cu_curtain_2.png`, `L_cu_curtain_b0.png`, and `L_cu_curtain_b1.png`, which correctly show rounded, tied-back pleated cloth on a rod — so the asset kit itself is inconsistent, and two of five curtain instances still violate the explicit "no boxes/real pleated cloth" rule.
+
+4. **Unfinished blank signage (`L_spot.png`).** There's a beige wood-plank sign hanging under the pink awning (right-center) with no text or graphic at all — reads as a placeholder shop sign that never got art pass.
+
+5. **Mailbox plate style mismatch (`L_cu_mailbox.png`).** The "郵/信箱" plate is a clean, flat minimalist icon/sticker (hard-edged envelope glyph, no brush texture) that looks like a UI icon pasted onto the prop rather than a gouache-painted plate consistent with the map poster or shop signs.
+
+6. **Recurring low-detail shelf props (`L_spot.png`, `L_tab_fruit.png`, `L_interior.png`).** Small bottle/jar clusters on shelves render as blurry, indistinct color blobs with no visible labels or caps — under-detailed relative to the brief's "jars must look like detailed models" requirement; borderline blockout.
+
+7. **Minor: TV antenna (`L_cu_tv.png`) is a bare crossed-wire shape** with no toon outline weight matching the rest of the TV cabinet's finished sculpt — small but noticeable next to an otherwise nicely painted cartoon screen (good golden-hour palette match there, to its credit).
+
+8. **Minor: floating "ZZZ" sleep icon (`L_interior.png`)** hovers mid-air over the rug with no clear anchor (speech bubble, sleeping pet, etc. is off-frame/invisible), reading as a stray debug sprite rather than an intentional world element.
+
+**What's working well:** the street/shop exterior signage (`花店`, `豆花`, `冰店`, `阿婆家`) is crisp, correctly rendered Traditional Chinese in a unified painted-signboard style; the framed wall art and town map poster are genuinely strong gouache storybook pieces that nail the golden-hour palette; toy blocks' Zhuyin glyphs are legible; no white blowouts or z-fighting observed; the toy robot and fire hydrant are both acceptably detailed, not blockouts.
+
+Given explicit brief violations still present (a literal unfinished box prop, two non-compliant curtains, a stylistically foreign menu board) alongside otherwise strong palette cohesion and good signage work, this isn't yet at shippable polish — it needs another pass on the flagged props before it clears the bar.
+
+SCORE: 6/10

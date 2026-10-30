@@ -399,8 +399,10 @@ public static class SoftProps
         Block(g, new Vector3(0, -h / 2, -0.07f), new Vector3(w, 0.03f, 0.2f), Dk(frame, 0.7f), 0.005f, false);
         Color[] cc = { new Color(0.98f, 0.93f, 0.86f), new Color(0.95f, 0.82f, 0.86f), new Color(0.86f, 0.9f, 0.96f), new Color(0.95f, 0.9f, 0.72f) };
         Color cu = cc[hs % 4]; float open = 0.26f + (hs % 3) * 0.05f;
-        if (hs % 5 == 4) { var bl = Drape(g, new Vector3(0, h / 2 - h * 0.2f, -0.05f), Quaternion.identity, w * 0.94f, h * 0.36f, Mathf.Max(6, Mathf.RoundToInt(w * 8)), 0.06f, cu); bl.name = "sk_curtainp"; }   // v0.9.12 gathered half-drawn cafe curtain (was a slab)
-        else foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(5, Mathf.RoundToInt(w * open * 14)), 0.075f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; if (hs % 2 == 0) { Ring(g, new Vector3(sx * w * (0.5f - open / 2), -0.08f, -0.06f), Q(90, 0, 0), w * open * 0.28f, 0.012f, Dk(cu, 0.75f), 16); } }   // v0.9.12 pleated cloth panels (were boxes)
+        if (hs % 5 == 4) { var bl = Drape(g, new Vector3(0, h / 2 - h * 0.2f, -0.05f), Quaternion.identity, w * 0.94f, h * 0.36f, Mathf.Max(6, Mathf.RoundToInt(w * 8)), 0.06f, cu); bl.name = "sk_curtainp"; }
+        if (true) foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(5, Mathf.RoundToInt(w * open * 14)), 0.075f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; if (hs % 2 == 0) { Ring(g, new Vector3(sx * w * (0.5f - open / 2), -0.08f, -0.06f), Q(90, 0, 0), w * open * 0.28f, 0.012f, Dk(cu, 0.75f), 16); } }   // v0.9.14 r2: every window gets side cloth panels
+        // half-drawn cafe curtain (was a slab)
+        if (false) foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(5, Mathf.RoundToInt(w * open * 14)), 0.075f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; if (hs % 2 == 0) { Ring(g, new Vector3(sx * w * (0.5f - open / 2), -0.08f, -0.06f), Q(90, 0, 0), w * open * 0.28f, 0.012f, Dk(cu, 0.75f), 16); } }   // v0.9.12 pleated cloth panels (were boxes)
         { var glw = Art.Prim(PrimitiveType.Quad, g, new Vector3(0, 0.02f, 0.008f), new Vector3(w * 0.94f, h * 0.88f, 1), Art.Emissive(Color.Lerp(new Color(1f, 0.83f, 0.58f), cu, 0.35f), 0.75f)); glw.name = "sk_winglow"; }   // v0.9.13 warm back-light behind the cloth
         Cyl(g, new Vector3(0, h / 2 - 0.035f, -0.075f), 0.012f, w * 0.96f, Dk(frame, 0.6f), 0.005f, Q(0, 0, 90), 8); for (int ri = 0; ri < 7; ri++) Ring(g, new Vector3(-w * 0.45f + ri * w * 0.15f, h / 2 - 0.035f, -0.075f), Q(0, 90, 0), 0.02f, 0.005f, Dk(frame, 0.5f), 10);   // v0.9.13 rod + rings
         if (hs % 2 == 0) { float ix = w * 0.22f * ((hs % 4) - 1.5f) / 1.5f; Block(g, new Vector3(ix, -h / 2 + 0.12f, 0.0f), new Vector3(0.16f, 0.2f, 0.12f), Color.Lerp(inside, Color.black, 0.35f), 0.03f, false); Ball(g, new Vector3(ix, -h / 2 + 0.32f, 0.0f), new Vector3(0.26f, 0.22f, 0.1f), Color.Lerp(inside, new Color(0.2f, 0.3f, 0.2f), 0.6f), 8); }   // pot-plant silhouette on the inner sill
@@ -417,7 +419,13 @@ public static class SoftProps
         }
         // glass hint: one faint horizontal sky sheen across the upper pane (no diagonal sticks)
         Block(g, new Vector3(0, h * 0.36f, -0.09f), new Vector3(w * 0.96f, h * 0.2f, 0.004f), Color.Lerp(inside, new Color(0.88f, 0.86f, 0.98f), 0.35f), 0.002f, false);
-        Drape(g, new Vector3(0, h / 2 - 0.07f, -0.075f), Quaternion.identity, w * 0.96f, 0.13f, Mathf.Max(6, Mathf.RoundToInt(w * 10)), 0.025f, Dk(cu, 0.9f));   // v0.9.12 ruffled cloth valance (was a bar)
+        Drape(g, new Vector3(0, h / 2 - 0.085f, -0.08f), Quaternion.identity, w * 0.96f, 0.15f, Mathf.Max(3, Mathf.RoundToInt(w * 3.5f)), 0.03f, Dk(cu, 0.9f));   // v0.9.14 soft gathered valance
+        {   // v0.9.14 scalloped hem: soft half-round fabric lobes + piping (was spiky ruffle teeth)
+            int nsc = Mathf.Max(3, Mathf.RoundToInt(w * 4f)); float scw = w * 0.96f / nsc; var omv = PushM(MatK.Fabric);
+            for (int i = 0; i < nsc; i++) { var lb = Ball(g, new Vector3(-w * 0.48f + (i + 0.5f) * scw, h / 2 - 0.165f, -0.095f), new Vector3(scw * 1.02f, 0.085f, 0.03f), Dk(cu, 0.84f), 12); }
+            Cyl(g, new Vector3(0, h / 2 - 0.155f, -0.112f), 0.008f, w * 0.96f, Lt(cu, 0.35f), 0.004f, Q(0, 0, 90), 8);   // piping
+            MatA = omv;
+        }
         Cyl(g, new Vector3(0, h / 2 - 0.005f, -0.075f), 0.012f, w * 0.98f, Dk(frame, 0.6f), 0.004f, Q(0, 0, 90), 10);   // curtain rod
         if (hs % 3 != 2) { var lp = Art.Prim(PrimitiveType.Sphere, g, new Vector3(w * 0.15f * ((hs % 2) * 2 - 1), h * 0.22f, 0.0f), Vector3.one * Mathf.Min(0.16f, w * 0.08f), WinLampM ?? (WinLampM = Art.Emissive(new Color(1f, 0.8f, 0.55f), 0.9f))); lp.name = "sk_winlamp"; }   // dim pendant inside
         // sill + lintel
@@ -551,8 +559,8 @@ public static class SoftProps
             // v0.9.4: goods built after the sign (below) to match the shop type
             var awn = Awning(fr, new Vector3(0, 2.5f, -0.05f), w * 0.85f, 1.1f, acc, White);
             // v0.8.1: sign stands on brackets at the awning's front edge - out in front of balconies/windows, nothing crosses it from the street
-            var ab = Art.RenderBounds(awn.gameObject); float atop = fr.InverseTransformPoint(ab.max).y; float sz = 0.14f, hb = sz * 9f;
-            string sn = shop ?? new[] { "早餐", "冰店", "書店", "花店" }[rng.Next(4)];
+            var ab = Art.RenderBounds(awn.gameObject); float atop = fr.InverseTransformPoint(ab.max).y; float sz = 0.12f, hb = sz * 9f;   // v0.9.14 smaller board so 早餐店 is not cropped above the awning
+            string sn = UniqueSign(shop ?? new[] { "早餐", "冰店", "書店", "花店" }[rng.Next(4)]);   // v0.9.14 no repeated shop names on a street
             var st = Text3D(fr, new Vector3(0, atop + 0.12f + hb / 2f, -1.02f), sn, sz, new[] { Rose, Coral, LavD, MintD }[rng.Next(4)]);
             // v0.9.10: icon is painted into the gouache sign board itself
             foreach (float bx in new[] { -0.45f, 0.45f }) Block(fr, new Vector3(bx, atop - 0.03f, -0.72f), new Vector3(0.06f, 0.3f, 0.06f), GreyD, 0.015f, false);   // brackets down to the awning
@@ -1027,6 +1035,17 @@ public static class SoftProps
         MatA = om; var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(w, h, d); bc.center = new Vector3(0, h / 2, 0); return g;
     }
     /// v0.9.7 picture frame: moulded frame, mat, simple painted scene
+    static readonly HashSet<string> UsedSigns = new HashSet<string>();
+    static readonly string[] SignPool = { "早餐店", "冰店", "書局", "花店", "麵包", "豆花", "文具", "理髮", "柑仔店", "阿姨家" }   /* only names with painted sign art */;
+    public static void ResetSigns() { UsedSigns.Clear(); }
+    public static string UniqueSign(string want)
+    {
+        if (UsedSigns.Count >= SignPool.Length) UsedSigns.Clear();
+        if (want == "早餐") want = "早餐店"; if (want == "書店") want = "書局";
+        if (UsedSigns.Add(want)) return want;
+        foreach (var n in SignPool) if (UsedSigns.Add(n)) return n;
+        return want;
+    }
     public static int ShopIcon(string n)
     {   string[][] k = { new[]{"早餐"}, new[]{"冰"}, new[]{"書"}, new[]{"花"}, new[]{"麵包","烘焙"}, new[]{"豆花"}, new[]{"文具"}, new[]{"理髮","髮"} };
         if (n.Contains("豆花")) return 5; for (int i = 0; i < k.Length; i++) foreach (var t in k[i]) if (n.Contains(t)) return i; return 8; }
@@ -1331,7 +1350,7 @@ public static class SoftProps
                 break;
             case "box":
             {   // v0.9.9 r3 cardboard box: kraft body, open flaps, tape, edge seams, shipping label
-                var kr = H("c9965a"); var kd = Dk(kr, 0.72f); var om2 = PushM(MatK.Fabric);
+                var kr = H("b08a5e"); var kd = Dk(kr, 0.72f); var om2 = PushM(MatK.Fabric);
                 Block(g, new Vector3(0, 0.31f, 0), new Vector3(0.82f, 0.6f, 0.82f), kr, 0.025f, false, 0, 0.004f);
                 foreach (int sx in new[] { -1, 1 }) foreach (int sz2 in new[] { -1, 1 }) Block(g, new Vector3(sx * 0.411f, 0.31f, sz2 * 0.411f), new Vector3(0.02f, 0.6f, 0.02f), kd, 0.004f, false);
                 foreach (float y in new[] { 0.015f, 0.605f }) { Block(g, new Vector3(0, y, 0.411f), new Vector3(0.82f, 0.018f, 0.02f), kd, 0.004f, false); Block(g, new Vector3(0, y, -0.411f), new Vector3(0.82f, 0.018f, 0.02f), kd, 0.004f, false); }
@@ -1340,7 +1359,15 @@ public static class SoftProps
                 Block(g, new Vector3(0, 0.45f, 0.415f), new Vector3(0.16f, 0.32f, 0.008f), H("e9dcb0"), 0.003f, false);   // tape strip
                 Picture(g, new Vector3(0.12f, 0.24f, 0.418f), Q(0, 180, 0), 0.4f, 0.27f, "art_lbl");   // v0.9.10 painted fragile label
                 foreach (var pp in new[] { new Vector3(0.08f, 0.6f, 0.06f), new Vector3(-0.16f, 0.61f, -0.08f), new Vector3(0.12f, 0.6f, -0.17f) }) Ball(g, pp, new Vector3(0.2f, 0.12f, 0.18f), H("efe6d2"), 8, false, null, "sk_packpaper", 0.25f);   // v0.9.13 crumpled packing paper
-                Block(g, new Vector3(0, 0.31f, -0.415f), new Vector3(0.16f, 0.32f, 0.008f), H("e9dcb0"), 0.003f, false); Text(g, new Vector3(-0.16f, 0.5f, -0.42f), Quaternion.identity, "易碎", 0.03f, H("8a3b2a")); Text(g, new Vector3(0.2f, 0.18f, -0.42f), Quaternion.identity, "↑↑", 0.03f, H("5a4030"));
+                Block(g, new Vector3(0, 0.31f, -0.415f), new Vector3(0.16f, 0.32f, 0.008f), H("e9dcb0"), 0.003f, false); Text(g, new Vector3(-0.16f, 0.5f, -0.42f), Quaternion.identity, "易碎", 0.016f, H("8a3b2a")); Text(g, new Vector3(0.2f, 0.18f, -0.42f), Quaternion.identity, "↑↑", 0.016f, H("5a4030"));
+                {   // v0.9.14 corrugation ribs, crushed corner, cross tape, printed shipper label
+                    var kd2 = Dk(kr, 0.86f);
+                    for (int i = 0; i < 7; i++) { float t = -0.35f + i * 0.117f; Block(g, new Vector3(t, 0.31f, -0.4125f), new Vector3(0.006f, 0.56f, 0.003f), kd2, 0.001f, false); Block(g, new Vector3(0.4125f, 0.31f, t), new Vector3(0.003f, 0.56f, 0.006f), kd2, 0.001f, false); }
+                    var cr = Block(g, new Vector3(-0.37f, 0.57f, -0.37f), new Vector3(0.14f, 0.1f, 0.14f), Dk(kr, 0.78f), 0.04f, false); cr.transform.localRotation = Q(18, 45, -14);   // crushed corner dent
+                    Block(g, new Vector3(-0.415f, 0.31f, 0), new Vector3(0.008f, 0.6f, 0.15f), H("d9c89a"), 0.003f, false); Block(g, new Vector3(0.415f, 0.31f, 0), new Vector3(0.008f, 0.6f, 0.15f), H("d9c89a"), 0.003f, false);
+                    Block(g, new Vector3(-0.2f, 0.22f, -0.418f), new Vector3(0.3f, 0.2f, 0.004f), H("f3ecd8"), 0.003f, false);
+                    Text(g, new Vector3(-0.2f, 0.27f, -0.422f), Quaternion.identity, "林記商行", 0.011f, H("3a2a20")); Text(g, new Vector3(-0.2f, 0.19f, -0.422f), Quaternion.identity, "台南 → 高雄", 0.008f, H("6a4a30"));
+                }
                 MatA = om2; break;
             }
             case "safe":

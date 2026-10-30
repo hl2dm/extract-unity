@@ -1,0 +1,21 @@
+Reviewed all 26 screenshots in /workspace/rev912. Findings, worst first:
+
+**1. Framed landscape paintings break the "one gouache style" rule (L_frames, L_interior).** The two framed pictures in L_frames (sunset wheat field, rainbow cottage) and the matching one above the shelf in L_interior render with soft, blurry, almost-photographic airbrush shading — gradient skies, no visible brush/paper texture. Everything else (town map poster in L_cu_map_b, menu board in L_cu_menu, TV cartoon in L_cu_tv, cat portrait in L_cu_curtain_b0) uses a flat, crisp, cel-outlined gouache look. Sitting side by side on the same wall, the paintings read as a different art pipeline. This is the #1 cohesion failure the brief calls out.
+
+**2. Curtain close-ups don't read as pleated cloth in two spots.** L_cu_curtain_1: the fabric behind the arched window is a repeating stack of scalloped/rainbow-rib shapes — looks like a lattice or accordion blockout mesh, not gathered drape. L_cu_curtain_2: a flower medallion floats dead-center of the curtain assembly, disconnected from both the rod and the wall, reading as a stray decorative disc rather than part of the window. The wider establishing shots (L_cu_curtain_0, b0, b1) actually do show convincing gathered cloth on rods, which makes these two close-ups stand out as regressions.
+
+**3. Floating ghost UI text in L_street.** A near-transparent line of Chinese text ("…已賣光了，家裡只剩…點心就在冰箱裡！") hovers directly over the sunset sky with no background chip, mid-fade and barely legible — reads as a stray/overlapping toast notification left in frame. Violates both "no overlaps" and "no unreadable text."
+
+**4. Toy robot is a primitive blockout (L_atoys, L_toys, L_abed, L_bedroom).** This is literally one of the examples named in the brief. The body is a plain oval can, legs are bare cylinders on ball joints, head is a flat rectangle screen — almost no sculpted surface detail beyond a few rivets. It sits next to much more finished props (painted signage, labeled crate) and looks unfinished by comparison, especially in the close-up L_toys.
+
+**5. Unlabeled plain jars/bottles read as blockouts (L_shelf, L_interior, L_st_1, L_toys).** The small cylinder/cone "jars" on shelves and nightstands are solid flat colors with zero label art or texture — another named brief example of placeholder-looking props that recur across multiple rooms.
+
+**6. Geometry overlap in L_cu_curtain_b1.** Through the oval window glass, a second window/interior is visible at a mismatched angle and depth — reads as two room modules clipping through each other rather than a coherent view outside.
+
+**7. Minor: wall clock face in L_interior** has very low-contrast numerals, hard to read at a glance compared to the crispness of every other 2D surface.
+
+**8. Minor: book spines (L_bedroom, L_shelf)** have legible titles only on close inspection (小王子, 星空 etc.) — slightly soft/small at normal viewing distance.
+
+What's genuinely good: shop signage (花店, 豆花, 冰店), the menu board, town map poster, mailbox plate, and TV cartoon are all crisp, correctly-rendered Traditional Chinese in a consistent, well-palette-matched gouache style — these are shippable as-is and show the intended look is achievable.
+
+SCORE: 6/10

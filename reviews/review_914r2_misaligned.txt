@@ -1,0 +1,25 @@
+Reviewed all 26 screenshots in /workspace/rev912. Here's the critique, worst problems first.
+
+**1. Primitive-blockout shelf jars/bottles — still present, and the brief explicitly calls this out.**
+In `L_cu_mailbox.png`, `L_spot.png`, and `L_st_1.png`, the small wall-mounted display cabinets are stocked with items that are just flat, unlabeled colored rectangular blocks — no bottle necks, no jar lids, no label art. This is the exact "jars/boxes must look like detailed models" violation the brief warns against, and it repeats across three separate locations, which reads as a systemic asset, not a one-off.
+
+**2. Undetailed cardboard box prop.**
+`L_cu_scooter.png` — the box sitting behind the scooter (in the renovation/storage room with paint buckets) is a flat tan rectangular prism with no flaps, creasing, tape, or printed label. Reads as blockout geometry next to an otherwise fairly detailed scooter model.
+
+**3. Style mismatch on the menu board.**
+`L_cu_menu.png` and `L_st_1.png` — the "今日菜單" sandwich board uses flat vector/icon illustrations (solid-shaded bowl, cup, bun icons on a navy card) that look like UI iconography, not gouache storybook painting. It sits right next to the map poster and cat portrait, which *are* correctly painterly, so the mismatch is obvious side-by-side.
+
+**4. Palette-lock violation on a wall picture.**
+`L_frames.png` — the small rainbow/house picture uses a cool blue sky and white clouds, which breaks the golden-hour palette lock; it reads as a stock clip-art insert next to the warm sunset-landscape frame right beside it.
+
+**5. Odd floating geometry at the mailbox.**
+`L_cu_mailbox.png` — there's a flat ledge/slab cantilevered off the post above the mailbox that doesn't correspond to any readable object, plus a traffic cone awkwardly wedged/partially clipped behind the post. Reads as leftover or unintentional geometry.
+
+**6. Book spine asset reuse + palette drift.**
+`L_shelf.png` / `L_bedroom.png` — the bookshelf reuses the same "小王子" spine texture twice in view, and the spine colors (teal, purple, cool blue) skew cooler than the golden-hour wall/curtain palette around them.
+
+**What's working well (for balance):** curtains are genuinely real pleated cloth on rods in every curtain shot (`L_cu_curtain_0/1/2/b0/b1`) — no boxes, good fix. Traditional Chinese text throughout (map labels, shop signs 花店/豆花/冰店/早餐店, UI strings, menu items) is grammatically correct, properly rendered, and legible — no mojibake or wrong characters found. The map poster, cat portrait, and TV cartoon screen share a consistent gouache look and correctly golden-hour palette. Toy blocks/robot have good sculpted detail, not blockouts.
+
+Concrete, fixable issues rather than a systemic failure — but the recurring blockout shelf props and the menu's style mismatch are both things the brief named directly, so they keep this from being shippable-polish yet.
+
+SCORE: 7/10

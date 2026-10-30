@@ -1,0 +1,25 @@
+Reviewed all 26 screenshots in /workspace/rev912. Here's the breakdown, worst problems first:
+
+**1. Flat vector art breaks gouache cohesion — `L_frames.png` / `L_tab_fruit.png`**
+The two framed wall pictures sit side by side but are rendered in two different illustration languages: the left frame (golden hills at sunset) has proper painterly gouache texture and matches the scene's palette, while the right frame (rainbow + red-roofed house) is flat, oversaturated, hard-edged clip-art with no painterly brushwork at all. Hung inches apart, the mismatch is glaring and is exactly the "ONE consistent gouache storybook style" violation the brief calls out.
+
+**2. Toy props still read as primitive blockouts — `L_atoys.png`, `L_cu_blocks.png`, `L_toys.png`, `L_abed.png`**
+The building-block cubes (Bopomofo letter blocks, "3" block, etc.) are flat single-color cubes with hard uninflected edges and no surface shading variation — they sit directly next to a nicely detailed toy robot in the same shot, so the contrast in fidelity is obvious and reads as unfinished placeholder geometry, not a stylistic choice. The brief explicitly flags toy-robot-style blockouts as unacceptable; the blocks have the same problem the robot avoided.
+
+**3. Under-detailed secondary props — `L_cu_scooter.png`, `L_tab_fruit.png`**
+The wooden crate and stacked paint buckets behind the scooter are flat-shaded primitives with no plank lines/rim highlights, well below the fidelity of the hydrant/robot/scooter nearby. The fruit bowl on the coffee table (banana + cherries) is similarly flat and underdetailed compared to the rest of the room dressing.
+
+**4. TV interact prompt doesn't match the visible object — `L_cu_tv.png`**
+The "E" prompt reads "餅乾 19 元 撿起" ("pick up cookie, 19 yuan") while the only visible object at that position is the TV. This strongly suggests a hidden/overlapping pickup item occupying the same space as the TV mesh — a z-fighting/overlap bug per the brief's "no overlaps" requirement, and confusing for the player regardless.
+
+**5. Inconsistent curtain construction — `L_cu_curtain_1.png`**
+Every other curtain in the set (`L_cu_curtain_0`, `_2`, `_b0`, `_b1`) is correctly built as soft pleated cloth hanging from a rod. This one window instead has a hard-edged scalloped wooden valance/fan trim above and below the glass — no cloth, no rod-hang drape. It breaks the "curtains must be real pleated cloth on rods" rule that the rest of the set actually follows well.
+
+**6. Possible duplicate book spine title — `L_shelf.png`**
+"小王子" appears to repeat on both shelf rows (low confidence at this resolution) — if it's the same spine texture reused without variation, it's a minor repetition/polish ding, not a major issue.
+
+**What's working well (for balance):** the map poster (`L_cu_map_b.png`), menu board (`L_cu_menu.png`), shop signage (`L_shops.png`, `L_street.png`), mailbox plate, clock face and sunflower painting (`L_interior.png`) are all genuinely strong — correct, crisp Traditional Chinese, consistent gouache linework, and well palette-locked to the golden-hour scene. Most curtains are also properly cloth-on-rod now, which suggests this was a known prior issue that's largely fixed.
+
+The core signage/UI work is close to shippable, but the toy-prop blockouts, the mismatched picture frame, and the TV overlap bug are the kind of things a strict art pass would bounce back before calling this done.
+
+SCORE: 7/10

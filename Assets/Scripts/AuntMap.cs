@@ -285,7 +285,7 @@ public static partial class LevelGen
         // ---- GARAGE
         var gC = rooms[0]; 
         SCont(h, "toolchest", new Vector3(-8.55f, FY, 1.0f), 90, Coral, "工具箱");
-        SCont(h, "box", new Vector3(-8.3f, FY, 5.25f), 0, H("a88a66"), "神秘紙箱");
+        SCont(h, "box", new Vector3(-6.55f, FY, 5.2f), 0, H("a88a66"), "神秘紙箱");
         SCont(h, "shelf", new Vector3(-4.0f, FY, 5.62f), 180, Lite(Sky, 0.1f), "雜物架");
         SoftProps.Scooter(h, new Vector3(-7.7f, FY, 3.3f), 0, Pink);
         SoftProps.Cone(h, new Vector3(-3.6f, FY, 0.6f));
@@ -439,7 +439,7 @@ public static partial class LevelGen
 
     static Level BuildAunt(int seed, ThemeDef th, float vmult, int luckLv)
     {
-        rng = new System.Random(seed); luck = luckLv; GlobalSeed = seed;
+        rng = new System.Random(seed); luck = luckLv; GlobalSeed = seed; SoftProps.ResetSigns();
         L = new Level { theme = th, seed = seed, vmult = vmult, root = new GameObject("Level").transform };
         Openings.Clear(); NoRide.Clear(); TrimCrossBefore = TrimPieces = 0;
         var root = L.root; blocks.Clear(); var deco = new System.Random(20260424);   // fixed layout; loot varies by seed
