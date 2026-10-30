@@ -103,11 +103,11 @@ Shader "Casual/Toon"
                 // hatching in shade (diagonal strokes)
                 float hs = frac((ws.x + ws.y * 1.3 - ws.z * 0.7) * 6.0 + vn(ws * 3) * 0.6);
                 float hatch = smoothstep(0.35, 0.5, hs) * smoothstep(0.85, 0.7, hs);
-                col = lerp(col, col * float3(0.86, 0.82, 0.95), hatch * (1 - band) * 0.8 * grain);
+                col = lerp(col, col * float3(0.86, 0.82, 0.95), hatch * (1 - band) * 0.8 * (1 - 0.5 * D) * grain);
                 // crayon tooth: grain darkens slightly, paper peeks through in the gaps
                 col *= lerp(0.84, 1.04, g * grain + (1 - grain) * 0.6);
                 float tooth = pow(saturate(1 - g2 * 1.35), 3);
-                col = lerp(col, float3(1, 0.98, 0.94), tooth * 0.22 * grain * (1 - 0.6 * S2) * (1 - _ToonSoft.w));
+                col = lerp(col, float3(1, 0.98, 0.94), tooth * 0.22 * (1 - 0.7 * D) * grain * (1 - 0.6 * S2) * (1 - _ToonSoft.w));
                 // toy material classes from vertex alpha: 1 matte clay, 0.5 glossy plastic, ~0.1 felt
                 float3 vd = normalize(GetWorldSpaceViewDir(ws));
                 float ma = lerp(_MatA > 0 ? _MatA : 1, i.vc.a, _UseVC);
@@ -118,13 +118,13 @@ Shader "Casual/Toon"
                 if (D > 0)
                 {   // v0.9.3 material library (vertex alpha id): soft, dusk-coloured, capped spec so nothing glares or sparkles
                     float id = round(ma * 20), ks = 0.005, ex = 4, fr = 0, mt = 0, sh = 0.1, bk = 0, gs = 0;
-                    if (id > 19.5)      { ks = 0.02; ex = 6;  fr = 0.03; sh = 0; col *= 0.96 + 0.08 * vn(ws * 3.7); }                      // plaster / painted wall: matte
-                    else if (id > 18.5) { ks = 0.18 * (0.5 + g1); ex = 22; fr = 0.12; sh = 0; col *= 0.82 + 0.3 * smoothstep(0.3, 0.7, g1); }     // wood door/furniture: satin, grain sheen
+                    if (id > 19.5)      { ks = 0.02; ex = 6;  fr = 0.03; sh = 0; col *= (0.93 + 0.1 * vn(ws * 3.7)) * (0.95 + 0.08 * vn(ws * 14)); }                      // plaster / painted wall: matte
+                    else if (id > 18.5) { ks = 0.26 * (0.5 + g1); ex = 18; fr = 0.12; sh = 0; float gr = frac((ws.x + ws.z) * 0.6 + ws.y * 7.0 + vn(ws * float3(2, 0.4, 2)) * 1.6); col *= float3(0.97, 0.88, 0.78) * (0.74 + 0.3 * smoothstep(0.2, 0.8, gr) + 0.12 * g1); }     // wood door/furniture: satin, grain sheen
                     else if (id > 17.5) { ks = 0.2 * (0.8 + 0.4 * g1); ex = 14; fr = 0.32; sh = 0; }     // varnished floor: broad soft gloss
-                    else if (id > 16.5) { ks = 0.24; ex = 44; fr = 0.4; sh = 0; }                         // tile / terrazzo
-                    else if (id > 15.5) { ks = 0; ex = 4; fr = 0.01; sh = 0; col *= 0.93 + 0.14 * vn(ws * 9); }                            // asphalt: very rough
+                    else if (id > 16.5) { ks = 0.3; ex = 44; fr = 0.4; sh = 0; float2 jj = abs(frac(ws.xz * 1.6) - 0.5); col *= 1 - 0.22 * smoothstep(0.43, 0.49, max(jj.x, jj.y)); col *= 0.95 + 0.1 * vn(ws * 6); }                         // tile / terrazzo
+                    else if (id > 15.5) { ks = 0; ex = 4; fr = 0.01; sh = 0; col *= (0.86 + 0.2 * vn(ws * 9)) * (0.9 + 0.16 * step(0.82, vn(ws * 37))); }                            // asphalt: very rough
                     else if (id > 14.5) { ks = 0.3; ex = 80; fr = 0.55; sh = 0; gs = 1; }                 // glass: sharp + fresnel sky
-                    else if (id > 13.5) { ks = 0.26; ex = 36; fr = 0.2; mt = 1; sh = 0; }                 // metal: albedo-tinted spec
+                    else if (id > 13.5) { ks = 0.7; ex = 90; fr = 0.32; mt = 1; sh = 0; col *= 0.92 + 0.12 * frac(ws.y * 9 + ws.x * 0.3); }                 // metal: albedo-tinted spec
                     else if (id > 12.5) { ks = 0.012; ex = 6; fr = 0.02; bk = 0.25; sh = 0; }             // foliage: rough + backlight
                     else if (id > 11.5) { ks = 0.12; ex = 26; fr = 0.1; sh = 0; }                         // roof tiles: semi-gloss
                     else if (id > 9.5)  { ks = 0.13; ex = 34; fr = 0.1; sh = 0; }                         // painted plastic / trim
@@ -132,7 +132,7 @@ Shader "Casual/Toon"
                     ex = min(ex, lerp(24, 80, saturate(_ToonLight.w * 2 - 1)));                           // mobile: broader = cheaper/stabler
                     float3 Lc = L.color.rgb / max(1, max(L.color.r, max(L.color.g, L.color.b)));
                     float nh = saturate(dot(n, hv)), nlr = saturate(dot(n, L.direction)), nv = saturate(dot(n, vd));
-                    float spc = min(ks * pow(nh, ex) * sqrt(ex) * 0.5, 0.4) * nlr * L.shadowAttenuation;
+                    float spc = min(ks * pow(nh, ex) * sqrt(ex) * 0.5, 0.4 + 0.2 * mt) * nlr * L.shadowAttenuation;
                     col *= lerp(1, 0.82, mt) * lerp(1, 0.86, gs);
                     col += spc * lerp(Lc, alb * Lc * 1.3, mt);
                     float fv = fr * pow(1 - nv, 4);
@@ -142,7 +142,8 @@ Shader "Casual/Toon"
                     col += min(ks * pow(saturate(dot(n, normalize(fd + vd))), max(ex * 0.35, 3)) * 2.5, 0.3) * (1 - band) * lerp(_ToonFillCol.rgb * 2.2, alb * 0.6, mt);
                     col += alb * Lc * sh * pow(1 - nv, 3) * (0.4 + 0.6 * band);
                     col += alb * Lc * bk * pow(saturate(dot(vd, -L.direction)), 3);
-                    col += gs * float3(1.0, 0.68, 0.38) * 0.42;
+                    col += gs * float3(1.0, 0.66, 0.34) * 0.75;
+                    col += alb * (1 - band) * float3(0.12, 0.055, 0.0) * saturate(1.2 - abs(n.y)) * saturate(0.6 - n.y);   // v0.9.4 warm street bounce on shaded walls (cores stay violet)
                     if (_MatDbg > 0.5) col = frac(float3(id * 0.37, id * 0.61, id * 0.13)) * 0.8 + 0.1;   // warm lit-interior glow behind window glass (static)
                 }
                 col *= lerp(1, 0.97 + 0.03 * vn(ws * 20), felt);

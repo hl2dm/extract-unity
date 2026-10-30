@@ -28,7 +28,7 @@ public class UI : MonoBehaviour
         hpBar = UiKit.Img(hpBg.transform, Good, Art.Rounded, "hp"); hpBar.rectTransform.Fill(3); hpBar.type = Image.Type.Filled; hpBar.fillMethod = Image.FillMethod.Horizontal;
         hpT = Chip(UiKit.Txt(hud, "100", 28, KnitKit.Ink1, TextAnchor.LowerLeft, true), KnitKit.PatchA); hpT.rectTransform.At(new Vector2(0, 0), new Vector2(42, 70), new Vector2(400, 40));
         ammoT = Chip(UiKit.Txt(hud, "", 36, KnitKit.Ink1, TextAnchor.LowerRight, true), KnitKit.PatchA); ammoT.rectTransform.At(new Vector2(1, 0), new Vector2(-40, 34), new Vector2(700, 100));
-        { var tb = UiKit.Img(hud, KnitKit.TimerBg, Art.Rounded, "timerBg"); tb.color = KnitKit.TimerBg; KnitKit.AsFelt(tb); var st = KnitKit.Line(tb.transform, new Color(0.95f, 0.91f, 0.89f, 0.55f), "stitch"); st.rectTransform.Fill(5); timerBg = tb; tb.raycastTarget = false; tb.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(380, 62)); tb.rectTransform.pivot = new Vector2(0.5f, 1); }
+        { var tb = UiKit.Img(hud, KnitKit.TimerBg, Art.Rounded, "timerBg"); tb.color = KnitKit.TimerBg; KnitKit.AsFelt(tb); var st = KnitKit.Line(tb.transform, new Color(0.95f, 0.91f, 0.89f, 0.55f), "stitch"); st.rectTransform.Fill(5); timerBg = tb; { var sd = tb.gameObject.AddComponent<Shadow>(); sd.effectColor = new Color(0.08f, 0.05f, 0.12f, 0.5f); sd.effectDistance = new Vector2(0, -4); } tb.raycastTarget = false; tb.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(380, 62)); tb.rectTransform.pivot = new Vector2(0.5f, 1); }
         timerT = Chip(UiKit.Txt(hud, "4:00", 46, KnitKit.TimerInk, TextAnchor.UpperCenter, true), KnitKit.TimerBg, KnitKit.TimerInk); timerT.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -18), new Vector2(300, 60));
         objT = Chip(UiKit.Txt(hud, "", 24, KnitKit.Ink1, TextAnchor.MiddleCenter), KnitKit.PatchB); objT.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -86), new Vector2(1000, 58)); objT.rectTransform.pivot = new Vector2(0.5f, 1); objT.rectTransform.anchoredPosition = new Vector2(0, -86);
         bagT = Chip(UiKit.Txt(hud, "", 24, KnitKit.Ink1, TextAnchor.MiddleLeft, true), KnitKit.PatchA); bagT.rectTransform.At(new Vector2(0, 1), new Vector2(46, -14), new Vector2(480, 72));
@@ -151,7 +151,7 @@ public class UI : MonoBehaviour
             L.val = UiKit.Txt(L.content, "", 19, Accent, TextAnchor.MiddleCenter, true); L.val.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(6, 6), new Vector2(-6, 32)); ((InkText)L.val).Bg = CellCream; L.val.color = InkPrice;
             L.bar = UiKit.Img(L.content, Color.white, Art.Rounded, "bar"); L.bar.rectTransform.Place(new Vector2(0, 0), new Vector2(1, 0), new Vector2(14, 14), new Vector2(-14, 22)); L.bar.type = Image.Type.Filled; L.bar.fillMethod = Image.FillMethod.Horizontal;
             L.chip = UiKit.Img(L.content, Color.white, Art.Rounded, "chip"); L.chip.rectTransform.At(new Vector2(0, 1), new Vector2(6, -6), new Vector2(46, 22));
-            L.chipT = UiKit.Txt(L.chip.transform, "", 14, InkDark, TextAnchor.MiddleCenter, true); L.chipT.rectTransform.Fill(); L.chip.rectTransform.sizeDelta = new Vector2(50, 24);
+            L.chipT = UiKit.Txt(L.chip.transform, "", 14, InkDark, TextAnchor.MiddleCenter, true); L.chipT.rectTransform.Fill(); L.chipT.enabled = false; L.chip.rectTransform.sizeDelta = new Vector2(50, 24);
             L.flash = UiKit.Img(L.content, new Color(1, 1, 1, 0), Art.Rounded, "flash"); L.flash.rectTransform.Fill(); L.flash.raycastTarget = false;
             cells.Add(L);
         }
@@ -182,14 +182,14 @@ public class UI : MonoBehaviour
             c.content.localScale = Vector3.one; c.flash.color = new Color(1, 1, 1, 0); c.glow.color = new Color(1, 1, 1, 0);
             if (s.state == 0)
             {
-                c.ring.enabled = true; c.ring.color = new Color(0.36f, 0.24f, 0.3f, 0.12f); c.spin.enabled = false; c.q.enabled = true; c.icon.enabled = false; c.chip.enabled = false;
+                c.ring.enabled = true; c.ring.color = new Color(0.36f, 0.24f, 0.3f, 0.12f); c.spin.enabled = false; c.q.enabled = true; c.icon.enabled = false; c.chip.enabled = false; c.chipT.enabled = false;
                 c.name.text = "<color=#5e4f58>未搜索</color>"; c.val.text = ""; c.bar.enabled = false; c.bg.color = CellIdle; c.rim.color = KnitKit.SlotEmptyLine;
             }
             else if (s.state == 1)
             {
                 float k = Mathf.Clamp01(s.p / Mathf.Max(0.01f, s.dur));
                 c.ring.enabled = true; c.ring.color = new Color(rc.r, rc.g, rc.b, 0.15f); c.spin.enabled = true; c.spin.color = KnitKit.Rar[s.it.r]; c.spin.transform.localRotation = Quaternion.Euler(0, 0, -t * (360 + 240 * s.it.r)); c.q.enabled = true; c.q.color = InkMid;
-                c.icon.enabled = false; c.chip.enabled = false; c.name.text = "翻翻翻…"; c.val.text = s.it.paid ? "<color=#a8322a>已付費</color>" : "";
+                c.icon.enabled = false; c.chip.enabled = false; c.chipT.enabled = false; c.name.text = "翻翻翻…"; c.val.text = s.it.paid ? "<color=#a8322a>已付費</color>" : "";
                 c.bar.enabled = true; c.bar.fillAmount = k; c.bar.color = KnitKit.Rar[s.it.r]; c.bg.color = CellCream; c.rim.color = KnitKit.Rar[s.it.r];   // v0.8.2: steady, no pulse
                 c.glow.color = new Color(rc.r, rc.g, rc.b, 0.12f + 0.08f * s.it.r * k);
             }
@@ -202,12 +202,12 @@ public class UI : MonoBehaviour
                     c.flash.color = new Color(1, 1, 1, Mathf.Clamp01(1 - (t - s.p) / 0.35f) * (0.35f + 0.12f * s.it.r));
                     float gl = s.it.r >= 2 ? 0.25f + 0.08f * s.it.r : s.it.r == 1 ? 0.14f : 0f; c.glow.color = new Color(rc.r, rc.g, rc.b, gl);
                     c.bg.color = CellCream; c.rim.color = KnitKit.Rar[s.it.r]; c.icon.color = Color.white;
-                    c.chip.enabled = true; var kc = KnitKit.Rar[s.it.r]; if (c.chip.color != kc) { c.chip.color = kc; ((InkText)c.chipT).Bg = kc; c.chipT.color = KnitKit.RarInk(s.it.r); } c.chipT.text = Data.RarName[s.it.r];
+                    var kc = KnitKit.Rar[s.it.r]; if (c.chip.color != kc || !c.chipT.enabled) { c.chip.color = kc; ((InkText)c.chipT).Bg = kc; c.chipT.color = KnitKit.RarInk(s.it.r); c.chipT.text = Data.RarName[s.it.r]; } c.chip.enabled = true; c.chipT.enabled = true;   // v0.9.4: colour+text set while hidden, then shown (no stale-ink frame)
                     c.name.text = s.it.name; c.val.text = s.it.key ? "<color=#245a9e>鑰匙</color>" : Data.Fmt(s.it.v);
                 }
                 else
                 {
-                    c.bg.color = CellTaken; c.rim.color = new Color(KnitKit.SlotEmptyLine.r, KnitKit.SlotEmptyLine.g, KnitKit.SlotEmptyLine.b, 0.5f); c.chip.enabled = false; c.icon.color = new Color(1, 1, 1, 0.3f);
+                    c.bg.color = CellTaken; c.rim.color = new Color(KnitKit.SlotEmptyLine.r, KnitKit.SlotEmptyLine.g, KnitKit.SlotEmptyLine.b, 0.5f); c.chip.enabled = false; c.chipT.enabled = false; c.icon.color = new Color(1, 1, 1, 0.3f);
                     c.name.text = "<color=#5e4f58>已拿取</color>"; c.val.text = "";
                 }
             }

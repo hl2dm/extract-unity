@@ -50,7 +50,7 @@ public static class LightQ
         RenderSettings.fogColor = new Color(0.95f, 0.93f, 0.87f); RenderSettings.fogDensity *= 1.25f;
         Shader.SetGlobalVector("_ToonDusk", Vector4.zero); Shader.SetGlobalVector("_SkySunCol", Vector4.zero);
         if (S2 > 0) Soft2(root, prof, sun);
-        PoolK = 1f; if (S2 > 0 && !NoVivid && !NoDusk) { Dusk(prof, sun); PoolK = 1.7f; }
+        PoolK = 1f; if (S2 > 0 && !NoVivid && !NoDusk) { Dusk(prof, sun); PoolK = 2.1f; }
         if (root && t >= 1) Pools(root, t);
     }
     // v0.9.1 "overcast-bright afternoon": very light shadows, no glare, matte materials, low contrast/saturation, gentle warm haze. Same on every tier (only cost-free params).
@@ -81,24 +81,24 @@ public static class LightQ
         if (root) Materials(root); if (root && !NoDusk && !NoVivid) Glows(root);
     }
     // v0.9.3 nostalgic golden-hour dusk: low warm sun, orange->peach->lavender sky, blue-violet soft shadows, warm haze, gentle glow. Cost-free params, same on every tier.
-    public static float D_Elev = 20f, D_Yaw = 72f, D_Sun = 1.08f, D_Temp = 4f, D_Exp = -0.12f, D_Fog = 0.8f, D_Bloom = 0.13f, D_Shadow = 0.6f, D_Sat = 50f, D_Con = 28f;
+    public static float D_Elev = 20f, D_Yaw = 72f, D_Sun = 1.08f, D_Temp = 4f, D_Exp = -0.2f, D_Fog = 0.42f, D_Bloom = 0.09f, D_Shadow = 0.7f, D_Sat = 56f, D_Con = 32f;
     static void Dusk(VolumeProfile prof, Light sun)
     {
         var e = sun.transform.eulerAngles; sun.transform.rotation = Quaternion.Euler(D_Elev, D_Yaw, 0);
         sun.color = new Color(1f, 0.82f, 0.62f); sun.intensity *= D_Sun; sun.shadowStrength = D_Shadow;
-        RenderSettings.ambientSkyColor = new Color(0.52f, 0.48f, 0.6f); RenderSettings.ambientEquatorColor = new Color(0.74f, 0.58f, 0.52f); RenderSettings.ambientGroundColor = new Color(0.5f, 0.41f, 0.4f);
-        Shader.SetGlobalColor("_ToonFillCol", new Color(0.22f, 0.21f, 0.3f));
-        Shader.SetGlobalVector("_ToonDusk", new Vector4(0.56f, 0.53f, 0.8f, 1f));
+        RenderSettings.ambientSkyColor = new Color(0.5f, 0.45f, 0.56f); RenderSettings.ambientEquatorColor = new Color(0.8f, 0.57f, 0.42f); RenderSettings.ambientGroundColor = new Color(0.56f, 0.44f, 0.42f);
+        Shader.SetGlobalColor("_ToonFillCol", new Color(0.15f, 0.14f, 0.26f));
+        Shader.SetGlobalVector("_ToonDusk", new Vector4(0.54f, 0.5f, 0.84f, 1f));
         RenderSettings.fogColor = new Color(0.97f, 0.78f, 0.68f); RenderSettings.fogDensity *= D_Fog;
         var sk = RenderSettings.skybox;
         if (sk && sk.HasProperty("_Horizon")) { sk.SetColor("_Top", new Color(0.62f, 0.6f, 0.86f)); sk.SetColor("_Mid", new Color(1f, 0.78f, 0.6f)); sk.SetColor("_Horizon", new Color(1f, 0.62f, 0.34f)); sk.SetColor("_Ground", new Color(0.86f, 0.66f, 0.58f)); sk.SetColor("_Cloud", new Color(1f, 0.8f, 0.72f)); }
         Shader.SetGlobalVector("_SkySunDir", -sun.transform.forward); Shader.SetGlobalVector("_SkySunCol", new Vector4(1f, 0.84f, 0.6f, 0.55f));
         if (prof)
         {
-            if (prof.TryGet<Bloom>(out var bl)) { bl.threshold.Override(1.0f); bl.intensity.Override(D_Bloom); bl.scatter.Override(0.78f); bl.tint.Override(new Color(1f, 0.85f, 0.7f)); }
+            if (prof.TryGet<Bloom>(out var bl)) { bl.threshold.Override(1.0f); bl.intensity.Override(D_Bloom); bl.scatter.Override(0.68f); bl.tint.Override(new Color(1f, 0.85f, 0.7f)); }
             if (prof.TryGet<ColorAdjustments>(out var c)) { c.postExposure.Override(D_Exp); c.saturation.Override(D_Sat); c.contrast.Override(D_Con); }
             if (prof.TryGet<WhiteBalance>(out var wb)) { wb.temperature.Override(D_Temp); wb.tint.Override(2f); }
-            if (prof.TryGet<SplitToning>(out var st)) { st.shadows.Override(new Color(0.47f, 0.45f, 0.53f)); st.highlights.Override(new Color(0.56f, 0.52f, 0.47f)); st.balance.Override(-20f); }
+            if (prof.TryGet<SplitToning>(out var st)) { st.shadows.Override(new Color(0.42f, 0.44f, 0.62f)); st.highlights.Override(new Color(0.62f, 0.52f, 0.42f)); st.balance.Override(-35f); }
             if (prof.TryGet<ShadowsMidtonesHighlights>(out var smh)) smh.highlights.Override(new Vector4(1f, 1f, 1f, -0.16f));
         }
     }
@@ -162,14 +162,14 @@ public static class LightQ
     {
         glowRoot = null;
         if (!glowB) glowB = GlowM(true, new Color(1f, 0.72f, 0.4f), 0.85f);
-        if (!glowF) glowF = GlowM(false, new Color(1f, 0.66f, 0.36f), 0.22f);
-        if (!glowB) return 0; var wg = GlowM(true, new Color(1f, 0.7f, 0.4f), 0.16f);
+        if (!glowF) glowF = GlowM(false, new Color(1f, 0.66f, 0.36f), 0.36f);
+        if (!glowB) return 0; var wg = GlowM(true, new Color(1f, 0.68f, 0.36f), 0.3f);
         int n = 0, w = 0;
         foreach (var tr in root.GetComponentsInChildren<Transform>().Where(x => x.name == "sk_lamp" || x.name == "sk_flamp").ToList())
         {
             if (glowed.Contains(tr)) continue; glowed.Add(tr);
             if (tr.name == "sk_lamp") { G(tr, new Vector3(0, 3.45f, 0), 3.2f, glowB, false); if (!lampM) lampM = Art.Emissive(new Color(1f, 0.86f, 0.6f), 1.35f);
-                foreach (var rr in tr.GetComponentsInChildren<Renderer>()) { var ly = tr.InverseTransformPoint(rr.bounds.center).y; if (ly > 3.2f && ly < 3.7f && rr.name != "lq_glow" && rr.bounds.size.y < 1.2f) rr.sharedMaterial = lampM; } G(tr, new Vector3(0, 0.04f, 0), 6f, glowF, true); }
+                foreach (var rr in tr.GetComponentsInChildren<Renderer>()) { var ly = tr.InverseTransformPoint(rr.bounds.center).y; if (ly > 3.2f && ly < 3.7f && rr.name != "lq_glow" && rr.bounds.size.y < 1.2f) rr.sharedMaterial = lampM; } G(tr, new Vector3(0, 0.04f, 0), 7f, glowF, true); }
             else G(tr, new Vector3(0, 1.5f, 0), 1.4f, glowB, false);
             n++;
         }
@@ -191,9 +191,14 @@ public static class LightQ
             if (n >= cap) break; if (tr.Find("lq_pool")) continue;
             if (tr.name == "sk_lamp") Pt(tr, new Vector3(0, 3.1f, 0), new Color(1f, 0.82f, 0.55f), 6.5f, 0.9f);
             else if (tr.name == "sk_flamp") Pt(tr, new Vector3(0, 1.5f, 0), new Color(1f, 0.74f, 0.45f), 3.2f, 1.5f);
-            else Pt(tr, new Vector3(0, -0.3f, 0), new Color(1f, 0.93f, 0.8f), 3.0f, 0.55f);
+            else Pt(tr, new Vector3(0, -0.3f, 0), new Color(1f, 0.93f, 0.8f), 3.0f, PoolK > 1 ? 0.75f : 0.55f);
             n++;
         }
+        if (PoolK > 1) foreach (var r in root.GetComponentsInChildren<Renderer>().Where(x => x.name.StartsWith("glass")).ToList())
+            {   // v0.9.4 dusk: warm amber light spilling in through windows (motivated interior light)
+                if (n >= cap) break; var b = r.bounds; if (b.size.y < 0.3f || r.transform.Find("lq_pool")) continue;
+                Pt(r.transform, r.transform.InverseTransformPoint(b.center), new Color(1f, 0.64f, 0.34f), 5.5f, 0.8f); n++;
+            }
         Debug.Log("[light] tier " + t + " pools " + n); return n;
     }
 }

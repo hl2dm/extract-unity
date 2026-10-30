@@ -33,8 +33,8 @@ public static class SoftProps
     {
         var g = Group(p, "sk_pot", pos);
         Lath(g, Vector3.zero, new[] { new Vector2(0, 0), new Vector2(0.2f, 0), new Vector2(0.27f, 0.36f), new Vector2(0.3f, 0.4f), new Vector2(0.24f, 0.42f), new Vector2(0, 0.42f) }.Scale(s), pot, 16);
-        Ball(g, new Vector3(0, 0.5f, 0) * s, new Vector3(0.5f, 0.32f, 0.5f) * s, LeafD, 12);
-        for (int i = 0; i < 5; i++) { float a = i * 1.26f; Ball(g, new Vector3(Mathf.Cos(a) * 0.15f, 0.62f + (i % 2) * 0.05f, Mathf.Sin(a) * 0.15f) * s, Vector3.one * 0.12f * s, flower, 8); }
+        Goods.Shrub(g, new Vector3(0, 0.4f, 0) * s, 0.26f * s, 0.32f * s, LeafD, flower, (int)(pos.x * 13 + pos.z * 7));   // v0.9.4: leaves + petalled flowers (was balls)
+
         if (col) { var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.6f, 0.7f, 0.6f) * s; bc.center = new Vector3(0, 0.35f * s, 0); }
         return g;
     }
@@ -150,7 +150,7 @@ public static class SoftProps
     public static Transform RoundWin(Transform p, Vector3 center, float R, Color frame, bool petals)
     {
         var g = Group(p, "sk_roundwin", center); var om = PushM(0.5f);
-        Cyl(g, new Vector3(0, 0, 0.02f), R, 0.06f, Sky, 0.02f, Q(90, 0, 0), 24);
+        Tag(Cyl(g, new Vector3(0, 0, 0.02f), R, 0.06f, Sky, 0.02f, Q(90, 0, 0), 24).transform, MatK.Glass);
         Ring(g, new Vector3(0, 0, -0.04f), Quaternion.identity, R, Mathf.Max(0.12f, R * 0.2f), frame, 32);
         if (petals) { for (int k = 0; k < 4; k++) { float a = k * Mathf.PI / 2; Ring(g, new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0) * R * 0.36f + new Vector3(0, 0, -0.16f), Quaternion.identity, R * 0.34f, Mathf.Max(0.07f, R * 0.09f), frame, 20); Ball(g, new Vector3(0, 0, -0.2f), Vector3.one * R * 0.28f, frame, 12); } }
         else Ball(g, new Vector3(-R * 0.3f, R * 0.3f, -0.03f), new Vector3(R * 0.35f, R * 0.18f, 0.03f), White, 10, false, Q(0, 0, -40));
@@ -163,11 +163,11 @@ public static class SoftProps
         var g = Group(p, "sk_win", center); var om = PushM(0.5f);
         float wr = Mathf.Min(w, h) * 0.32f;
         Block(g, new Vector3(0, 0, 0.04f), new Vector3(w + 0.44f, h + 0.44f, 0.2f), frame, wr + 0.2f, false, 0, 0.01f);
-        Block(g, new Vector3(0, 0, -0.04f), new Vector3(w, h, 0.12f), Sky, wr, false, 0, 0.005f, 0, null, "glass");
+        Tag(Block(g, new Vector3(0, 0, -0.04f), new Vector3(w, h, 0.12f), Sky, wr, false, 0, 0.005f, 0, null, "glass").transform, MatK.Glass);
         Ball(g, new Vector3(-w * 0.22f, h * 0.22f, -0.1f), new Vector3(w * 0.18f, h * 0.1f, 0.03f), White, 10, false, Q(0, 0, -30));
         Block(g, new Vector3(0, -h / 2 - 0.2f, -0.12f), new Vector3(w + 0.6f, 0.26f, 0.36f), frame, 0.13f, false);
-        if (arch) { Cyl(g, new Vector3(0, h / 2, 0.03f), w / 2, 0.06f, Sky, 0.02f, Q(90, 0, 0), 20); var r = Ring(g, new Vector3(0, h / 2, -0.04f), Quaternion.identity, w / 2 + 0.02f, 0.07f, frame, 24); }
-        if (flowers.HasValue) { Block(g, new Vector3(0, -h / 2 - 0.3f, -0.36f), new Vector3(w + 0.2f, 0.4f, 0.42f), WoodD, 0.18f, false); for (int i = 0; i < 4; i++) Ball(g, new Vector3(-w / 2 + 0.25f + i * (w - 0.5f) / 3, -h / 2 + 0.02f, -0.38f), Vector3.one * 0.38f, i % 2 == 0 ? flowers.Value : LeafD, 10); }
+        if (arch) { Tag(Cyl(g, new Vector3(0, h / 2, 0.03f), w / 2, 0.06f, Sky, 0.02f, Q(90, 0, 0), 20).transform, MatK.Glass); var r = Ring(g, new Vector3(0, h / 2, -0.04f), Quaternion.identity, w / 2 + 0.02f, 0.07f, frame, 24); }
+        if (flowers.HasValue) { Block(g, new Vector3(0, -h / 2 - 0.3f, -0.36f), new Vector3(w + 0.2f, 0.4f, 0.42f), WoodD, 0.18f, false); for (int i = 0; i < 4; i++) Goods.Shrub(g, new Vector3(-w / 2 + 0.25f + i * (w - 0.5f) / 3, -h / 2 - 0.1f, -0.38f), 0.2f, 0.3f, i % 2 == 0 ? Leaf : LeafD, flowers.Value, 41 + i); }   // v0.9.4
         if (grille) Grille(g, new Vector3(0, 0, -0.06f), w + 0.1f, h + 0.1f, White);
         else
         {   // v0.5: chunky rounded mullion cross + keystone header, so frames match the fat pipe-trim scale
@@ -179,7 +179,7 @@ public static class SoftProps
     }
     public static Transform Awning(Transform p, Vector3 center, float w, float depth, Color a, Color b)
     {
-        var om = PushM(0.1f); var g = Group(p, "sk_awning", center); int n = Mathf.Max(3, Mathf.RoundToInt(w / 0.9f)); float sw = w / n;
+        var om = PushM(MatK.Fabric); var g = Group(p, "sk_awning", center); int n = Mathf.Max(3, Mathf.RoundToInt(w / 0.9f)); float sw = w / n;
         for (int i = 0; i < n; i++)
         {
             var s = Block(g, new Vector3(-w / 2 + (i + 0.5f) * sw, 0, -depth / 2), new Vector3(sw + 0.01f, 0.2f, depth), i % 2 == 0 ? a : b, 0.09f, false, 0, 0.01f);
@@ -202,7 +202,7 @@ public static class SoftProps
     public static Transform ACUnit(Transform p, Vector3 pos)
     {
         var g = Group(p, "sk_ac", pos); Block(g, Vector3.zero, new Vector3(0.9f, 0.6f, 0.4f), White, 0.12f, false);
-        Ring(g, new Vector3(0.18f, 0, -0.2f), Quaternion.identity, 0.2f, 0.03f, GreyD, 18); Ball(g, new Vector3(0.18f, 0, -0.19f), new Vector3(0.12f, 0.12f, 0.04f), GreyD, 8); return g;
+        Ring(g, new Vector3(0.18f, 0, -0.2f), Quaternion.identity, 0.2f, 0.03f, GreyD, 18); Ball(g, new Vector3(0.18f, 0, -0.19f), new Vector3(0.12f, 0.12f, 0.04f), GreyD, 8); Tag(g, MatK.Metal); return g;
     }
     public static Transform WaterTank(Transform p, Vector3 pos, Color c)
     {
@@ -215,7 +215,7 @@ public static class SoftProps
     /// big friendly arched door slab (visual), centred on its bottom at pos, facing -Z
     public static Transform DoorVisual(Transform p, Vector3 pos, float w, float h, Color c, Color frame)
     {
-        var g = Group(p, "sk_doorvis", pos); var om = PushM(0.5f);
+        var g = Group(p, "sk_doorvis", pos); var om = PushM(MatK.Wood);
         Block(g, new Vector3(0, (h - w / 2) / 2, 0), new Vector3(w, h - w / 2, 0.12f), c, 0.05f, false);
         Cyl(g, new Vector3(0, h - w / 2, 0), w / 2, 0.12f, c, 0.04f, Q(90, 0, 0), 20);
         Ring(g, new Vector3(0, h - w / 2, -0.06f), Quaternion.identity, w / 2 + 0.06f, 0.09f, frame, 24);
@@ -227,6 +227,7 @@ public static class SoftProps
         Block(g, new Vector3(w * 0.36f, h * 0.42f, -0.08f), new Vector3(0.08f, 0.3f, 0.03f), ButterD, 0.01f, false);
         Block(g, new Vector3(w * 0.32f, h * 0.44f, -0.14f), new Vector3(0.18f, 0.04f, 0.04f), ButterD, 0.01f, false);
         Block(g, new Vector3(w * 0.36f, h * 0.38f, -0.1f), new Vector3(0.03f, 0.05f, 0.02f), GreyD, 0f, false);
+        for (int k = g.childCount - 3; k < g.childCount; k++) Tag(g.GetChild(k), MatK.Metal);   // lever handle + plate = brass/steel
         MatA = om; return g;
     }
 
@@ -267,12 +268,14 @@ public static class SoftProps
         {   // little shop: awning + display + sign
             Block(fr, new Vector3(0, 1.25f, -0.03f), new Vector3(w * 0.66f, 2.1f, 0.14f), Lt(Sky, 0.3f), 0.5f, false);
             for (int i = 0; i < 3; i++) Block(fr, new Vector3(0, 0.6f + i * 0.6f, -0.2f), new Vector3(w * 0.66f, 0.06f, 0.35f), WoodD, 0.03f, false);
-            for (int i = 0; i < 9; i++) Ball(fr, new Vector3(-w * 0.3f + (i % 5) * w * 0.15f, 0.75f + (i / 5) * 0.6f, -0.22f), new Vector3(0.22f, 0.26f, 0.22f), new[] { PinkD, ButterD, MintD, Coral, LavD }[i % 5], 10);
+            // v0.9.4: goods built after the sign (below) to match the shop type
             var awn = Awning(fr, new Vector3(0, 2.5f, -0.05f), w * 0.85f, 1.1f, acc, White);
             // v0.8.1: sign stands on brackets at the awning's front edge - out in front of balconies/windows, nothing crosses it from the street
             var ab = Art.RenderBounds(awn.gameObject); float atop = fr.InverseTransformPoint(ab.max).y; float sz = 0.14f, hb = sz * 9f;
-            var st = Text3D(fr, new Vector3(0, atop + 0.12f + hb / 2f, -1.02f), shop ?? new[] { "早餐", "冰店", "書店", "花店" }[rng.Next(4)], sz, new[] { Rose, Coral, LavD, MintD }[rng.Next(4)]);
+            string sn = shop ?? new[] { "早餐", "冰店", "書店", "花店" }[rng.Next(4)];
+            var st = Text3D(fr, new Vector3(0, atop + 0.12f + hb / 2f, -1.02f), sn, sz, new[] { Rose, Coral, LavD, MintD }[rng.Next(4)]);
             foreach (float bx in new[] { -0.45f, 0.45f }) Block(fr, new Vector3(bx, atop - 0.03f, -0.72f), new Vector3(0.06f, 0.3f, 0.06f), GreyD, 0.015f, false);   // brackets down to the awning
+            Goods.ShopWindow(fr, sn, w, Mathf.RoundToInt(fr.position.x * 13 + fr.position.z * 7));
         }
         else if (gt == 1)
         {   // rolling shutter + side door
@@ -342,7 +345,7 @@ public static class SoftProps
         Block(fr, new Vector3(lx, 2.6f, -0.1f), new Vector3(0.1f, 0.1f, 0.3f), GreyD, 0.03f, false);
         var om3 = PushM(0.5f); Ball(fr, new Vector3(lx, 2.52f, -0.32f), new Vector3(0.26f, 0.32f, 0.26f), Lt(ButterD, 0.4f), 12); MatA = om3;
         // planters hugging the base
-        foreach (int s in new[] { -1, 1 }) if (r.Next(3) > 0) { Block(fr, new Vector3(s * (w / 2 - 0.65f), 0.32f, -0.45f), new Vector3(0.8f, 0.45f, 0.55f), Lt(trim, 0.3f), 0.12f, false); Ball(fr, new Vector3(s * (w / 2 - 0.65f), 0.7f, -0.45f), new Vector3(0.75f, 0.5f, 0.5f), new[] { MintD, Mint }[r.Next(2)], 12); }
+        foreach (int s in new[] { -1, 1 }) if (r.Next(3) > 0) { Block(fr, new Vector3(s * (w / 2 - 0.65f), 0.32f, -0.45f), new Vector3(0.8f, 0.45f, 0.55f), Lt(trim, 0.3f), 0.12f, false); { var lc = new[] { LeafD, Leaf }[r.Next(2)]; float px = s * (w / 2 - 0.65f); Cyl(fr, new Vector3(px, 0.555f, -0.45f), 0.36f, 0.02f, Dk(trim, 0.6f), 0.005f, Q(0, 0, 0), 8); Goods.Shrub(fr, new Vector3(px - 0.17f, 0.56f, -0.45f), 0.24f, 0.4f, lc, null, 11 + s); Goods.Shrub(fr, new Vector3(px + 0.17f, 0.56f, -0.45f), 0.22f, 0.36f, Dk(lc, 0.92f), Rose, 17 + s); } }
         // AC units + laundry pole on upper floors
         int side = r.Next(2) == 0 ? -1 : 1; bool laundry = false;
         for (int f = 1; f < floors; f++)
@@ -628,7 +631,7 @@ public static class SoftProps
     {
         var g = Group(p, "sk_plant", pos);
         Lath(g, Vector3.zero, new[] { new Vector2(0, 0), new Vector2(0.18f, 0), new Vector2(0.24f, 0.35f), new Vector2(0, 0.35f) }.Scale(s), Coral, 14);
-        for (int i = 0; i < 6; i++) { float a = i * 1.05f; var l = Ball(g, new Vector3(Mathf.Cos(a) * 0.18f, 0.6f + (i % 3) * 0.12f, Mathf.Sin(a) * 0.18f) * s, new Vector3(0.18f, 0.4f, 0.1f) * s, i % 2 == 0 ? Leaf : LeafD, 8); l.transform.localRotation = Q(0, -a * Mathf.Rad2Deg, 35); }
+        for (int i = 0; i < 6; i++) { float a = i * 1.05f; var l = Ball(g, new Vector3(Mathf.Cos(a) * 0.18f, 0.6f + (i % 3) * 0.12f, Mathf.Sin(a) * 0.18f) * s, new Vector3(0.14f, 0.42f, 0.04f) * s, i % 2 == 0 ? Leaf : LeafD, 8, false, null, "sk_plant", 0.02f); l.transform.localRotation = Q(0, -a * Mathf.Rad2Deg, 35); }   // v0.9.4: thin blades
         var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.5f, 1f, 0.5f) * s; bc.center = new Vector3(0, 0.5f * s, 0); return g;
     }
     public static Transform FloorLamp(Transform p, Vector3 pos)

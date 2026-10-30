@@ -443,6 +443,7 @@ public class Game : MonoBehaviour
         var d = target - eye; var hd = new Vector3(d.x, 0, d.z); if (hd.sqrMagnitude < 0.001f) hd = Vector3.forward;
         player.Teleport(eye - Vector3.up * player.camRig.localPosition.y, Quaternion.LookRotation(hd).eulerAngles.y); player.pitch = -Mathf.Atan2(d.y, hd.magnitude) * Mathf.Rad2Deg; yield return null; yield return null;
     }
+    static Transform FrontOf(Transform t) { for (var a = t.parent; a; a = a.parent) if (a.name == "front") return a; return null; }
     IEnumerator CamShot(Vector3 from, Vector3 at, string name, float wait = 0.4f)
     {
         var cm = player.cam.transform; cm.position = from; cm.rotation = Quaternion.LookRotation(at - from); yield return new WaitForSeconds(wait);
@@ -508,6 +509,21 @@ public class Game : MonoBehaviour
                 var dv = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_doorvis").OrderByDescending(t => Mathf.Abs(Vector3.Dot(t.forward, sdir)) - Vector3.Distance(t.position, new Vector3(-14f, 0, 0)) * 0.004f).FirstOrDefault();
                 if (dv) { var b = Art.RenderBounds(dv.gameObject); var nn = dv.forward * Mathf.Sign(Vector3.Dot(dv.forward, sdir)); nn.y = 0; nn.Normalize(); var rt = Vector3.Cross(Vector3.up, nn);
                     yield return CamShot(b.center + nn * 3.4f + rt * 1.8f + Vector3.up * 0.3f, b.center + Vector3.down * 0.6f - rt * 0.4f, "L_matshop", 0.5f); }
+            }
+            {   // v0.9.4 dressing close-ups: shop windows per type + table settings
+                var all = level.root.GetComponentsInChildren<Transform>();
+                var seen = new HashSet<string>();
+                foreach (var wv in Goods.Windows.OrderBy(v => Vector3.Distance(v.at, new Vector3(-14f, 0, 0))))
+                {
+                    string k = wv.shop.Length > 0 ? wv.shop.Substring(0, 1) : "?"; if (!seen.Add(k) || seen.Count > 4) continue;
+                    var rt = Vector3.Cross(Vector3.up, wv.outN); Debug.Log("[props] window " + wv.shop + " @" + wv.at);
+                    yield return CamShot(wv.at + wv.outN * 2.2f + rt * 0.5f + Vector3.up * 0.25f, wv.at, "L_win_" + seen.Count, 0.5f);
+                }
+                foreach (var tn in new[] { "sk_plate", "sk_fruit" })
+                {
+                    var it = all.FirstOrDefault(t => t.name == tn); if (!it) continue;
+                    yield return CamShot(it.position + new Vector3(0.9f, 0.7f, -0.9f), it.position, "L_tab_" + tn.Substring(3), 0.5f);
+                }
             }
             Debug.Log("[casual] lightOnly done errors " + errs); PlayerPrefs.DeleteKey(SaveSys.Key); yield return new WaitForSeconds(0.5f); Application.Quit(); yield break;
         }
