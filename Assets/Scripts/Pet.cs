@@ -125,12 +125,19 @@ public class Pet : MonoBehaviour
         if (st == St.Flee || st == St.Lured && lure) return;
         lure = l; Set(St.Lured); target = l.transform.position;
     }
+    public void Warp(Vector3 pos, Vector3 look) { if (cc) cc.enabled = false; transform.position = pos; var f = look - pos; f.y = 0; if (f.sqrMagnitude > 0.01f) transform.rotation = Quaternion.LookRotation(f); if (cc) cc.enabled = true; Set(St.Patrol); }
+    public void LoseSight() { if (st == St.Notice) Set(St.Investigate); }
+    public bool CanSee(Player p) => Sees(p);
+    public void ForceChase() { Set(St.Chase); }
+    public bool Chasing => st == St.Chase || st == St.Notice;
+    public bool Curious => st == St.Investigate;
     public void LoseTrack() { if (st == St.Chase || st == St.Notice || st == St.Investigate) Set(St.Patrol); }
     void Set(St s) { if (st == s) return; st = s; stT = 0; lostT = 0; }
     void Say(string n) { Sfx.At(n, transform.position + Vector3.up * 0.4f, 0.9f, 3, 30); }
     Vector3 Eye => transform.position + Vector3.up * (dog ? 0.6f : 0.45f);
     bool Sees(Player p)
     {
+        if (p.hidden) return false;
         var d = p.cam.transform.position - Eye; float dist = d.magnitude; if (dist > sight) return false;
         var f = transform.forward; f.y = 0; var dd = d; dd.y = 0;
         if (Vector3.Angle(f, dd) > 50 && dist > 2.2f) return false;
@@ -163,11 +170,11 @@ public class Pet : MonoBehaviour
                 {
                     if (!active || FreezeAll > 0) { Set(St.Patrol); break; }
                     var to = p.transform.position - transform.position; to.y = 0; face = to;
-                    if (Sees(p) || to.magnitude < 2.5f) lostT = 0; else lostT += dt;
+                    if (p.hidden) lostT += dt * 2f; else if (Sees(p) || to.magnitude < 2.5f) lostT = 0; else lostT += dt;
                     if (lostT > 3 || stT > 8) { Set(St.Patrol); Game.I.Toast((dog ? "狗狗" : "貓咪") + pname + " 跟丟你了～"); break; }
                     move = to.normalized; spd = chaseSpeed; Play("run", "gallop", "walk");
                     barkT -= dt; if (barkT <= 0) { barkT = dog ? 1.4f : 2.2f; Say(dog ? "woof" : "meow"); }
-                    if (to.magnitude < 0.9f) Catch(p);
+                    if (to.magnitude < 0.9f && !p.hidden) Catch(p);
                 }
                 break;
             case St.Flee:

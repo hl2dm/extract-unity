@@ -104,6 +104,7 @@ public class UI : MonoBehaviour
     public void HitMarker(bool big) { hitT = 0.15f; hitM.color = big ? Bad : Color.white; hitM.rectTransform.sizeDelta = Vector2.one * (big ? 44 : 30); }
     Vector3 dmgFrom; public void DamageDir(Vector3 from) { dmgFrom = from; dmgT = 1f; }
 
+    public string HudText() => interactHint ? interactHint.text : "";
     public void Toast(string s, float dur = 2.6f)
     {
         var bg = UiKit.Img(toastBox, new Color(0.22f, 0.27f, 0.48f, 0.9f), Art.Rounded, "toast");

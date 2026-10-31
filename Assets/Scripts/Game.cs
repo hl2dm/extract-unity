@@ -21,7 +21,7 @@ public class Game : MonoBehaviour
     {
         I = this; UIContrast.Ensure(); Application.targetFrameRate = 120; QualitySettings.vSyncCount = 1;
         var args = System.Environment.GetCommandLineArgs();
-        for (int i = 0; i < args.Length; i++) if (args[i] == "-autoshots") { autoshots = true; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; }
+        for (int i = 0; i < args.Length; i++) { if (args[i] == "-mute") AudioListener.volume = 0; if (args[i] == "-autoshots") { autoshots = true; AudioListener.volume = 0; shotDir = i + 1 < args.Length ? args[i + 1] : "shots"; } }
         foreach (var a in args) { if (a == "-matdbg") Shader.SetGlobalFloat("_MatDbg", 1); if (a == "-legacytrim") LevelGen.LegacyTrim = true; if (a == "-dooronly") doorOnly = true; if (a == "-gallery") gallery = true; if (a == "-scaleonly") scaleOnly = true; if (a == "-polyonly") polyOnly = true; if (a == "-lightonly") lightOnly = true; }
         { var u0 = Application.absoluteURL ?? ""; int gi = u0.IndexOf("geo="); if (gi >= 0 && gi + 4 < u0.Length) GeoQ.Force = u0[gi + 4] - '0'; }
         for (int i = 0; i + 1 < args.Length; i++) if (args[i] == "-lite" && args[i + 1] == "0") LightQ.Legacy = true;
@@ -95,7 +95,7 @@ public class Game : MonoBehaviour
         if (baseRoot) Destroy(baseRoot.gameObject); Interactable.All.RemoveAll(x => x == null);
         int seed = SaveSys.S.seedN * 7919 + 17;
         Pet.All.Clear();
-        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); PlaceAudit.Fix(level.root); PlaceAudit.ContactShadows(level.root); LightQ.Apply(level.root); Art.PrewarmText();
+        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); PlaceAudit.Fix(level.root); PlaceAudit.ContactShadows(level.root); LightQ.Apply(level.root); Art.PrewarmText(); HideSpot.Setup(level.root); if (!NoiseRing.I) NoiseRing.Make(); player.Unhide();
         bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; busN = 0; newFound = 0; wishes = Gameplay.MakeWishes(th, seed); warn60 = warn20 = false;
         player.Equip(SaveSys.S.shoes); player.hp = 100; player.alive = true; player.inRaid = true; player.caught = 0; player.cryT = 0; player.Teleport(level.spawn, level.spawnYaw);
         state = St.Raid; deploying = false;
@@ -157,10 +157,11 @@ public class Game : MonoBehaviour
                 }
                 float score = angB + dist * 5; if (score < best) { best = score; focus = it; }
             }
+            if (player.hidden && player.hideAt) focus = player.hideAt;
             HintRing.focused = focus;
             if (focus) prompt = focus.Prompt;
             if (focus && TouchIn.Down(KeyCode.E)) { focus.Use(); }
-            hint = TouchIn.Active ? "" : state == St.Base ? "WASD 走路　滑鼠 看看　E 互動" : "WASD 走路　Shift 跑（會吵到狗狗）　1/2 或滾輪 換零食　左鍵 丟零食　E 互動";
+            hint = TouchIn.Active ? "" : state == St.Base ? "WASD 走路　滑鼠 看看　E 互動" : (player.hidden ? "躲起來了！貓咪狗狗看不到你　E 或走動 出來" : "WASD 走路　Shift 跑（很吵）　Ctrl 偷偷走（很小聲）　1/2 換零食　左鍵 丟零食　E 互動");
         }
         // loot
         if (ui.LootOpen && openC)
@@ -199,7 +200,7 @@ public class Game : MonoBehaviour
         LootSlot cur = null; foreach (var s in openC.slots) if (s.state == 1) { cur = s; break; }
         if (cur == null) foreach (var s in openC.slots) if (s.state == 0) { cur = s; s.state = 1; s.p = 0; s.dur = Data.RarSpin[s.it.r] * LuckMul * (autoshots ? 0.6f : 1); break; }
         if (cur == null) { if (ui.autoTake) for (int i = 0; i < openC.slots.Count; i++) { if (openC.slots[i].state == 2) { TakeSlot(i); if (!ui.autoTake) break; } } return; }
-        cur.p += dt; tickT -= dt; if (tickT <= 0) { tickT = 0.11f; Sfx.Play("tick", 0.25f, 0.9f + cur.p / cur.dur * 0.5f); }
+        cur.p += dt; player.searching = true; tickT -= dt; if (tickT <= 0) { tickT = 0.11f; Sfx.Play("tick", 0.25f, 0.9f + cur.p / cur.dur * 0.5f); }
         if (cur.p >= cur.dur) { cur.state = 2; cur.p = Time.time; Sfx.Reveal(cur.it.r); if (cur.it.r >= 3) player.Shake(0.4f); if (ui.autoTake) TakeSlot(openC.slots.IndexOf(cur)); }
     }
     public void TakeSlot(int i)
@@ -300,10 +301,10 @@ public class Game : MonoBehaviour
         if (fs > 0) sb.Append("　·　傳說寶貝 " + fs + " 個！");
         if (info.sold > 0) sb.Append("\n<color=#c95a5a>玩具箱滿了，" + Data.Fmt(info.sold) + " 的東西半價賣掉了。</color>");
         sb.Append("\n<color=#3f9a6a>回家獎勵 +" + Data.Fmt(info.bonus) + (caughtRun == 0 ? "（沒被抓到，額外加碼！）" : "") + "</color>");
-        sb.Append("\n<color=#2f7a4a>家人願望 " + info.wishN + "/" + (wishes == null ? 0 : wishes.Count) + "　+" + Data.Fmt(info.wish) + "</color>　<color=#8c4e32>第 " + busN + " 班公車加碼 +" + Data.Fmt(info.late) + "</color>　<color=#5c3d4a>寶貝圖鑑 " + SaveSys.S.found.Count + "/" + Gameplay.BookTotal + (newFound > 0 ? "（新發現 " + newFound + "）" : "") + "</color>");
+        sb.Append("\n<color=#2f7a4a>家人願望 " + info.wishN + "/" + (wishes == null ? 0 : wishes.Count) + "　+" + Data.Fmt(info.wish) + "</color>　　<color=#8c4e32>第 " + busN + " 班公車加碼 +" + Data.Fmt(info.late) + "</color>\n<color=#5c3d4a>寶貝圖鑑 " + SaveSys.S.found.Count + "/" + Gameplay.BookTotal + (newFound > 0 ? "（新發現 " + newFound + "）" : "") + "</color>");
         if (info.quest) sb.Append("\n<color=#c98a1a>任務完成！去找熊熊領獎勵。</color>");
         sb.Append("\n<size=22>按空白鍵回房間</size>");
-        var t = UiKit.Txt(c, sb.ToString(), 26, new Color(1, 1, 1, 0.9f), TextAnchor.LowerCenter); t.rectTransform.Place(Vector2.zero, new Vector2(1, 0), new Vector2(0, 0), new Vector2(0, 180));
+        var t = UiKit.Txt(c, sb.ToString(), 26, new Color(1, 1, 1, 0.9f), TextAnchor.LowerCenter); t.lineSpacing = 1.15f; t.rectTransform.Place(Vector2.zero, new Vector2(1, 0), new Vector2(0, 10), new Vector2(0, 250));
         { var st = UiKit.Txt(c, "今天的評價　<size=54>" + Gameplay.StarText(info.stars) + "</size>", 28, KnitKit.Ink1, TextAnchor.MiddleRight, true); st.rectTransform.At(new Vector2(1, 1), new Vector2(-30, -16), new Vector2(460, 70)); st.name = "stars"; }
         Sfx.Play("cash", 0.8f);
     }
@@ -443,6 +444,49 @@ public class Game : MonoBehaviour
     }
     public Interactable Focus => focus;
 
+    // v0.9.16 noise ring + hiding spots
+    IEnumerator StealthTest()
+    {
+        var pp = player; pp.Unhide(); float pitch0 = pp.pitch; pp.pitch = 42;
+        string[] gn = { "sneak", "walk", "run" }; float[] want = { NoiseRing.Sneak, NoiseRing.Walk, NoiseRing.Run };
+        for (int g = 0; g < 3; g++)
+        {
+            pp.autoGait = g; pp.autoMove = new Vector3(g == 1 ? 0.7f : -0.7f, 0, g == 2 ? 1f : 0.3f).normalized; float seen = 0;
+            for (float w = 0; w < 1.0f; w += Time.deltaTime) { seen = Mathf.Max(seen, pp.NoiseR); yield return null; }
+            Check(Mathf.Abs(seen - want[g]) < 0.05f, "noise ring " + gn[g] + " radius " + seen.ToString("0.0") + " (want " + want[g] + ")");
+            Check(NoiseRing.I && NoiseRing.I.GetComponent<LineRenderer>().enabled, "noise ring visible while " + gn[g]);
+            yield return Shot("v0916_noise_" + gn[g]);
+        }
+        pp.autoGait = 1; pp.autoMove = Vector3.zero; yield return new WaitForSeconds(0.5f); pp.autoGait = -1; pp.pitch = pitch0;
+        Check(pp.NoiseR == 0, "standing still is silent");
+        var pet = Pet.All.FirstOrDefault(x => x);
+        if (pet)
+        {   // hearing: sneak noise does not reach a pet 6 m away, running does
+            var at = pp.transform.position + pp.transform.forward * 6f; pet.Warp(at, pp.transform.position); yield return null;
+            Pet.Noise(pp.transform.position, NoiseRing.Sneak); yield return null; Check(!pet.Curious, "pet 6 m away doesn't hear sneaking");
+            Pet.Noise(pp.transform.position, NoiseRing.Run); yield return null; Check(pet.Curious, "pet 6 m away hears running");
+        }
+        Check(HideSpot.Spots.Count >= 2, "hiding spots in the house (" + HideSpot.Spots.Count + ", tables " + HideSpot.Spots.Count(h => h.low) + ")");
+        var hs = HideSpot.Spots.Where(h => h.low).FirstOrDefault() ?? HideSpot.Spots.FirstOrDefault();
+        if (hs)
+        {
+            var b = hs.WorldBounds; var side = b.center + new Vector3(b.extents.x + 0.6f, 0, 0); side.y = b.min.y;
+            yield return Aim(side + Vector3.up * Player.Eye, b.center); yield return new WaitForSeconds(0.4f);
+            Check(Focus == hs, "hide spot gets focus (" + (Focus ? Focus.name : "none") + ")"); yield return Shot("v0916_hide_prompt");
+            hs.Use(); yield return new WaitForSeconds(0.8f); Check(pp.hidden, "player hidden at " + hs.kind);
+            int bc = bag.Count;
+            if (pet)
+            {
+                pet.Warp(pp.transform.position + new Vector3(-2.5f, 0, 0.3f), pp.transform.position); yield return null;
+                Check(!pet.CanSee(pp), "pet can't see a hidden kid"); float fz = Pet.FreezeAll; Pet.FreezeAll = 0; pet.ForceChase();
+                for (float w = 0; w < 3.5f && pet.Chasing; w += Time.deltaTime) yield return null;
+                Check(!pet.Chasing, "chasing pet gives up on a hidden kid"); Check(bag.Count == bc, "no steal while hidden"); Pet.FreezeAll = fz;
+            }
+            yield return Shot("v0916_hidden"); Check(ui.HudText().Contains("躲起來"), "hidden hint shown");
+            hs.Use(); yield return new WaitForSeconds(0.6f); Check(!pp.hidden, "leave hiding spot");
+            pp.Unhide();
+        }
+    }
     // ---------- casual autotest ----------
     int errs; readonly List<string> errList = new List<string>();
     void OnLog(string msg, string st, LogType t) { if (t == LogType.Exception || t == LogType.Error || t == LogType.Assert) { errs++; if (errList.Count < 20) errList.Add(msg + " @ " + (st ?? "").Split('\n')[0]); } }
@@ -750,6 +794,8 @@ public class Game : MonoBehaviour
                 Check(busN >= 2, "several buses came this run (" + busN + ")"); Check(Objective().Contains("加碼"), "late-bus bonus shown in objective");
                 yield return new WaitForSeconds(0.6f); yield return Shot("oneMap_wishes");
             }
+            if (run == 0) yield return StealthTest();
+            if (run == 0) { int add = 30 - bag.Count; for (int k = 0; k < add; k++) { var d = Data.Items[k % Data.Items.Length]; bag.Add(new Item { r = d.r, ic = d.ic, name = d.name, v = d.v }); } Check(bag.Count(i => !i.key) > 24, "full bag for results layout (" + bag.Count + ")"); }
             // bus stop + cinematic
             if (!level.bus.CanBoard) level.bus.ForceArrive();
             var bp = level.bus.Point; yield return Aim(bp + new Vector3(-2.2f, 0, -2.0f) + Vector3.up * 0.2f, bp); yield return new WaitForSeconds(0.8f);

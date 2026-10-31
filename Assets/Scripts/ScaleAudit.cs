@@ -16,9 +16,9 @@ public static class ScaleAudit
         new Rule("Cont_drawer", "drawer chest", 0.6f, 1.1f), new Rule("Cont_box", "box/crate", 0.3f, 0.9f), new Rule("Cont_shelf", "store shelf", 1.6f, 2.6f),
         new Rule("Cont_display", "display case", 1.4f, 2.1f), new Rule("Cont_safe", "safe", 0.4f, 0.9f), new Rule("Cont_register", "till (lid open)", 0.2f, 0.7f),
         new Rule("Door", "interior door", 2.0f, 2.45f), new Rule("LockedDoor", "locked door", 2.0f, 2.45f), new Rule("sk_doorvis", "shop/house door", 2.0f, 2.45f),
-        new Rule("sk_lamp", "street lamp", 3.2f, 4.6f), new Rule("sk_tree", "tree", 3.0f, 7.0f),
-        new Rule("sk_bench", "bench", 0.7f, 1.1f), new Rule("sk_bin", "trash bin", 0.7f, 1.1f), new Rule("sk_mailbox", "mailbox", 1.0f, 1.5f),
-        new Rule("sk_scooter", "parked scooter", 1.0f, 1.40f), new Rule("RideScooter", "ride scooter", 1.2f, 1.6f), new Rule("slide", "slide", 1.6f, 2.6f),
+        new Rule("sk_lamp", "street lamp", 3.2f, 4.6f), new Rule("sk_tree", "tree", 2.5f, 7.0f),
+        new Rule("sk_bench", "bench", 0.7f, 1.1f), new Rule("sk_bin", "trash bin", 0.7f, 1.25f), new Rule("sk_mailbox", "mailbox", 1.0f, 1.7f),
+        new Rule("sk_scooter", "parked scooter", 1.0f, 1.65f), new Rule("RideScooter", "ride scooter", 1.2f, 1.6f), new Rule("slide", "slide", 1.6f, 2.6f),
         new Rule("Bus", "bus", 2.8f, 3.8f), new Rule("Cat", "cat (toy)", 0.35f, 0.75f), new Rule("Dog", "dog (toy)", 0.45f, 0.95f),
         new Rule("TownHouse", "town house", 6f, 16f), new Rule("sk_text3d", "sign text", 0.3f, 1.4f), new Rule("GroundLoot", "ground loot", 0.05f, 0.7f),
     };

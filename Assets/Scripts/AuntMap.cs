@@ -80,7 +80,8 @@ public static partial class LevelGen
             bool skip = false;
             for (var q = r.transform; q && q != root; q = q.parent) { var nm = q.name; if (nm == "Door" || nm == "LockedDoor" || nm == "sk_grille" || nm == "sk_curtain" || nm == "sk_curtainp" || nm == "flowerbox" || q.GetComponent<Interactable>()) { skip = true; break; } }
             if (skip) continue;
-            foreach (var o in Openings) if (o.Intersects(b)) { n++; if (log) Debug.Log("[trimcheck] " + r.name + " " + b.ToString("F2") + " crosses opening " + o.ToString("F2")); break; }
+            foreach (var o in Openings) if (o.Intersects(b) && b.max.y > o.min.y + 0.05f) {   // v0.9.16: floor-level pads/mats at a doorstep don't cross the opening
+                n++; if (log) Debug.Log("[trimcheck] " + r.name + " " + b.ToString("F2") + " crosses opening " + o.ToString("F2")); break; }
         }
         return n;
     }

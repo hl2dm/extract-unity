@@ -9,7 +9,8 @@ public class Player : MonoBehaviour
     public CharacterController cc; public Camera cam, vmCam; public Transform camRig, vmRoot, hand;
     public float yaw, pitch, hp = 100; public bool alive = true, inRaid, controlEnabled = true;
     public GearDef shoes; public int sel; // 0 can, 1 meat
-    public int caught; public float cryT; public bool Crying => cryT > 0; public bool Sprinting { get; private set; }
+    public int caught; public float cryT; public bool Crying => cryT > 0; public bool Sprinting { get; private set; } public bool Sneaking { get; private set; }
+    public float NoiseR; public bool searching, hidden; public HideSpot hideAt; public int autoGait = -1; public Vector3 autoMove; float hideY;
     float bobT, stepT, vy, shake, throwT, throwAnim, noiseT; int handSel = -1;
     public float Sens = 2.0f;
 
@@ -32,6 +33,8 @@ public class Player : MonoBehaviour
     public static void SetLayer(GameObject g, int l) { foreach (var t in g.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = l; }
     public void Teleport(Vector3 p, float yawDeg) { cc.enabled = false; transform.position = p; cc.enabled = true; yaw = yawDeg; pitch = 0; vy = 0; }
     public bool Locked => Game.I.InputLocked;
+    public void Hide(HideSpot h) { hidden = true; hideAt = h; foreach (var pet in Pet.All) if (pet) pet.LoseSight(); }
+    public void Unhide() { if (!hidden) return; hidden = false; hideAt = null; }
     public int Ammo(int s) => s == 0 ? SaveSys.S.cans : SaveSys.S.meats;
 
     void BuildHand()
@@ -64,8 +67,13 @@ public class Player : MonoBehaviour
             mv = new Vector3(TouchIn.Axis("Horizontal"), 0, TouchIn.Axis("Vertical")); if (mv.sqrMagnitude > 1) mv.Normalize();
             sprint = TouchIn.Held(KeyCode.LeftShift) && mv.z > 0.1f && !Crying;
         }
+        bool sneak = canAct && (TouchIn.Held(KeyCode.LeftControl) || TouchIn.Held(KeyCode.C));
+        if (autoGait >= 0) { mv = autoMove; sprint = autoGait == 2; sneak = autoGait == 0; }
+        if (sprint) sneak = false;
+        if (hidden) { if (mv.sqrMagnitude > 0.2f && autoGait < 0) Unhide(); else { mv = Vector3.zero; sprint = sneak = false; } }
+        Sneaking = sneak && mv.sqrMagnitude > 0.1f;
         Sprinting = sprint && mv.sqrMagnitude > 0.1f;
-        float spd = (sprint ? Run : Walk) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1);
+        float spd = (sprint ? Run : Walk) * (Sneaking ? 0.55f : 1) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1);
         var vel = transform.TransformDirection(mv) * spd;
         if (cc.isGrounded) { vy = -1f; if (canAct && TouchIn.Down(KeyCode.Space)) vy = 4.4f; } else vy -= 14f * dt;
         vel.y = vy; cc.Move(vel * dt);
@@ -74,12 +82,16 @@ public class Player : MonoBehaviour
         {
             bobT += dt * hs * 2.1f; stepT += dt * hs;
             if (stepT > (sprint ? 1.7f : 1.4f)) { stepT = 0; Footstep(); }
-            noiseT -= dt; if (inRaid && noiseT <= 0) { noiseT = 0.4f; Pet.Noise(transform.position, Sprinting ? 10f : 4f); }
+            noiseT -= dt; if (inRaid && noiseT <= 0) { noiseT = 0.4f; Pet.Noise(transform.position, NoiseR); }
         }
-        else bobT = Mathf.Lerp(bobT, Mathf.Round(bobT / Mathf.PI) * Mathf.PI, dt * 5);
+        bool moving = cc.isGrounded && hs > 0.5f;
+        NoiseR = hidden ? 0 : moving ? (Sprinting ? NoiseRing.Run : Sneaking ? NoiseRing.Sneak : NoiseRing.Walk) : searching ? NoiseRing.Search : 0;
+        if (!moving && searching && inRaid && !hidden) { noiseT -= dt; if (noiseT <= 0) { noiseT = 0.8f; Pet.Noise(transform.position, NoiseRing.Search); } }
+        searching = false;
+        if (!moving) bobT = Mathf.Lerp(bobT, Mathf.Round(bobT / Mathf.PI) * Mathf.PI, dt * 5);
         float bob = Mathf.Sin(bobT * 2) * 0.04f * Mathf.Clamp01(hs / 4), bobX = Mathf.Cos(bobT) * 0.03f * Mathf.Clamp01(hs / 4);
         float cry = Crying ? Mathf.Sin(Time.time * 9) * 0.6f : 0;
-        camRig.localPosition = new Vector3(bobX * 0.4f, Eye + bob, 0);
+        hideY = Mathf.MoveTowards(hideY, hidden && hideAt && hideAt.low ? 0.45f : 0, dt * 2.5f); camRig.localPosition = new Vector3(bobX * 0.4f, Eye + bob - hideY, 0);
         camRig.localRotation = Quaternion.Euler(pitch + sy + cry, sx, Mathf.Sin(bobT) * 0.5f * Mathf.Clamp01(hs / 4) + cry);
         cam.fieldOfView = Mathf.Lerp(cam.fieldOfView, Fov + (sprint ? 5 : 0), dt * 10);
         // hand / throw
