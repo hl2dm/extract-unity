@@ -1407,6 +1407,7 @@ public static class SoftProps
                 Block(g, new Vector3(-0.1f, 0.71f, 0.05f), new Vector3(0.22f, 0.03f, 0.08f), H("e8b84a"), 0.01f, false);   // wrench on top
                 MatA = om3; break;
             }
+            case "nest": case "ricejar": case "basket": FarmArt.ContBody(g, kind, accent); break;
             default:
                 Block(g, new Vector3(0, sz.y / 2, 0), sz, accent, Mathf.Min(0.12f, sz.y * 0.3f), false); break;
         }

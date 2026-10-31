@@ -44,9 +44,9 @@ public class HideSpot : Interactable
         Spots.Clear(); int n = 0; if (!root) return 0;
         foreach (var t in root.GetComponentsInChildren<Transform>())
         {
-            if (t.name != "sk_rtable" && t.name != "sk_curtain") continue;
+            if (t.name != "sk_rtable" && t.name != "sk_curtain" && t.name != "sk_haystack") continue;
             if (t.GetComponent<HideSpot>()) continue; if (t.name == "sk_curtain" && n >= 8) continue;
-            var h = t.gameObject.AddComponent<HideSpot>(); h.low = t.name == "sk_rtable"; h.kind = h.low ? "桌子底下" : "窗簾後面"; h.reach = 2.2f; n++;
+            var h = t.gameObject.AddComponent<HideSpot>(); h.low = t.name != "sk_curtain"; h.kind = t.name == "sk_haystack" ? "草堆裡面" : h.low ? "桌子底下" : "窗簾後面"; h.reach = t.name == "sk_haystack" ? 2.4f : 2.2f; n++;
         }
         return n;
     }

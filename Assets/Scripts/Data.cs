@@ -6,7 +6,7 @@ using UnityEngine;
 
 public class ItemDef { public int r; public string ic, name; public int v; public ItemDef(int r, string ic, string n, int v) { this.r = r; this.ic = ic; name = n; this.v = v; } }
 public class CKind { public string l, model; public Vector3 size; public string pool; public int nMin, nMax; public float reach = 1.9f; }
-public class ThemeDef { public string id, name, twist; public int tier; public float mult; public bool playable; public Color sky; public ItemDef[] items; public string[] rooms; public string special; public int enemies = 2; public string style = "house"; }
+public class ThemeDef { public string id, name, twist; public int tier; public float mult; public bool playable; public Color sky; public ItemDef[] items; public string[] rooms; public string special; public int enemies = 2; public string style = "house"; public float petHear = 1f, petSight = 1f; }
 public class GearDef { public string id, n, d; public int price; public float dmg, rate, spread, red = 0, spd = 1; public int mag, cap; public string model; }
 public class UpgDef { public string id, n, d; public int[] lv; public float[] eff; }
 
@@ -44,6 +44,9 @@ public static class Data
         {"rack", new CKind{l="教具櫃", model=null, size=new Vector3(0.62f,2.0f,0.95f), pool="high", nMin=2, nMax=4}},
         {"crate", new CKind{l="木箱子", model="PH/wooden_crate_02", size=new Vector3(1.0f,0.7f,0.7f), pool="mid", nMin=3, nMax=6}},
         {"milcrate", new CKind{l="長長的箱子", model="PH/old_military_crate", size=new Vector3(1.8f,0.3f,0.98f), pool="high", nMin=2, nMax=4}},
+        {"nest", new CKind{l="雞窩", model=null, size=new Vector3(0.9f,0.56f,0.7f), pool="low", nMin=2, nMax=4}},
+        {"ricejar", new CKind{l="米缸", model=null, size=new Vector3(0.76f,0.84f,0.76f), pool="mid", nMin=2, nMax=4}},
+        {"basket", new CKind{l="竹籃子", model=null, size=new Vector3(0.74f,0.46f,0.74f), pool="low", nMin=2, nMax=4}},
         {"toolchest", new CKind{l="工具櫃", model="PH/metal_tool_chest", size=new Vector3(0.69f,0.65f,0.41f), pool="mid", nMin=2, nMax=5}},
     };
 
@@ -56,9 +59,8 @@ public static class Data
             items=new[]{ new ItemDef(0,"🍙","御飯糰",24), new ItemDef(1,"🥤","珍奶",90), new ItemDef(1,"🍦","霜淇淋",76), new ItemDef(2,"🎴","集點貼紙",480), new ItemDef(3,"🎁","盲盒",1300), new ItemDef(4,"🎟️","一番賞",5500)} },
         new ThemeDef{ id="school", name="學校", tier=3, mult=1.35f, playable=false, enemies=3, style="office", sky=H("a8e6ff"), twist="放學後的教室。警衛伯伯的狗狗在走廊巡邏喔。",
             items=new[]{ new ItemDef(0,"📝","作業簿",16), new ItemDef(1,"✏️","自動鉛筆",70), new ItemDef(1,"📏","尺",60), new ItemDef(2,"📕","聯絡簿",420), new ItemDef(3,"💯","考卷100分",1500), new ItemDef(4,"🏅","校長的金牌",6000)} },
-        new ThemeDef{ id="grandma", name="阿嬤家", tier=2, mult=1.2f, playable=false, enemies=3, sky=H("ffd9a8"), twist="阿嬤在午睡，三隻貓狗在院子曬太陽。阿嬤的紅包藏在哪裡呢？",
-            rooms=new[]{"box","fridge","wardrobe","drawer","crate","drawer"}, special="safe",
-            items=new[]{ new ItemDef(0,"🍊","橘子",20), new ItemDef(1,"🍡","麻糬",80), new ItemDef(2,"🥮","月餅",390), new ItemDef(3,"🧧","阿嬤的大紅包",1600), new ItemDef(4,"🏺","古董花瓶",6500)} },
+        new ThemeDef{ id="farm", name="外婆家農場", tier=2, mult=1.2f, playable=true, enemies=2, petHear=0.9f, petSight=0.9f, sky=H("f4b48c"), twist="黃昏的稻田，鵝群在池塘邊站崗。被鵝看到牠會大叫，看門狗就會跑過來喔！",
+            items=new[]{ new ItemDef(0,"🥚","土雞蛋",22), new ItemDef(0,"🌽","甜玉米",18), new ItemDef(1,"🐢","紅龜粿",85), new ItemDef(1,"🍭","古早味糖果",72), new ItemDef(2,"🎐","竹蜻蜓",360), new ItemDef(2,"👒","外婆的草帽",410), new ItemDef(3,"⏱️","外公的懷錶",1500), new ItemDef(4,"🖼️","全家福老照片",6000)} },
         new ThemeDef{ id="park", name="公園", tier=2, mult=1.2f, sky=H("b6f0c0"), twist="溜滑梯還在施工中，下次再來玩！", items=new ItemDef[0] },
     };
 

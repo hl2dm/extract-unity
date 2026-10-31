@@ -11,6 +11,11 @@ public class Pet : MonoBehaviour
     public bool sleeper; public Item carried; public int catches;
     CharacterController cc; Animation anim; readonly Dictionary<string, string> clips = new Dictionary<string, string>(); string cur;
     int wp; float stT, lostT, cool, idleT, barkT, stuckT; Vector3 target, lastPos; Lure lure; Transform icon; TextMesh mark; GameObject zzz;
+    public static float HearK = 1f, SightK = 1f; public float alarmT;   // v0.9.17 per-map sensitivity + goose alarm
+    public static void Alarm(Vector3 pos)
+    {
+        foreach (var p in All) if (p && p.isActiveAndEnabled && p.dog && (p.st == St.Patrol || p.st == St.Sleep || p.st == St.Investigate)) { p.Set(St.Investigate); p.target = pos; p.alarmT = 9f; p.Say("woof"); }
+    }
     public static float FreezeAll; // autotest: >0 pets ignore the player
 
     Transform model; float fitH; public PetToy toy;
@@ -113,7 +118,7 @@ public class Pet : MonoBehaviour
     }
     public static void Noise(Vector3 pos, float radius)
     {
-        foreach (var p in All) if (p && p.isActiveAndEnabled) p.Hear(pos, radius * (p.dog ? 1.3f : 1f));
+        foreach (var p in All) if (p && p.isActiveAndEnabled) p.Hear(pos, radius * HearK * (p.dog ? 1.3f : 1f));
     }
     void Hear(Vector3 pos, float r)
     {
@@ -138,7 +143,8 @@ public class Pet : MonoBehaviour
     bool Sees(Player p)
     {
         if (p.hidden) return false;
-        var d = p.cam.transform.position - Eye; float dist = d.magnitude; if (dist > sight) return false;
+        var d = p.cam.transform.position - Eye; float dist = d.magnitude; if (dist > sight * SightK) return false;
+        if (dist > 2.5f && (p.Sneaking || p.NoiseR < 0.01f) && LevelGen.InRice(p.transform.position)) return false;   // v0.9.17 tall rice hides a sneaking kid
         var f = transform.forward; f.y = 0; var dd = d; dd.y = 0;
         if (Vector3.Angle(f, dd) > 50 && dist > 2.2f) return false;
         if (Physics.Raycast(Eye, d.normalized, out var h, dist, Art.ShotMask, QueryTriggerInteraction.Ignore)) { if (!h.collider.GetComponentInParent<Player>()) return false; }
@@ -147,7 +153,7 @@ public class Pet : MonoBehaviour
 
     void Update()
     {
-        float dt = Time.deltaTime; stT += dt; cool -= dt;
+        float dt = Time.deltaTime; stT += dt; cool -= dt; alarmT -= dt;
         var p = Player.I; bool active = p != null && p.inRaid && Game.I.RaidActive && !Game.I.InputLocked;
         Vector3 move = Vector3.zero; Vector3 face = transform.forward; float spd = 0;
         bool sees = active && FreezeAll <= 0 && p.alive && cool <= 0 && st != St.Flee && st != St.Lured && st != St.Sleep && Sees(p);
@@ -161,7 +167,7 @@ public class Pet : MonoBehaviour
                 { var to = patrol[wp] - transform.position; to.y = 0; if (to.magnitude < 0.6f) { idleT += dt; Play("idle", "sit"); if (idleT > 1.5f) { idleT = 0; wp = (wp + 1) % patrol.Count; } } else { move = to.normalized; spd = speed; face = to; Play("walk"); } }
                 break;
             case St.Investigate:
-                { var to = target - transform.position; to.y = 0; if (to.magnitude < 0.8f || stT > 7) { Play("idle", "sit"); if (stT > 2.5f && to.magnitude < 0.8f || stT > 7) Set(St.Patrol); } else { move = to.normalized; spd = speed * 1.3f; face = to; Play("walk"); } }
+                { var to = target - transform.position; to.y = 0; float lim = alarmT > 0 ? 14 : 7; if (to.magnitude < 0.8f || stT > lim) { Play("idle", "sit"); if (stT > 2.5f && to.magnitude < 0.8f || stT > lim) Set(St.Patrol); } else { move = to.normalized; spd = speed * (alarmT > 0 ? 1.7f : 1.3f); face = to; Play("walk"); } }
                 break;
             case St.Notice:
                 { var to = p.transform.position - transform.position; to.y = 0; face = to; Play("idle", "sit"); if (stT > 0.55f) Set(St.Chase); }

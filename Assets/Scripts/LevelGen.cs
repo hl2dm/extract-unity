@@ -18,6 +18,7 @@ public static partial class LevelGen
     public static Level BuildHouse(int seed, ThemeDef th, float vmult, int luckLv)
     {
         if (th.id == "aunt") return BuildAunt(seed, th, vmult, luckLv);
+        if (th.id == "farm") return BuildFarm(seed, th, vmult, luckLv);
         rng = new System.Random(seed); luck = luckLv;
         L = new Level { theme = th, seed = seed, vmult = vmult, root = new GameObject("Level").transform };
         var root = L.root;

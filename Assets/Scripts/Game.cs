@@ -60,7 +60,30 @@ public class Game : MonoBehaviour
     public void Toast(string s, float d = 2.6f) { ui.Toast(s, d); }
 
     void EnvBase() => Art.SetupEnvironment(Data.H("bfe6ff"), Data.H("ffe9c7"), 1.5f, new Color(1f, 0.93f, 0.8f), new Vector3(40, -30, 0), 30, 140, 0.0f, 0.5f, 0.45f, 6, new Color(1f, 0.98f, 0.95f));
-    void EnvTown(ThemeDef th) => Art.SetupEnvironment(th.sky, Data.H("a6e08a"), 2.0f, new Color(1f, 0.96f, 0.85f), new Vector3(45, -35, 0), 60, 260, 0.0f, 0.5f, 0.45f, 10, new Color(1f, 1f, 0.98f));
+    void EnvFarm()
+    {   // v0.9.17 dusk over the paddies: low warm key, cool lilac fill, soft shadows, peach horizon
+        Art.SetupEnvironment(Data.H("e9b8a0"), Data.H("a8b478"), 1.6f, new Color(1f, 0.8f, 0.62f), new Vector3(20, -50, 0), 60, 240, 0.0f, 0.5f, 0.45f, 10, new Color(1f, 0.97f, 0.93f));
+        if (Art.Sun) { Art.Sun.color = new Color(1f, 0.85f, 0.7f); Art.Sun.shadowStrength = 0.45f; }
+        RenderSettings.ambientSkyColor = new Color(0.66f, 0.68f, 0.9f); RenderSettings.ambientEquatorColor = new Color(0.9f, 0.74f, 0.7f); RenderSettings.ambientGroundColor = new Color(0.52f, 0.48f, 0.42f);
+        RenderSettings.fogColor = new Color(0.94f, 0.84f, 0.8f);
+        var sk = RenderSettings.skybox; if (sk && sk.HasProperty("_Top")) { sk.SetColor("_Top", Data.H("9eaedb")); sk.SetColor("_Mid", Data.H("d9c0d6")); sk.SetColor("_Horizon", Data.H("f8d2b0")); sk.SetColor("_Ground", Data.H("f1d6bc")); if (sk.HasProperty("_Cloud")) sk.SetColor("_Cloud", Data.H("fbe6d6")); }
+    }
+    void FarmGrade()
+    {   // after the global dusk preset: calmer, less saturated paddy dusk — lilac top, peach-rose horizon, cool fill, soft shadows
+        var sk = RenderSettings.skybox;
+        if (sk && sk.HasProperty("_Horizon")) { sk.SetColor("_Top", new Color(0.56f, 0.6f, 0.84f)); sk.SetColor("_Mid", new Color(0.86f, 0.74f, 0.8f)); sk.SetColor("_Horizon", new Color(0.99f, 0.78f, 0.62f)); sk.SetColor("_Ground", new Color(0.9f, 0.8f, 0.72f)); sk.SetColor("_Cloud", new Color(1f, 0.88f, 0.82f)); }
+        if (Art.Sun) { Art.Sun.color = new Color(1f, 0.84f, 0.68f); Art.Sun.shadowStrength = 0.55f; }
+        RenderSettings.ambientSkyColor = new Color(0.6f, 0.62f, 0.8f); RenderSettings.ambientEquatorColor = new Color(0.8f, 0.68f, 0.64f);
+        RenderSettings.fogColor = new Color(0.93f, 0.82f, 0.8f);
+        var prof = Art.Vol ? Art.Vol.sharedProfile : null;
+        if (prof)
+        {
+            if (prof.TryGet<UnityEngine.Rendering.Universal.ColorAdjustments>(out var c)) { c.saturation.Override(22f); c.contrast.Override(22f); }
+            if (prof.TryGet<UnityEngine.Rendering.Universal.WhiteBalance>(out var wb)) { wb.temperature.Override(-2f); wb.tint.Override(4f); }
+        }
+    }
+    void EnvTown(ThemeDef th) { if (th.id == "farm") { EnvFarm(); return; } EnvTown0(th); }
+    void EnvTown0(ThemeDef th) => Art.SetupEnvironment(th.sky, Data.H("a6e08a"), 2.0f, new Color(1f, 0.96f, 0.85f), new Vector3(45, -35, 0), 60, 260, 0.0f, 0.5f, 0.45f, 10, new Color(1f, 1f, 0.98f));
 
     void EnterBase(bool first = false)
     {
@@ -95,7 +118,8 @@ public class Game : MonoBehaviour
         if (baseRoot) Destroy(baseRoot.gameObject); Interactable.All.RemoveAll(x => x == null);
         int seed = SaveSys.S.seedN * 7919 + 17;
         Pet.All.Clear();
-        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); PlaceAudit.Fix(level.root); PlaceAudit.ContactShadows(level.root); LightQ.Apply(level.root); Art.PrewarmText(); HideSpot.Setup(level.root); if (!NoiseRing.I) NoiseRing.Make(); player.Unhide();
+        Pet.HearK = th.petHear; Pet.SightK = th.petSight; Goose.ResetRun();
+        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); PlaceAudit.Fix(level.root); PlaceAudit.ContactShadows(level.root); LightQ.Apply(level.root); if (th.id == "farm") FarmGrade(); Art.PrewarmText(); HideSpot.Setup(level.root); if (!NoiseRing.I) NoiseRing.Make(); player.Unhide();
         bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; busN = 0; newFound = 0; wishes = Gameplay.MakeWishes(th, seed); warn60 = warn20 = false;
         player.Equip(SaveSys.S.shoes); player.hp = 100; player.alive = true; player.inRaid = true; player.caught = 0; player.cryT = 0; player.Teleport(level.spawn, level.spawnYaw);
         state = St.Raid; deploying = false;
@@ -161,7 +185,7 @@ public class Game : MonoBehaviour
             HintRing.focused = focus;
             if (focus) prompt = focus.Prompt;
             if (focus && TouchIn.Down(KeyCode.E)) { focus.Use(); }
-            hint = TouchIn.Active ? "" : state == St.Base ? "WASD 走路　滑鼠 看看　E 互動" : (player.hidden ? "躲起來了！貓咪狗狗看不到你　E 或走動 出來" : "WASD 走路　Shift 跑（很吵）　Ctrl 偷偷走（很小聲）　1/2 換零食　左鍵 丟零食　E 互動");
+            hint = TouchIn.Active ? "" : state == St.Base ? "WASD 走路　滑鼠 看看　E 互動" : (player.hidden ? "躲起來了！貓咪狗狗看不到你　E 或走動 出來" : level != null && level.theme.id == "farm" && LevelGen.InRice(player.transform.position) ? "稻田裡：偷偷走（Ctrl）或站著不動，鵝和狗狗就看不到你" : "WASD 走路　Shift 跑（很吵）　Ctrl 偷偷走（很小聲）　1/2 換零食　左鍵 丟零食　E 互動");
         }
         // loot
         if (ui.LootOpen && openC)
@@ -487,6 +511,63 @@ public class Game : MonoBehaviour
             pp.Unhide();
         }
     }
+    IEnumerator FarmTest()
+    {   // v0.9.17 外婆家農場: geese alarm, haystack + rice cover, farm loot -> book
+        var pp = player; pp.Unhide(); yield return new WaitForSeconds(4f);   // let loot toasts fade before the art shots
+        Check(Goose.All.Count == 3, "farm has 3 geese (" + Goose.All.Count + ")"); Check(LevelGen.Rice.Count == 8, "8 rice paddies (" + LevelGen.Rice.Count + ")");
+        var hays = HideSpot.Spots.Where(h => h.kind == "草堆裡面").ToList(); Check(hays.Count >= 6, "haystack hide spots (" + hays.Count + ")");
+        Check(Mathf.Abs(Pet.HearK - 0.9f) < 0.01f && Mathf.Abs(Pet.SightK - 0.9f) < 0.01f, "farm pet hearing/sight from theme");
+        yield return CamShot(new Vector3(-20, 22, -40), new Vector3(8, 0, 4), "v0917_overview", 0.3f);
+        yield return CamShot(LevelGen.PondC + new Vector3(-9, 4, -11), LevelGen.PondC + new Vector3(2, 0.4f, 0), "v0917_pond", 0.3f);
+        var dog = Pet.All.FirstOrDefault(x => x.dog); var g = Goose.All.Count > 1 ? Goose.All[1] : Goose.All.FirstOrDefault();
+        if (g)
+        {   // seen -> 1 s alert ring -> honk with 8 m red ring -> guard dog comes
+            var out0 = g.transform.position - LevelGen.PondC; out0.y = 0; out0.Normalize(); var at = g.transform.position + out0 * 4f; at.y = 0.15f;
+            pp.Teleport(at, Quaternion.LookRotation(-out0).eulerAngles.y); g.transform.rotation = Quaternion.LookRotation(out0); yield return null;
+            if (dog) dog.Warp(g.transform.position + Vector3.Cross(out0, Vector3.up) * 7f + Vector3.up * 0.1f, g.transform.position);
+            Pet.FreezeAll = 0; if (dog) dog.ForceState(Pet.St.Patrol); int h0 = Goose.HonksRun; g.ForceSee(pp.transform.position);
+            for (float w = 0; w < 0.5f; w += Time.deltaTime) yield return null;
+            Check(g.st == Goose.St.Alert, "goose alert first (fair warning, " + g.st + ")");
+            yield return CamShot(g.transform.position + out0 * 9f + Vector3.Cross(out0, Vector3.up) * 5f + Vector3.up * 6f, g.transform.position, "v0917_goose_alert", 0.05f);
+            for (float w = 0; w < 2.5f && g.st != Goose.St.Honk; w += Time.deltaTime) yield return null;
+            Check(g.st == Goose.St.Honk && Goose.HonksRun > h0, "goose honks after the alert");
+            var rings = g.GetComponentsInChildren<LineRenderer>(); Check(rings.Any(r => r.enabled && r.name == "goose_ring"), "honk ring visible");
+            yield return new WaitForSeconds(0.4f); Pet.FreezeAll = 999;
+            yield return CamShot(g.transform.position + out0 * 11f + Vector3.Cross(out0, Vector3.up) * 6f + Vector3.up * 8f, g.transform.position, "v0917_goose_honk", 0.05f);
+            Check(dog && dog.Curious, "guard dog comes to the honk");
+            Pet.FreezeAll = 0; for (float w = 0; w < 4f && g.st == Goose.St.Honk; w += Time.deltaTime) yield return null; Check(g.st == Goose.St.Cool, "honk lasts ~3 s then calms");
+            Pet.FreezeAll = 999; if (dog) dog.ForceState(Pet.St.Patrol);
+            for (float w = 0; w < 7f && g.st != Goose.St.Wander; w += Time.deltaTime) yield return null;
+        }
+        var hs = hays.OrderBy(h => (h.transform.position - LevelGen.PondC).sqrMagnitude).FirstOrDefault();
+        if (hs && g)
+        {   // hiding in a haystack: a goose right next to it can't see you
+            var b = hs.WorldBounds; var side = b.center + new Vector3(b.extents.x + 0.7f, 0, 0); side.y = 0.15f; pp.Teleport(side, -90); yield return null; yield return null;
+            hs.Use(); yield return new WaitForSeconds(0.8f); Check(pp.hidden, "hide in haystack");
+            var gp0 = g.transform.position; var hm = g.home; g.transform.position = new Vector3(b.center.x + 3f, 0.05f, b.center.z); g.home = g.transform.position; g.transform.rotation = Quaternion.LookRotation(new Vector3(-1, 0, 0)); yield return null;
+            Check(!g.Sees(pp), "goose can't see a kid in the haystack"); Pet.FreezeAll = 0; for (float w = 0; w < 1.5f; w += Time.deltaTime) yield return null; Pet.FreezeAll = 999;
+            Check(g.st == Goose.St.Wander, "no honk while hidden in the haystack (" + g.st + ")");
+            yield return CamShot(b.center + new Vector3(4.5f, 2.2f, -4.5f), b.center + Vector3.up * 0.6f, "v0917_haystack_hide", 0.2f);
+            hs.Use(); yield return new WaitForSeconds(0.6f); pp.Unhide();
+            // rice: sneaking/standing still in a paddy hides you from 5 m
+            var rb = LevelGen.Rice[2]; var rp = rb.center; rp.y = 0.15f; pp.Teleport(rp, 0); yield return new WaitForSeconds(0.4f);
+            Check(LevelGen.InRice(pp.transform.position), "player inside a paddy");
+            g.transform.position = rp + new Vector3(0, -0.1f, -5f); g.home = g.transform.position; g.transform.rotation = Quaternion.identity; yield return null;
+            Debug.Log("[farm] rice test goose " + g.transform.position + " kid " + pp.transform.position);
+            Check(!g.Sees(pp), "goose can't see a still kid in the rice"); pp.autoGait = 2; pp.autoMove = Vector3.right; yield return new WaitForSeconds(0.4f);
+            Check(g.Sees(pp), "goose does see a running kid in the rice"); pp.autoMove = Vector3.zero; pp.autoGait = -1; yield return new WaitForSeconds(0.3f);
+            yield return CamShot(rp + new Vector3(-4, 2.6f, -6), rp + Vector3.up * 0.5f, "v0917_rice_hide", 0.2f);
+            g.transform.position = gp0; g.home = hm;
+        }
+        {   // farm loot -> treasure book
+            var fi = level.theme.items.FirstOrDefault(d => !SaveSys.S.found.Contains(d.name)) ?? level.theme.items[0]; int f0 = SaveSys.S.found.Count;
+            Pickup(new Item { r = fi.r, ic = fi.ic, name = fi.name, v = fi.v }); yield return new WaitForSeconds(0.3f);
+            Check(SaveSys.S.found.Contains(fi.name), "farm loot " + fi.name + " recorded in the book (" + f0 + "->" + SaveSys.S.found.Count + ")");
+            var gl = FindObjectsByType<GroundLoot>(FindObjectsSortMode.None).FirstOrDefault(); Check(gl, "farm ground loot exists");
+            if (gl) yield return CamShot(gl.transform.position + new Vector3(2.2f, 1.6f, -2.2f), gl.transform.position, "v0917_loot", 0.2f);
+        }
+        Check(Goose.All.All(q => q.GetComponentsInChildren<Collider>().Length == 0), "geese never block");
+    }
     // ---------- casual autotest ----------
     int errs; readonly List<string> errList = new List<string>();
     void OnLog(string msg, string st, LogType t) { if (t == LogType.Exception || t == LogType.Error || t == LogType.Assert) { errs++; if (errList.Count < 20) errList.Add(msg + " @ " + (st ?? "").Split('\n')[0]); } }
@@ -673,11 +754,14 @@ public class Game : MonoBehaviour
         OpenStation("shop"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_shop"); CloseModal();
         OpenStation("deploy"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_map"); CloseModal();
         int parkIdx = System.Array.FindIndex(Data.Themes, t => !t.playable); Deploy(parkIdx); yield return null; Check(state == St.Base, "park (施工中) not deployable");
-        for (int run = 0; run < 2; run++)
+        int farmIdx = System.Array.FindIndex(Data.Themes, t => t.id == "farm"); Check(farmIdx >= 0 && Data.Themes[farmIdx].playable, "farm map card playable");
+        var cla = System.Environment.GetCommandLineArgs(); int mi = System.Array.IndexOf(cla, "-map"); string onlyMap = mi >= 0 && mi + 1 < cla.Length ? cla[mi + 1] : null;
+        var runs = onlyMap == "farm" ? new[] { 2 } : onlyMap == "aunt" ? new[] { 0, 1 } : new[] { 0, 1, 2 }; bool firstRun = true;
+        foreach (int run in runs)
         {
-            int ti = 0; var th = Data.Themes[ti]; string tn = th.id;
-            if (run > 0) { BackToBase(); for (float w = 0; w < 5 && state != St.Base; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(1.0f); }
-            Deploy(ti); yield return new WaitForSeconds(3.0f);
+            int ti = run == 2 ? farmIdx : 0; if (ti < 0) continue; var th = Data.Themes[ti]; string tn = th.id;
+            if (!firstRun) { BackToBase(); for (float w = 0; w < 5 && state != St.Base; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(1.0f); }
+            firstRun = false; Deploy(ti); yield return new WaitForSeconds(3.0f);
             if (state != St.Raid || level == null) { Check(false, "deploy " + tn); continue; }
             Pet.FreezeAll = 999; S0.cans = S0.meats = 5;
             Check(Pet.All.Count == th.enemies, tn + " pets " + Pet.All.Count + "/" + th.enemies);
@@ -795,6 +879,7 @@ public class Game : MonoBehaviour
                 yield return new WaitForSeconds(0.6f); yield return Shot("oneMap_wishes");
             }
             if (run == 0) yield return StealthTest();
+            if (run == 2) yield return FarmTest();
             if (run == 0) { int add = 30 - bag.Count; for (int k = 0; k < add; k++) { var d = Data.Items[k % Data.Items.Length]; bag.Add(new Item { r = d.r, ic = d.ic, name = d.name, v = d.v }); } Check(bag.Count(i => !i.key) > 24, "full bag for results layout (" + bag.Count + ")"); }
             // bus stop + cinematic
             if (!level.bus.CanBoard) level.bus.ForceArrive();
@@ -806,7 +891,7 @@ public class Game : MonoBehaviour
             yield return new WaitForSeconds(3.5f); if (run == 0) yield return Shot("oneMap_bus_cine_b");
             for (float w = 0; w < 20 && state != St.End; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(1f);
             Check(state == St.End, tn + " extract"); yield return Shot("oneMap_" + tn + "_results");
-            Check(lastPlay.z >= 1 && lastPlay.z <= 3, "run rating 1-3 stars (" + lastPlay.z + ")"); Check(lastPlay.x > 0, "late-bus bonus paid (" + lastPlay.x + ")"); Check(lastPlay.y >= 1, "wish reward paid (" + lastPlay.y + ")");
+            Check(lastPlay.z >= 1 && lastPlay.z <= 3, "run rating 1-3 stars (" + lastPlay.z + ")"); if (run == 0) { Check(lastPlay.x > 0, "late-bus bonus paid (" + lastPlay.x + ")"); Check(lastPlay.y >= 1, "wish reward paid (" + lastPlay.y + ")"); }
         }
         Pet.FreezeAll = 0; BackToBase(); yield return new WaitForSeconds(2f);
         OpenStation("stash"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_stash"); yield return TextStability("inventory", 60, true); CloseModal();

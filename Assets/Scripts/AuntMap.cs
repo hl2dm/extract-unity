@@ -9,6 +9,8 @@ public static partial class LevelGen
 {
     struct Op { public bool ax; public float fc, c, w, y0, y1; }
     public const float AWH = 3.0f, AWT = 0.24f, FY = 0.12f;
+    static bool FarmHouse;   // v0.9.17 外婆家: brick walls + red tiled roof instead of the pink upper storeys
+    static void FarmRoof(Transform h) => FarmArt.TiledRoof(h, FY + AWH + 0.12f, -10.1f, 10.1f, -1.2f, 13.3f, 2.7f);
     // v0.9.12 r2 a wall clock hung over the new cloth drapes: slide it along its wall until it clears every curtain
     static void ClearOfCurtains(Transform h, Transform c)
     {
@@ -90,6 +92,7 @@ public static partial class LevelGen
 
     static LootContainer SCont(Transform parent, string kind, Vector3 lp, float yaw, Color accent, string label = null, bool special = false, List<LootContainer> bucket = null)
     {
+        if (FarmHouse && label != null) label = label.Replace("阿姨", "外婆");
         var g = SoftProps.ContainerBody(parent, kind, lp, yaw, accent, label);
         var lc = g.AddComponent<LootContainer>(); lc.Init(kind, rng, L.theme, L.vmult, luck, label); lc.special = special; L.containers.Add(lc); bucket?.Add(lc); return lc;
     }
@@ -149,7 +152,7 @@ public static partial class LevelGen
     static Transform AuntHouse(Transform root, Vector3 origin, List<ARoom> rooms, List<LootContainer> lockedC, List<Vector3> petSpots)
     {
         var h = new GameObject("House").transform; h.SetParent(root, false); h.localPosition = origin;
-        var wallOut = Pink; var trim = White; var ops = new List<Op>();
+        var wallOut = FarmHouse ? H("c9876a") : Pink; var trim = FarmHouse ? H("f1e4cc") : White; var ops = new List<Op>();
         System.Func<float, float, Color> wood = (x, z) => Color.Lerp((Mathf.FloorToInt(x / 0.55f) & 1) == 0 ? Wood : Lite(Wood, 0.1f), WoodD, 0.28f * VN(new Vector3(x * 0.5f, 0, z * 0.5f), 3));
         System.Func<float, float, Color> Tiles(Color a, Color b) => (x, z) => ((Mathf.FloorToInt(x / 0.6f) + Mathf.FloorToInt(z / 0.6f)) & 1) == 0 ? a : b;
         rooms.Add(new ARoom { name = "garage", x0 = -9, x1 = -3, z0 = 0, z1 = 6, wall = H("d2bba4"), trim = SkyD, floor = Tiles(Lite(Grey, 0.55f), Lite(Grey, 0.4f)) });
@@ -181,9 +184,9 @@ public static partial class LevelGen
         foreach (var r in rooms) Field(h, new Vector3((r.x0 + r.x1) / 2, FY, (r.z0 + r.z1) / 2), r.x1 - r.x0, r.z1 - r.z0, 0.55f, r.floor, true, "floor_" + r.name);
         var ceil = Block(h, new Vector3(0, FY + AWH + 0.07f, 6), new Vector3(18.4f, 0.14f, 12.4f), Cream, 0.05f, true, 0, 0.01f); NoShadow(ceil);
         // toy-diorama massing: fat rounded corner pillars + pillowy cornice + chunky base bumper (visual only)
-        foreach (var cx in new[] { -9.2f, 9.2f }) foreach (var cz in new[] { -0.2f, 12.2f }) { Cyl(h, new Vector3(cx, FY + AWH / 2 + 0.2f, cz), 0.8f, AWH + 0.6f, Lite(ButterD, 0.25f), 0.35f, null, 24); Ball(h, new Vector3(cx, FY + AWH + 0.6f, cz), new Vector3(1.5f, 0.8f, 1.5f), Rose, 16); }
+        foreach (var cx in new[] { -9.2f, 9.2f }) foreach (var cz in new[] { -0.2f, 12.2f }) { Cyl(h, new Vector3(cx, FY + AWH / 2 + 0.2f, cz), 0.8f, AWH + 0.6f, Lite(ButterD, 0.25f), 0.35f, null, 24); if (!FarmHouse) Ball(h, new Vector3(cx, FY + AWH + 0.6f, cz), new Vector3(1.5f, 0.8f, 1.5f), Rose, 16); }
         Block(h, new Vector3(0, FY + AWH + 0.35f, -0.35f), new Vector3(18.6f, 0.6f, 0.7f), White, 0.3f, false);
-        foreach (var px in new[] { -3.05f, 3.05f }) { Cyl(h, new Vector3(px, FY + AWH / 2, -0.3f), 0.42f, AWH, Lite(Wood, 0.45f), 0.12f, null, 20); Cyl(h, new Vector3(px, FY + 0.15f, -0.3f), 0.52f, 0.3f, WoodD, 0.06f, null, 20); Cyl(h, new Vector3(px, FY + AWH - 0.12f, -0.3f), 0.5f, 0.2f, WoodD, 0.05f, null, 20); for (int fl = 0; fl < 10; fl++) { float a = fl * Mathf.PI / 5; Block(h, new Vector3(px + Mathf.Cos(a) * 0.415f, FY + AWH / 2, -0.3f + Mathf.Sin(a) * 0.415f), new Vector3(0.035f, AWH - 0.7f, 0.035f), Lite(Wood, 0.2f), 0.012f, false); } /* v0.9.10 painted-wood porch column */ Ball(h, new Vector3(px, FY + AWH + 0.15f, -0.3f), new Vector3(1.1f, 0.6f, 1.1f), Mint, 14); }
+        foreach (var px in new[] { -3.05f, 3.05f }) { Cyl(h, new Vector3(px, FY + AWH / 2, -0.3f), 0.42f, AWH, Lite(Wood, 0.45f), 0.12f, null, 20); Cyl(h, new Vector3(px, FY + 0.15f, -0.3f), 0.52f, 0.3f, WoodD, 0.06f, null, 20); Cyl(h, new Vector3(px, FY + AWH - 0.12f, -0.3f), 0.5f, 0.2f, WoodD, 0.05f, null, 20); for (int fl = 0; fl < 10; fl++) { float a = fl * Mathf.PI / 5; Block(h, new Vector3(px + Mathf.Cos(a) * 0.415f, FY + AWH / 2, -0.3f + Mathf.Sin(a) * 0.415f), new Vector3(0.035f, AWH - 0.7f, 0.035f), Lite(Wood, 0.2f), 0.012f, false); } /* v0.9.10 painted-wood porch column */ if (!FarmHouse) Ball(h, new Vector3(px, FY + AWH + 0.15f, -0.3f), new Vector3(1.1f, 0.6f, 1.1f), Mint, 14); else Cyl(h, new Vector3(px, FY + AWH + 0.1f, -0.3f), 0.5f, 0.22f, H("8a5a3c"), 0.06f, null, 20); }
         Block(h, new Vector3(4.6f, 0.3f, -0.35f), new Vector3(8.2f, 0.6f, 0.6f), LavD, 0.28f, false);
 
         // ---- structural walls (outer pink, partitions cream) + room skins
@@ -233,6 +236,7 @@ public static partial class LevelGen
         SDoor(h, 6, 6, 1.3f, 2.3f, Lav, trim, true);
 
         // ---- upper storeys (dollhouse shell: no shadows so rooms get sun)
+        if (FarmHouse) FarmRoof(h); else {
         var up = Group(h, "upper", Vector3.zero);
         float y2 = FY + AWH + 0.14f;
         Block(up, new Vector3(0, y2 + 0.05f, 6), new Vector3(19.2f, 0.45f, 12.9f), PinkD, 0.2f, true, 0, 0.02f);              // chunky band
@@ -267,10 +271,11 @@ public static partial class LevelGen
         var sign = Group(up, "aunt_sign", new Vector3(0, y2 + 0.05f, -0.5f));
         Block(sign, Vector3.zero, new Vector3(2.8f, 0.85f, 0.16f), White, 0.2f, false);
         Ring(sign, Vector3.zero, Quaternion.identity, 0.0f, 0.0f, White, 3);
-        SoftProps.Text3D(sign, new Vector3(0, 0.05f, -0.95f), "阿姨家", 0.15f, Rose);
+        SoftProps.Text3D(sign, new Vector3(0, 0.05f, -0.95f), FarmHouse ? "外婆家" : "阿姨家", 0.15f, FarmHouse ? H("c0483a") : Rose);
         Ball(sign, new Vector3(-1.6f, 0.2f, -0.05f), new Vector3(0.3f, 0.3f, 0.1f), Rose, 10);
         Ball(sign, new Vector3(1.6f, 0.2f, -0.05f), new Vector3(0.3f, 0.3f, 0.1f), ButterD, 10);
         NoShadow(up.gameObject);
+        }
 
         // ---- front: garage awning + rolled shutter, planters, mailbox
         SoftProps.Awning(h, new Vector3(-6, FY + 3.15f, -0.15f), 4.9f, 1.0f, Sky, White);
