@@ -307,7 +307,8 @@ public class Goose : MonoBehaviour
     FarmArt.Rig rig; Vector3 goal; float lostT, noiseT, peckT, phase; TextMesh mark; LineRenderer ring, pulse; Lure lure; public Vector3 seenAt;
     public static Goose Create(Transform p, Vector3 pos, Vector3 home, float yaw)
     {
-        var rg = FarmArt.Goose(p, pos, yaw); var gz = rg.root.gameObject.AddComponent<Goose>(); gz.rig = rg; gz.home = home; gz.goal = pos; gz.phase = pos.x * 1.7f;
+        var rg = FarmArt.Goose(p, pos, yaw); rg.root.localScale = Vector3.one * 1.45f;   // v0.9.18: geese read clearly from across the yard (were hen-sized)
+        var gz = rg.root.gameObject.AddComponent<Goose>(); gz.rig = rg; gz.home = home; gz.goal = pos; gz.phase = pos.x * 1.7f;
         var mk = new GameObject("mark"); mk.transform.SetParent(rg.root, false); mk.transform.localPosition = new Vector3(0, 1.05f, 0); mk.AddComponent<Billboard2>();
         gz.mark = mk.AddComponent<TextMesh>(); gz.mark.font = Art.FontBold; mk.GetComponent<MeshRenderer>().sharedMaterial = Art.WorldFontMat; gz.mark.characterSize = 0.045f; gz.mark.fontSize = 64; gz.mark.anchor = TextAnchor.MiddleCenter; gz.mark.text = "";
         gz.ring = MkRing(rg.root, "goose_ring", 64); gz.pulse = MkRing(rg.root, "goose_pulse", 48); gz.ring.enabled = gz.pulse.enabled = false;

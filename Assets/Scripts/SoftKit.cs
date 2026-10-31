@@ -30,14 +30,26 @@ public static class SoftKit
     // ---- noise
     static float Hs(int x, int y, int z, int s) { unchecked { int h = x * 374761393 + y * 668265263 + z * 1274126177 + s * 1442695041; h = (h ^ (h >> 13)) * 1274126177; return ((h ^ (h >> 16)) & 0xffff) / 65535f; } }
     public static float VN(Vector3 p, int s)
-    {
-        int x = Mathf.FloorToInt(p.x), y = Mathf.FloorToInt(p.y), z = Mathf.FloorToInt(p.z); float fx = p.x - x, fy = p.y - y, fz = p.z - z;
+    {   // v0.9.18: same value noise, cheaper floor/lerp (bit-identical results; this ran ~10M times per aunt load)
+        int x = FF(p.x), y = FF(p.y), z = FF(p.z); float fx = p.x - x, fy = p.y - y, fz = p.z - z;
         fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); fz = fz * fz * (3 - 2 * fz);
-        float a = Mathf.Lerp(Hs(x, y, z, s), Hs(x + 1, y, z, s), fx), b = Mathf.Lerp(Hs(x, y + 1, z, s), Hs(x + 1, y + 1, z, s), fx);
-        float c = Mathf.Lerp(Hs(x, y, z + 1, s), Hs(x + 1, y, z + 1, s), fx), d = Mathf.Lerp(Hs(x, y + 1, z + 1, s), Hs(x + 1, y + 1, z + 1, s), fx);
-        return Mathf.Lerp(Mathf.Lerp(a, b, fy), Mathf.Lerp(c, d, fy), fz);
+        return Cell(x, y, z, s, fx, fy, fz);
     }
-    static Vector3 Wob(Vector3 p, int s, float amp, float f) { var q = p * f; return new Vector3(VN(q, s) - .5f, VN(q, s + 17) - .5f, VN(q, s + 41) - .5f) * 2 * amp; }
+    static int FF(float v) { int i = (int)v; return v < i ? i - 1 : i; }
+    static float L(float a, float b, float t) => a + (b - a) * t;
+    static float Cell(int x, int y, int z, int s, float fx, float fy, float fz)
+    {
+        float a = L(Hs(x, y, z, s), Hs(x + 1, y, z, s), fx), b = L(Hs(x, y + 1, z, s), Hs(x + 1, y + 1, z, s), fx);
+        float c = L(Hs(x, y, z + 1, s), Hs(x + 1, y, z + 1, s), fx), d = L(Hs(x, y + 1, z + 1, s), Hs(x + 1, y + 1, z + 1, s), fx);
+        return L(L(a, b, fy), L(c, d, fy), fz);
+    }
+    static Vector3 Wob(Vector3 p, int s, float amp, float f)
+    {
+        if (amp == 0) return Vector3.zero;
+        var q = p * f; int x = FF(q.x), y = FF(q.y), z = FF(q.z); float fx = q.x - x, fy = q.y - y, fz = q.z - z;
+        fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy); fz = fz * fz * (3 - 2 * fz);
+        return new Vector3(Cell(x, y, z, s, fx, fy, fz) - .5f, Cell(x, y, z, s + 17, fx, fy, fz) - .5f, Cell(x, y, z, s + 41, fx, fy, fz) - .5f) * 2 * amp;
+    }
     static Color Mottle(Color c, Vector3 p, int s) { float k = 0.985f + 0.025f * VN(p * 0.6f, s + 5); return new Color(c.r * k, c.g * k, c.b * k, MatA); }
     /// material class in vertex alpha: 1 matte clay, 0.5 glossy plastic, 0.1 felt
     public static float MatA = 1f; public static float PushM(float a) { var o = MatA; MatA = a; return o; }
@@ -126,8 +138,51 @@ public static class SoftKit
     static int Seed(Vector3 a, Vector3 b) { unchecked { return (int)(a.x * 73.1f) * 31 + (int)(a.y * 91.7f) * 17 + (int)(a.z * 53.3f) * 7 + (int)(b.x * 11.3f + b.y * 7.1f + b.z * 3.7f); } }
     public static int GlobalSeed;
 
+    /// v0.9.18 geometry sink: tiny foliage pieces (leaves, petals, buds, stems) inside trees/bushes are written straight into one
+    /// combined mesh per material instead of one GameObject + Mesh each (identical vertices/normals/colours, ~10x faster to build).
+    public static readonly System.Diagnostics.Stopwatch PwAdd = new System.Diagnostics.Stopwatch(), PwStem = new System.Diagnostics.Stopwatch(), PwFlush = new System.Diagnostics.Stopwatch(), PwTree = new System.Diagnostics.Stopwatch(), PwMerge = new System.Diagnostics.Stopwatch(), PwBall = new System.Diagnostics.Stopwatch(), PwRB = new System.Diagnostics.Stopwatch(), PwLat = new System.Diagnostics.Stopwatch(), PwHouse = new System.Diagnostics.Stopwatch();
+    public static string PwLog() => " tree=" + PwTree.ElapsedMilliseconds + " ball=" + PwBall.ElapsedMilliseconds + " add=" + PwAdd.ElapsedMilliseconds + " stem=" + PwStem.ElapsedMilliseconds + " flush=" + PwFlush.ElapsedMilliseconds + " merge=" + PwMerge.ElapsedMilliseconds + " roundbox=" + PwRB.ElapsedMilliseconds + " lathe=" + PwLat.ElapsedMilliseconds + " townhouse=" + PwHouse.ElapsedMilliseconds;
+    public static GeoSink Sink; static readonly Dictionary<long, MB> Tpl = new Dictionary<long, MB>();
+    public class GeoSink
+    {   // pieces are queued, then transformed into the combined meshes on all CPU cores at Flush (pure math, no Unity API)
+        struct Job { public Matrix4x4 M, MN; public MB src; public Color tint; public bool tinted, tag; public float alpha, ma; public int off, toff; }
+        readonly Transform root; readonly Dictionary<Material, List<Job>> jobs = new Dictionary<Material, List<Job>>();
+        public GeoSink(Transform r) { root = r; }
+        internal void Add(Transform p, Vector3 pos, Quaternion rot, Vector3 scl, MB src, float outline, float alpha, Color? tint = null)
+        {
+            PwAdd.Start(); var mat = Mat(outline); if (!jobs.TryGetValue(mat, out var l)) jobs[mat] = l = new List<Job>();
+            if (!tint.HasValue) src.Build(null);   // same NaN/normal clean-up as a real mesh
+            var M = root.worldToLocalMatrix * p.localToWorldMatrix * Matrix4x4.TRS(pos, rot, scl);
+            l.Add(new Job { M = M, MN = M.inverse.transpose, src = src, tint = tint ?? Color.white, tinted = tint.HasValue, tag = mat.HasProperty("_UseVC") && mat.GetFloat("_UseVC") >= 0.5f, alpha = alpha, ma = MatA }); PwAdd.Stop();
+        }
+        public List<GameObject> Flush(string name)
+        {
+            PwFlush.Start(); var res = new List<GameObject>();
+            foreach (var kv in jobs)
+            {
+                var l = kv.Value; if (l.Count == 0) continue; int nv = 0, nt = 0;
+                for (int j = 0; j < l.Count; j++) { var jb = l[j]; jb.off = nv; jb.toff = nt; l[j] = jb; nv += jb.src.V.Count; nt += jb.src.T.Count; }
+                var V = new Vector3[nv]; var N = new Vector3[nv]; var C = new Color[nv]; var T = new int[nt]; var arr = l.ToArray();
+                System.Action<int> body = j =>
+                {
+                    var jb = arr[j]; var sv = jb.src.V; var sn = jb.src.N; var sc = jb.src.C; var st = jb.src.T;
+                    for (int i = 0; i < sv.Count; i++)
+                    {
+                        int o = jb.off + i; V[o] = jb.M.MultiplyPoint3x4(sv[i]); var n = jb.MN.MultiplyVector(sn[i]); N[o] = n.sqrMagnitude > 1e-12f ? n.normalized : Vector3.up;
+                        var c = sc[i]; if (jb.tinted) c = new Color(c.r * jb.tint.r, c.g * jb.tint.g, c.b * jb.tint.b, jb.ma); if (jb.tag) c.a = jb.alpha; C[o] = c;
+                    }
+                    for (int i = 0; i < st.Count; i++) T[jb.toff + i] = st[i] + jb.off;
+                };
+                if (Application.platform == RuntimePlatform.WebGLPlayer || arr.Length < 64) for (int j = 0; j < arr.Length; j++) body(j);
+                else System.Threading.Tasks.Parallel.For(0, arr.Length, body);
+                var m = new Mesh { name = name, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 }; m.vertices = V; m.normals = N; m.colors = C; m.triangles = T; m.RecalculateBounds();
+                var go = new GameObject(name); go.transform.SetParent(root, false); go.AddComponent<MeshFilter>().sharedMesh = m; go.AddComponent<MeshRenderer>().sharedMaterial = kv.Key; res.Add(go);
+            }
+            jobs.Clear(); PwFlush.Stop(); return res;
+        }
+    }
     // ---- mesh builder
-    class MB
+    internal class MB
     {
         public readonly List<Vector3> V = new List<Vector3>(), N = new List<Vector3>(); public readonly List<Color> C = new List<Color>(); public readonly List<int> T = new List<int>();
         public int Add(Vector3 v, Vector3 n, Color c) { V.Add(v); N.Add(n); C.Add(c); return V.Count - 1; }
@@ -142,6 +197,7 @@ public static class SoftKit
         {
             for (int i = 0; i < N.Count; i++) { var q = N[i]; if (float.IsNaN(q.x) || float.IsNaN(q.y) || float.IsNaN(q.z) || q.sqrMagnitude < 1e-8f) N[i] = Vector3.up; else N[i] = q.normalized; }
             for (int i = 0; i < V.Count; i++) { var q = V[i]; if (float.IsNaN(q.x) || float.IsNaN(q.y) || float.IsNaN(q.z)) V[i] = i > 0 ? V[i - 1] : Vector3.zero; }
+            if (n == null) return null;
             var m = new Mesh { name = n }; if (V.Count > 65000) m.indexFormat = UnityEngine.Rendering.IndexFormat.UInt32;
             m.SetVertices(V); m.SetNormals(N); m.SetColors(C); m.SetTriangles(T, 0); m.RecalculateBounds(); return m;
         }
@@ -157,7 +213,8 @@ public static class SoftKit
         l.Add(hh); return l.ToArray();
     }
     /// Rounded box centred at origin. taper: top shrinks by this fraction. top: optional top-face colour.
-    public static Mesh RoundBox(Vector3 size, float r, Color c, float wob, int seed, float taper = 0, Color? top = null)
+    public static Mesh RoundBox(Vector3 size, float r, Color c, float wob, int seed, float taper = 0, Color? top = null) { PwRB.Start(); try { return RoundBox0(size, r, c, wob, seed, taper, top); } finally { PwRB.Stop(); } }
+    static Mesh RoundBox0(Vector3 size, float r, Color c, float wob, int seed, float taper, Color? top)
     {
         var h = size * 0.5f; r = Mathf.Clamp(r, 0, Mathf.Min(h.x, Mathf.Min(h.y, h.z)) * 0.98f); var inner = h - Vector3.one * r;
         var mb = new MB();
@@ -184,7 +241,8 @@ public static class SoftKit
         return mb.Build("sk_box");
     }
     /// Surface of revolution around Y from a (radius, y) profile listed bottom -> top. Normals from the profile tangent (soft).
-    public static Mesh Lathe(IList<Vector2> prof, Color c, int seg, float wob, int seed, IList<Color> ringCols = null)
+    public static Mesh Lathe(IList<Vector2> prof, Color c, int seg, float wob, int seed, IList<Color> ringCols = null) { PwLat.Start(); try { return LatheMB(prof, c, seg, wob, seed, ringCols).Build("sk_lathe"); } finally { PwLat.Stop(); } }
+    static MB LatheMB(IList<Vector2> prof, Color c, int seg, float wob, int seed, IList<Color> ringCols = null)
     {
         seg = GeoQ.Seg(seg); var mb = new MB(); int n = prof.Count; float span = 0; for (int i = 0; i < n; i++) span = Mathf.Max(span, prof[i].x);
         float freq = 1f / Mathf.Max(0.3f, span * 1.2f);
@@ -201,7 +259,7 @@ public static class SoftKit
             }
         }
         for (int k = 0; k < n - 1; k++) for (int i = 0; i < seg; i++) { int a = k * (seg + 1) + i, b = a + seg + 1; mb.Quad(a, b, b + 1, a + 1); }
-        return mb.Build("sk_lathe");
+        return mb;
     }
     public static List<Vector2> CylProf(float R, float Hh, float r)
     {
@@ -245,13 +303,26 @@ public static class SoftKit
     public static GameObject Cyl(Transform p, Vector3 pos, float R, float Hh, Color c, float r = -1, Quaternion? rot = null, int seg = 20, bool col = false, string name = "sk_cyl")
     {
         if (r < 0) r = Mathf.Min(R, Hh / 2) * 0.35f; int seed = Seed(pos, new Vector3(R, Hh, 0)) + GlobalSeed;
+        if (Sink != null && !col && name == "sk_stem")
+        {   // thin stems: unit rounded-cylinder template (64 variants) scaled to size and tinted; was a full noisy lathe per stem
+            PwStem.Start(); long tk = -(((long)seg * 100 + Mathf.RoundToInt(r / Mathf.Max(1e-5f, R) * 20)) * 64 + (seed & 63)) - 1;
+            if (!Tpl.TryGetValue(tk, out var tm)) { tm = LatheMB(CylProf(0.5f, 1f, 0.5f * r / Mathf.Max(1e-5f, R)), Color.white, seg, 0.03f, seed & 63); tm.Build(null); Tpl[tk] = tm; }
+            Sink.Add(p, pos, rot ?? Quaternion.identity, new Vector3(2 * R, Hh, 2 * R), tm, OL(Mathf.Max(R * 2, Hh)), MatK.Foliage, c); PwStem.Stop(); return null;
+        }
         var g = Obj(p, name, Lathe(CylProf(R, Hh, r), c, seg, Mathf.Min(0.03f, R * 0.06f), seed), pos, rot ?? Quaternion.identity, OL(Mathf.Max(R * 2, Hh)));
         if (col) { var bc = g.AddComponent<BoxCollider>(); bc.size = new Vector3(R * 2, Hh, R * 2); }
         return g;
     }
     public static GameObject Ball(Transform p, Vector3 pos, Vector3 size, Color c, int seg = 16, bool col = false, Quaternion? rot = null, string name = "sk_ball", float wob = 0.05f)
     {
-        int seed = Seed(pos, size) + GlobalSeed; var g = Obj(p, name, Lathe(SphereProf(0.5f, Mathf.Max(6, GeoQ.Seg(seg) / 2)), c, seg, wob, seed), pos, rot ?? Quaternion.identity, OL(Mathf.Max(size.x, Mathf.Max(size.y, size.z))));
+        int seed = Seed(pos, size) + GlobalSeed;
+        if (Sink != null && !col && (name == "sk_leaf" || name == "sk_petal" || name == "sk_bud"))
+        {   // unit-sphere template (64 wobble/mottle variants per segment count) tinted by c: same look, built once instead of per leaf
+            PwBall.Start(); int rings = Mathf.Max(6, GeoQ.Seg(seg) / 2); long tk = ((long)seg * 1000 + rings) * 100000 + Mathf.RoundToInt(wob * 1000) * 64 + (seed & 63);
+            if (!Tpl.TryGetValue(tk, out var tm)) { tm = LatheMB(SphereProf(0.5f, rings), Color.white, seg, wob, seed & 63); tm.Build(null); Tpl[tk] = tm; }
+            Sink.Add(p, pos, rot ?? Quaternion.identity, size, tm, OL(Mathf.Max(size.x, Mathf.Max(size.y, size.z))), name == "sk_leaf" ? MatK.Foliage : name == "sk_petal" ? MatK.Fabric : MatA, c); PwBall.Stop(); return null;
+        }
+        var g = Obj(p, name, Lathe(SphereProf(0.5f, Mathf.Max(6, GeoQ.Seg(seg) / 2)), c, seg, wob, seed), pos, rot ?? Quaternion.identity, OL(Mathf.Max(size.x, Mathf.Max(size.y, size.z))));
         g.transform.localScale = size; if (col) g.AddComponent<SphereCollider>().radius = 0.5f; return g;
     }
     public static GameObject Lath(Transform p, Vector3 pos, IList<Vector2> prof, Color c, int seg = 20, bool col = false, Quaternion? rot = null, string name = "sk_lathe", IList<Color> ringCols = null)
@@ -299,6 +370,14 @@ public static class GeoQ
     public static int Tier
     {
         get
+        {   // v0.9.18: cached per frame (PlayerPrefs.GetInt per mesh call cost seconds on big maps)
+            if (Force < 0 && tierF == Time.frameCount && tierV >= 0) return tierV;
+            tierF = Time.frameCount; tierV = Calc(); return tierV;
+        }
+    }
+    static int tierF = -1, tierV = -1;
+    static int Calc()
+    {
         {
             if (Force >= 0) return Mathf.Clamp(Force, 0, 2);
             int cap = Application.isMobilePlatform ? 0 : (Application.platform == RuntimePlatform.WebGLPlayer ? 1 : 2);

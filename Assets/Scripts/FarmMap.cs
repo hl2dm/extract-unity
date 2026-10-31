@@ -10,12 +10,14 @@ public static partial class LevelGen
     public static readonly List<Vector3> FarmHay = new List<Vector3>();
     public static Vector3 PondC = new Vector3(14, 0, 20);
 
-    static Level BuildFarm(int seed, ThemeDef th, float vmult, int luckLv)
+    static Level BuildFarm(int seed, ThemeDef th, float vmult, int luckLv) { Level r = null; var it = BuildFarmCo(seed, th, vmult, luckLv, l => r = l); while (it.MoveNext()) { } return r; }
+    public static System.Collections.IEnumerator BuildFarmCo(int seed, ThemeDef th, float vmult, int luckLv, System.Action<Level> done)
     {
         rng = new System.Random(seed); luck = luckLv; GlobalSeed = seed; SoftProps.ResetSigns();
         L = new Level { theme = th, seed = seed, vmult = vmult, root = new GameObject("Level").transform };
         Openings.Clear(); NoRide.Clear(); TrimCrossBefore = TrimPieces = 0; Rice.Clear(); FarmHay.Clear();
         var root = L.root; blocks.Clear(); var deco = new System.Random(20261101);
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 0 / 13f, "鋪草地和馬路…"); yield return null;
         // ---- ground: dusk grass, road + concrete shoulder by the gate
         Field(root, Vector3.zero, 130, 130, 2f, (x, z) => Color.Lerp(H("98b872"), H("7c9f5a"), VN(new Vector3(x * 0.06f, 0, z * 0.06f), 9)), true, "grass_ground");
         Field(root, new Vector3(0, 0.02f, -30.25f), 130, 7.5f, 1f, (x, z) => Color.Lerp(H("b9a996"), H("8e8070"), Mathf.Clamp01(0.4f * VN(new Vector3(x * 0.3f, 0, z * 0.3f), 5) + 0.6f * VN(new Vector3(x * 0.05f, 0, z * 0.05f), 11))), true, "road");
@@ -27,11 +29,17 @@ public static partial class LevelGen
         // keep the road side of the farm walkable but stop kids wandering off south across the road
         { var b = new GameObject("bound"); b.transform.SetParent(root, false); b.transform.localPosition = new Vector3(0, 2, -34.5f); b.AddComponent<BoxCollider>().size = new Vector3(130, 6, 1); }
 
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 1 / 13f, "蓋外婆的紅磚厝…"); yield return null;
         // ---- farmhouse (the aunt kit, red brick + tiled roof)
         var rooms = new List<ARoom>(); var lockedC = new List<LootContainer>(); var petSpots = new List<Vector3>();
         FarmHouse = true; Transform house;
         try { house = AuntHouse(root, new Vector3(-24, 0, 10), rooms, lockedC, petSpots); } finally { FarmHouse = false; }
         house.name = "House";
+        foreach (var r in rooms)
+        {   // v0.9.18 warm lamp glow in every farmhouse room (tungsten bulb, no shadows)
+            var lg = new GameObject("room_glow"); lg.transform.SetParent(house, false); lg.transform.localPosition = new Vector3((r.x0 + r.x1) / 2, FY + 2.3f, (r.z0 + r.z1) / 2);
+            var li = lg.AddComponent<Light>(); li.type = LightType.Point; li.color = new Color(1f, 0.78f, 0.52f); li.range = 7.5f; li.intensity = 1.1f; li.shadows = LightShadows.None;
+        }
         {   // wooden name board under the eave
             var sg = Group(house, "farm_sign", new Vector3(0, FY + AWH + 0.62f, -1.45f));
             Block(sg, Vector3.zero, new Vector3(2.6f, 0.78f, 0.12f), H("8a5a3c"), 0.05f, false); Block(sg, new Vector3(0, 0, -0.05f), new Vector3(2.35f, 0.58f, 0.04f), H("f1e2c2"), 0.03f, false);
@@ -45,6 +53,7 @@ public static partial class LevelGen
             Lath(house, new Vector3(sx * 3.6f, FY + 2.35f, -1.0f), new List<Vector2> { new Vector2(0, 0), new Vector2(0.12f, 0.04f), new Vector2(0.16f, 0.2f), new Vector2(0.12f, 0.36f), new Vector2(0, 0.4f) }, H("e8503a"), 14, false, null, "lantern");
             Cyl(house, new Vector3(sx * 3.6f, FY + 2.8f, -1.0f), 0.012f, 0.1f, H("3a2a20"), 0.004f, null, 6);
         }
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 2 / 13f, "整理曬穀場…"); yield return null;
         // ---- 曬穀場 concrete drying yard with golden grain patches, rake, baskets
         Field(root, new Vector3(-24, 0.05f, 3.5f), 26, 11, 1f, (x, z) => Color.Lerp(H("d9d0c0"), H("c8bead"), VN(new Vector3(x * 0.4f, 0, z * 0.4f), 21)), false, "yard");
         foreach (var (cx, cz, sx2, sz2) in new[] { (-30f, 3.5f, 6f, 4.5f), (-21f, 2.5f, 5f, 4f) })
@@ -58,6 +67,7 @@ public static partial class LevelGen
         SCont(root, "ricejar", new Vector3(-15.6f, 0.07f, 7.6f), 0, H("7a4a36"), "外婆的米缸");
         SCont(root, "basket", new Vector3(-17.2f, 0.07f, 1.0f), 30, FarmArt.Straw, "菜籃子");
 
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 3 / 13f, "插秧、做田埂…"); yield return null;
         // ---- rice paddies (4 x 2) with raised 田埂 ridges
         float px0 = -7f, pz0 = -20.6f, pw = 10.1f, pd = 9.4f, rg = 1.4f;
         for (int i = 0; i < 4; i++) for (int j = 0; j < 2; j++)
@@ -72,6 +82,7 @@ public static partial class LevelGen
         FarmArt.Scarecrow(root, new Vector3(px0 + rg + pw * 1.5f + rg, 0.05f, pz0 + D / 2 + 0.0f), 200);
         FarmArt.Scarecrow(root, new Vector3(px0 + 3 * rg + pw * 2.6f + rg, 0.05f, pz0 + rg + pd * 0.5f), 160);
 
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 4 / 13f, "挖池塘、放鵝…"); yield return null;
         // ---- pond with lily pads, reeds, stones and a little dock (geese live here)
         {
             var pg = Group(root, "pond", PondC);
@@ -102,6 +113,7 @@ public static partial class LevelGen
             // invisible wall so kids walk around the water, not into it
             var wc = new GameObject("pond_wall"); wc.transform.SetParent(pg, false); wc.transform.localPosition = new Vector3(0, 0.8f, 0.4f); var cap = wc.AddComponent<CapsuleCollider>(); cap.direction = 0; cap.radius = rz - 0.6f; cap.height = rx * 2 - 0.4f;
         }
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 5 / 13f, "蓋雞舍…"); yield return null;
         // ---- chicken coop with nest boxes + 2 hens
         {
             var cp = Group(root, "Coop", new Vector3(34, 0, 18), -90);
@@ -127,6 +139,7 @@ public static partial class LevelGen
             for (int k = 0; k < 20; k++) Ball(cp, new Vector3((float)deco.NextDouble() * 4 - 2, 0.11f, (float)deco.NextDouble() * 2.6f - 1.6f), new Vector3(0.05f, 0.01f, 0.03f), FarmArt.Straw, 6, false, null, "grain", 0f);
             L.spots.Add(cp.TransformPoint(new Vector3(0, 0.1f, 0)));
         }
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 6 / 13f, "整理工具間…"); yield return null;
         // ---- tool shed (open front) with tool chest + crate
         {
             var sh = Group(root, "Shed", new Vector3(-38, 0, -12), 90);
@@ -142,20 +155,24 @@ public static partial class LevelGen
             Cyl(sh, new Vector3(0.0f, 1.3f, 1.48f), 0.025f, 1.5f, H("b08a5c"), 0.01f, Quaternion.Euler(0, 0, 12), 8); Block(sh, new Vector3(0.16f, 2.02f, 1.44f), new Vector3(0.3f, 0.06f, 0.08f), H("8a8f98"), 0.01f, false);
             L.spots.Add(sh.TransformPoint(new Vector3(0, 0.12f, 0)));
         }
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 7 / 13f, "種菜園…"); yield return null;
         // ---- vegetable rows (cabbages + onion-like sprouts)
         for (int r = 0; r < 4; r++)
         {
             var row = new Vector3(-35, 0, -6.5f + r * 1.6f); Block(root, row + Vector3.up * 0.08f, new Vector3(9, 0.18f, 0.9f), H("8c6a4a"), 0.08f, false, 0, 0.03f, 0.2f, H("9e7a56"));
             for (int k = 0; k < 8; k++) Cabbage(root, row + new Vector3(-3.9f + k * 1.1f, 0.17f, 0), deco.Next(1000), r % 2 == 0);
         }
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 8 / 13f, "堆稻草…"); yield return null;
         // ---- haystacks: hide spots
         foreach (var hp in new[] { new Vector2(-37.5f, 2.5f), new Vector2(-10.4f, 5.0f), new Vector2(-10.2f, -13.5f), new Vector2(24f, 8.5f), new Vector2(28.5f, 25.5f), new Vector2(5.5f, 27.5f), new Vector2(-4.5f, 9.5f) })
         { FarmArt.Haystack(root, new Vector3(hp.x, 0.02f, hp.y), 1f, Mathf.RoundToInt(hp.x * 7 + hp.y * 3)); FarmHay.Add(new Vector3(hp.x, 0, hp.y)); }
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 9 / 13f, "圍籬笆…"); yield return null;
         // ---- fences: front along the road with west + main gates, sides, back
         float fz = -22.6f;
         FarmArt.BambooFence(root, new Vector3(-44, 0, fz), new Vector3(-42, 0, fz)); FarmArt.BambooFence(root, new Vector3(-38, 0, fz), new Vector3(17.5f, 0, fz)); FarmArt.BambooFence(root, new Vector3(26.5f, 0, fz), new Vector3(44, 0, fz));
         FarmArt.BambooFence(root, new Vector3(-44, 0, fz), new Vector3(-44, 0, 34)); FarmArt.BambooFence(root, new Vector3(44, 0, fz), new Vector3(44, 0, 34)); FarmArt.BambooFence(root, new Vector3(-44, 0, 34), new Vector3(44, 0, 34));
         GateArch(root, new Vector3(22, 0, fz), "外婆家農場"); GateArch(root, new Vector3(-40, 0, fz), null);
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 10 / 13f, "種竹林…"); yield return null;
         // ---- bamboo grove behind the back fence + along the sides
         for (int k = 0; k < 16; k++) FarmArt.BambooClump(root, new Vector3(-42 + k * 5.6f + (float)deco.NextDouble() * 1.5f, 0, 37 + (float)deco.NextDouble() * 3), 500 + k, 1f);
         for (int k = 0; k < 6; k++) { FarmArt.BambooClump(root, new Vector3(48 + (float)deco.NextDouble() * 3, 0, -14 + k * 9), 600 + k, 0.9f); FarmArt.BambooClump(root, new Vector3(-48 - (float)deco.NextDouble() * 3, 0, -8 + k * 8), 700 + k, 0.9f); }
@@ -168,6 +185,7 @@ public static partial class LevelGen
         // water jars by the house + a tricycle-cart of hay
         SoftProps.WaterJar(root, new Vector3(-12.6f, 0.07f, 9.2f), H("8a5a3c")); SoftProps.WaterJar(root, new Vector3(-13.5f, 0.07f, 9.6f), H("6a7a8a"));
 
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 11 / 13f, "藏寶物和鑰匙…"); yield return null;
         // ---- key + ground loot
         var keyable = L.containers.FindAll(c => !c.special && !lockedC.Contains(c));
         if (keyable.Count > 0) { var kc = Pick(keyable); kc.slots.Insert(rng.Next(kc.slots.Count + 1), new LootSlot { it = new Item { r = 2, ic = "🔑", name = "神秘鑰匙", v = 0, key = true } }); }
@@ -181,12 +199,14 @@ public static partial class LevelGen
             var g = new GameObject("GroundLoot"); g.transform.SetParent(root, false); g.transform.position = p; g.AddComponent<GroundLoot>().Init(it);
         }
         L.spots.Add(new Vector3(-24, 0.1f, 4)); L.spots.Add(PondC + new Vector3(0, 0.1f, -6.5f));
+        LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 12 / 13f, "公車、狗狗和鵝就位…"); yield return null;
         // ---- bus at the main gate, pets, geese, spawn
         L.bus = Bus.Build(root, new Vector3(22, 0.12f, -25.4f), Vector3.right);
         {
             var cat = Pet.Create(root, (petSpots.Count > 0 ? petSpots[0] : house.TransformPoint(new Vector3(0, FY, 3))) + Vector3.up * 0.05f, false, CatNames[((L.seed) % CatNames.Length + CatNames.Length) % CatNames.Length]);
             var inside = new List<Vector3>(); foreach (var r in rooms) if (inside.Count < 3) inside.Add(house.TransformPoint(r.C)); cat.patrol.AddRange(inside);
-            var dogRoute = new List<Vector3> { new Vector3(-24, 0.1f, 3), new Vector3(-9, 0.1f, -4), new Vector3(px0 + rg / 2 + 2 * (pw + rg), 0.2f, 1.7f), new Vector3(14, 0.1f, 12.5f), new Vector3(29, 0.1f, 12), new Vector3(px0 + rg / 2 + 3 * (pw + rg), 0.2f, 1.7f) };
+            // v0.9.18: route keeps ~4 m off the paddies (was walking the 田埂 right beside the rice where kids hide)
+            var dogRoute = new List<Vector3> { new Vector3(-24, 0.1f, 3), new Vector3(-12, 0.1f, 0.5f), new Vector3(px0 + rg / 2 + 2 * (pw + rg), 0.1f, 6.2f), new Vector3(14, 0.1f, 12.5f), new Vector3(29, 0.1f, 12), new Vector3(px0 + rg / 2 + 3 * (pw + rg), 0.1f, 6.2f) };
             var dog = Pet.Create(root, dogRoute[0] + Vector3.up * 0.05f, true, DogNames[((1 + L.seed) % DogNames.Length + DogNames.Length) % DogNames.Length]); dog.patrol.AddRange(dogRoute);
         }
         Goose.All.Clear();
@@ -196,7 +216,7 @@ public static partial class LevelGen
         // toonify gives everything outlines; keep rice/straw/foliage ribbons outline-free (would double the blades)
         foreach (var mr in root.GetComponentsInChildren<MeshRenderer>()) if (mr.name == "rice" || mr.name == "hay_straws" || mr.name == "bamboo_leaf" || mr.name == "reeds" || mr.name == "sc_straw" || mr.name == "pond_water" || mr.name == "pen_wire") mr.sharedMaterial = Mat(0.0001f);
         Debug.Log("[farm] containers " + L.containers.Count + " locked " + lockedC.Count + " hay " + FarmHay.Count + " geese " + Goose.All.Count + " paddies " + Rice.Count);
-        return L;
+        done(L); yield break;
     }
     static void Ridge(Transform root, Vector3 c, Vector3 s)
     {   // 田埂: packed mud with a grassy top, walkable (low step)

@@ -13,7 +13,11 @@ public static class SoftProps
     // ---------------- nature
     public static Transform Tree(Transform p, Vector3 pos, int kind, float s = 1f, Color? crown = null)
     {
+        SoftKit.PwTree.Start(); try {
         var g = Group(p, "sk_tree", pos); var cr = crown ?? (kind == 1 ? Mint : Leaf);
+        string fk = "tree|" + kind + "|" + s.ToString("0.###") + "|" + ColK(cr) + "|" + Mathf.RoundToInt(pos.x * 17.3f + pos.z * 7.1f) + "|" + GeoQ.Tier;
+        if (FolTry(g, fk)) { var cc0 = g.gameObject.AddComponent<CapsuleCollider>(); cc0.radius = 0.25f * s; cc0.height = 3f * s; cc0.center = new Vector3(0, 1.5f * s, 0); return g; }
+        var oldSink = SoftKit.Sink; var oldGS = SoftKit.GlobalSeed; SoftKit.Sink = new SoftKit.GeoSink(g); SoftKit.GlobalSeed = 0; var made = new List<GameObject>();
         // v0.9.7: tapered trunk with root flare, forked branches and leafy clusters at the tips (was a trunk stick + pom-pom ball)
         int tseed = Mathf.RoundToInt(pos.x * 17.3f + pos.z * 7.1f); var tr = new System.Random(tseed); float F() => (float)tr.NextDouble();
         if (kind == 2) Cyl(g, new Vector3(0, 1.1f * s, 0), 0.17f * s, 2.2f * s, WoodD, 0.06f);
@@ -39,7 +43,7 @@ public static class SoftProps
                 int sub = 2 + tr.Next(2);   // v0.9.8: irregular sub-clusters of leaf sprays, no smooth core blob
                 for (int q = 0; q < sub; q++) { var off = new Vector3(F() - 0.5f, F() * 0.5f, F() - 0.5f) * cs * 0.9f; Goods.Bush(g, t + off - Vector3.up * 0.35f * cs, cs * (0.9f + 0.6f * F()), Color.Lerp(cr, q == 0 ? Dk(cr, 0.8f) : Lt(cr, 0.06f), F()), null, tr); }
             }
-            MatA = om; Merge(g, 0, "treemesh");
+            MatA = om; SinkFlush(SoftKit.Sink); made.AddRange(Merge(g, 0, "treemesh", false));
         }
         if (kind == 2) new GameObject("pine_tag").transform.SetParent(g, false);
         if (kind == 2)
@@ -58,15 +62,24 @@ public static class SoftProps
                 }
             }
             Cyl(g, new Vector3(0, 4.35f * s, 0), 0.05f * s, 0.5f * s, LeafD, 0.02f, null, 6);   // leader shoot
-            MatA = om2; Merge(g, 0, "treemesh");
+            MatA = om2; SinkFlush(SoftKit.Sink); made.Clear(); made.AddRange(Merge(g, 0, "treemesh", false));
         }
+        SoftKit.Sink = oldSink; SoftKit.GlobalSeed = oldGS; FolStore(fk, made);
         var cc = g.gameObject.AddComponent<CapsuleCollider>(); cc.radius = 0.25f * s; cc.height = 3f * s; cc.center = new Vector3(0, 1.5f * s, 0);
         return g;
+        } finally { SoftKit.PwTree.Stop(); }
     }
     public static Transform Bush(Transform p, Vector3 pos, float s, Color c, Color? flower = null, System.Random rng = null)
     {
         var g = Group(p, "sk_bush", pos); rng = rng ?? new System.Random((int)(pos.x * 13 + pos.z * 7));
-        Goods.Bush(g, Vector3.zero, s, c, flower, rng); Merge(g, 0, "sk_bush");   // v0.9.5: real foliage (was 3 balls + ball flowers)
+        double[] fd = null; string fk = "bush|" + s.ToString("0.###") + "|" + ColK(c) + "|" + GeoQ.Tier;
+        if (flower.HasValue) { fd = new double[14]; for (int i = 0; i < 14; i++) fd[i] = rng.NextDouble(); fk += "|" + ColK(flower.Value); foreach (var d in fd) fk += "|" + d.ToString("0.0000"); }
+        if (!FolTry(g, fk))
+        {
+            var oldSink = SoftKit.Sink; var oldGS = SoftKit.GlobalSeed; SoftKit.Sink = new SoftKit.GeoSink(g); SoftKit.GlobalSeed = 0;
+            Goods.Bush(g, Vector3.zero, s, c, flower, fd != null ? new Replay(fd) : rng); SinkFlush(SoftKit.Sink); var made = Merge(g, 0, "sk_bush", false);
+            SoftKit.Sink = oldSink; SoftKit.GlobalSeed = oldGS; FolStore(fk, made);
+        }   // v0.9.5: real foliage (was 3 balls + ball flowers)
         var bc = g.gameObject.AddComponent<BoxCollider>(); var rb = Art.RenderBounds(g.gameObject); var lc0 = g.InverseTransformPoint(rb.center); bc.size = new Vector3(rb.size.x, rb.size.y, rb.size.z) * 0.92f; bc.center = lc0;   // v0.9.5 collider = leaf footprint so the overlap audit sees the real bush
         return g;
     }
@@ -521,7 +534,7 @@ public static class SoftProps
 
     /// 透天厝 townhouse (solid, not enterable). Front at local z=0 facing -Z, body extends +Z.
     public static Transform TownHouse(Transform p, Vector3 pos, float yaw, float w, float d, int floors, Color wall, Color trim, Color roof, System.Random rng, string shop = null)
-    {
+    { SoftKit.PwHouse.Start(); try {
         GeoQ.ArchLow = true;
         var g = Group(p, "TownHouse", pos, yaw); float gh = 3.2f, fh = 2.5f, H = gh + (floors - 1) * fh;
         Block(g, new Vector3(0, H / 2, d / 2), new Vector3(w, H, d), wall, Mathf.Min(1.3f, w * 0.17f), true, 0, 0.06f);
@@ -609,6 +622,7 @@ public static class SoftProps
         GeoQ.ArchLow = false;
         Merge(fr, 0, "sk_house"); Merge(g, 0, "sk_house");   // v0.8.1: static dressing -> few draws
         return g;
+        } finally { SoftKit.PwHouse.Stop(); }
     }
 
     /// medium/small-scale craft pass for townhouses: corner pilasters, plinth, step, canopy, mailbox, house number,
@@ -696,13 +710,15 @@ public static class SoftProps
 
 
     /// v0.8.1: fold freshly-built detail children (index >= from) into one mesh per material, so hundreds of tiles/slats cost one draw
-    public static void Merge(Transform root, int from, string name)
+    public static void Merge(Transform root, int from, string name) => Merge(root, from, name, true);
+    public static List<GameObject> Merge(Transform root, int from, string name, bool record)
     {
-        var groups = new Dictionary<Material, List<CombineInstance>>(); var kill = new List<GameObject>();
+        SoftKit.PwMerge.Start(); var groups = new Dictionary<Material, List<CombineInstance>>(); var kill = new List<GameObject>(); var made = new List<GameObject>();
         var inv = root.worldToLocalMatrix;
         for (int i = from; i < root.childCount; i++)
         {
             var c = root.GetChild(i);
+            if (c.name == "sink_mesh") { made.Add(c.gameObject); continue; }
             if (c.name == "front" || c.name == "sk_doorvis" || c.name == "sk_text3d" || c.GetComponentInChildren<TextMesh>() || c.GetComponentInChildren<Collider>()) continue;
             foreach (var mf in c.GetComponentsInChildren<MeshFilter>())
             {
@@ -710,15 +726,31 @@ public static class SoftProps
                 if (!groups.TryGetValue(mr.sharedMaterial, out var l)) groups[mr.sharedMaterial] = l = new List<CombineInstance>();
                 l.Add(new CombineInstance { mesh = mf.sharedMesh, transform = inv * mf.transform.localToWorldMatrix });
             }
-            PlaceAudit.Record(root, c); kill.Add(c.gameObject);
+            if (record) PlaceAudit.Record(root, c); kill.Add(c.gameObject);
         }
         foreach (var kv in groups)
         {
             var m = new Mesh { name = name, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 }; m.CombineMeshes(kv.Value.ToArray(), true, true); m.RecalculateBounds();
-            var go = new GameObject(name); go.transform.SetParent(root, false); go.AddComponent<MeshFilter>().sharedMesh = m; go.AddComponent<MeshRenderer>().sharedMaterial = kv.Key;
+            var go = new GameObject(name); go.transform.SetParent(root, false); go.AddComponent<MeshFilter>().sharedMesh = m; go.AddComponent<MeshRenderer>().sharedMaterial = kv.Key; made.Add(go);
         }
         foreach (var k in kill) { k.transform.SetParent(null); Object.Destroy(k); }
+        if (!record) foreach (var g in made) PlaceAudit.Record(root, g.transform);
+        SoftKit.PwMerge.Stop(); return made;
     }
+    // v0.9.18 foliage cache: a tree/bush with the same recipe is generated once per session, then re-used (same meshes, zero build time)
+    static readonly Dictionary<string, List<(Mesh m, Material mat, string n)>> FolCache = new Dictionary<string, List<(Mesh, Material, string)>>();
+    public static int FolHits, FolMiss;
+    static bool FolTry(Transform g, string key)
+    {
+        if (!FolCache.TryGetValue(key, out var l)) { FolMiss++; return false; }
+        FolHits++;
+        foreach (var e in l) { var go = new GameObject(e.n); go.transform.SetParent(g, false); go.AddComponent<MeshFilter>().sharedMesh = e.m; go.AddComponent<MeshRenderer>().sharedMaterial = e.mat; PlaceAudit.Record(g, go.transform); }
+        return true;
+    }
+    static void FolStore(string key, List<GameObject> made) { var l = new List<(Mesh, Material, string)>(); foreach (var go in made) if (go) l.Add((go.GetComponent<MeshFilter>().sharedMesh, go.GetComponent<MeshRenderer>().sharedMaterial, go.name)); FolCache[key] = l; }
+    static void SinkFlush(SoftKit.GeoSink sk) { foreach (var go in sk.Flush("sink_mesh")) { } }
+    static string ColK(Color c) => ((Color32)c).r + "," + ((Color32)c).g + "," + ((Color32)c).b;
+    class Replay : System.Random { readonly double[] v; int i; public Replay(double[] d) { v = d; } public override double NextDouble() => v[i++ % v.Length]; }
     /// v0.8.1 architectural detail pass: crisp, low-radius pieces where the eye reads "real building":
     /// louvred shutters + window reveals, front tiled pent roof with gutter/brackets, corner quoins, shop counter,
     /// blade-sign bracket, chimney, roof-coping tiles, scalloped awning valance. Own rng -> layout unchanged.

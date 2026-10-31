@@ -15,6 +15,14 @@ public static partial class LevelGen
     static float RR(float a, float b) => a + R() * (b - a);
     static T Pick<T>(IList<T> a) => a[rng.Next(a.Count)];
 
+    /// v0.9.18 staged build for the loading screen (aunt + farm yield between stages; others build in one go)
+    public static System.Collections.IEnumerator BuildHouseCo(int seed, ThemeDef th, float vmult, int luckLv, System.Action<Level> done)
+    {
+        if (th.id == "aunt") return BuildAuntCo(seed, th, vmult, luckLv, done);
+        if (th.id == "farm") return BuildFarmCo(seed, th, vmult, luckLv, done);
+        return One(seed, th, vmult, luckLv, done);
+    }
+    static System.Collections.IEnumerator One(int seed, ThemeDef th, float vmult, int luckLv, System.Action<Level> done) { done(BuildHouse(seed, th, vmult, luckLv)); yield break; }
     public static Level BuildHouse(int seed, ThemeDef th, float vmult, int luckLv)
     {
         if (th.id == "aunt") return BuildAunt(seed, th, vmult, luckLv);

@@ -111,21 +111,51 @@ public class Game : MonoBehaviour
         S.inRaid = true; S.stats.raids++; SaveSys.Save();
         deploying = true; ui.CloseModal(); StartCoroutine(DeployCo(th));
     }
+    float deployT0;
     IEnumerator DeployCo(ThemeDef th)
-    {
-        for (float t = 0; t < 1; t += Time.deltaTime * 3) { ui.Fade(t); yield return null; }
-        ui.Fade(1); Sfx.Play("whoosh", 0.7f); yield return null;
+    {   // v0.9.18: loading screen on the very next frame (was a 0.33 s fade into a frozen black screen), staged build with real progress
+        deployT0 = Time.realtimeSinceStartup;
+        LoadScreen.Show(th); Sfx.Play("whoosh", 0.7f); float ts0 = Time.timeScale; Time.timeScale = 0; state = St.Cine; player.enabled = false;
+        yield return null; float firstF = Time.realtimeSinceStartup - deployT0; yield return null;
         if (baseRoot) Destroy(baseRoot.gameObject); Interactable.All.RemoveAll(x => x == null);
         int seed = SaveSys.S.seedN * 7919 + 17;
         Pet.All.Clear();
         Pet.HearK = th.petHear; Pet.SightK = th.petSight; Goose.ResetRun();
-        level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); PlaceAudit.Fix(level.root); PlaceAudit.ContactShadows(level.root); LightQ.Apply(level.root); if (th.id == "farm") FarmGrade(); Art.PrewarmText(); HideSpot.Setup(level.root); if (!NoiseRing.I) NoiseRing.Make(); player.Unhide();
+        var sw = System.Diagnostics.Stopwatch.StartNew(); long m0 = System.GC.CollectionCount(0); string lp = " first=" + Mathf.RoundToInt(firstF * 1000);
+        Level lv = null; var gen = LevelGen.BuildHouseCo(seed, th, th.mult, SaveSys.S.luck, l => lv = l); int gi = 0; while (true)
+        {
+            bool more; try { more = gen.MoveNext(); } catch (System.Exception e) { Debug.LogException(e); more = false; }
+            if (!more) break;
+            yield return null;
+            if (autoshots && ++gi == 4 && !string.IsNullOrEmpty(shotDir))
+            {   // autotest: grab the loading screen mid-build (one per map)
+                yield return new WaitForEndOfFrame(); var lt = ScreenCapture.CaptureScreenshotAsTexture();
+                System.IO.Directory.CreateDirectory(shotDir); System.IO.File.WriteAllBytes(System.IO.Path.Combine(shotDir, "loading_" + th.id + ".png"), lt.EncodeToPNG()); Destroy(lt);
+            }
+        }
+        if (lv == null)
+        {   // v0.9.18: build failed -> never leave the game frozen behind the loading screen
+            Debug.LogError("[load] " + th.id + " build failed");
+            Time.timeScale = ts0 > 0 ? ts0 : 1; player.enabled = true; deploying = false; LoadScreen.Hide(); ui.Fade(0); EnterBase();
+            Toast("地圖沒蓋好，請再試一次", 3); yield break;
+        }
+        level = lv; lp += " gen=" + sw.ElapsedMilliseconds; LoadScreen.Set(0.86f, "整理場景…"); yield return null; sw.Restart();
+        EnvTown(th); lp += " env=" + sw.ElapsedMilliseconds; sw.Restart();
+        PlaceAudit.Fix(level.root); lp += " audit=" + sw.ElapsedMilliseconds; LoadScreen.Set(0.9f, "擺好影子…"); yield return null; sw.Restart();
+        PlaceAudit.ContactShadows(level.root); lp += " cshadow=" + sw.ElapsedMilliseconds; sw.Restart();
+        LightQ.Apply(level.root); if (th.id == "farm") FarmGrade(); lp += " light=" + sw.ElapsedMilliseconds; LoadScreen.Set(0.94f, "打光中…"); yield return null; sw.Restart();
+        Art.PrewarmText(); lp += " text=" + sw.ElapsedMilliseconds; sw.Restart();
+        HideSpot.Setup(level.root); lp += " hide=" + sw.ElapsedMilliseconds; sw.Restart(); if (!NoiseRing.I) NoiseRing.Make();
         bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; busN = 0; newFound = 0; wishes = Gameplay.MakeWishes(th, seed); warn60 = warn20 = false;
+        player.enabled = true; player.Unhide();
         player.Equip(SaveSys.S.shoes); player.hp = 100; player.alive = true; player.inRaid = true; player.caught = 0; player.cryT = 0; player.Teleport(level.spawn, level.spawnYaw);
-        state = St.Raid; deploying = false;
-        yield return null;
-        for (float t = 1; t > 0; t -= Time.deltaTime * 1.5f) { ui.Fade(t); yield return null; }
-        ui.Fade(0); Toast("<b>" + th.name + "</b>　" + th.twist, 4); Sfx.Play("sting", 0.5f);
+        lp += " gc0=" + (System.GC.CollectionCount(0) - m0); LoadScreen.Set(0.97f, "暖身一下…"); sw.Restart();
+        yield return null; lp += " frame1=" + sw.ElapsedMilliseconds; sw.Restart(); yield return null; lp += " frame2=" + sw.ElapsedMilliseconds;
+        Time.timeScale = ts0 > 0 ? ts0 : 1; state = St.Raid; deploying = false;
+        Debug.Log("[load] " + th.id + lp + " total=" + (Time.realtimeSinceStartup - deployT0).ToString("0.00") + "s");
+        LoadScreen.Hide(); ui.Fade(0);
+        while (LoadScreen.Up) yield return null;
+        Toast("<b>" + th.name + "</b>　" + th.twist, 4); Sfx.Play("sting", 0.5f);
         yield return new WaitForSeconds(4.2f); if (state == St.Raid) Toast("家人有願望！帶回畫面上方的東西有獎勵。越晚的公車，回家加碼越多喔！", 4.5f);
     }
 
@@ -532,9 +562,11 @@ public class Game : MonoBehaviour
             for (float w = 0; w < 2.5f && g.st != Goose.St.Honk; w += Time.deltaTime) yield return null;
             Check(g.st == Goose.St.Honk && Goose.HonksRun > h0, "goose honks after the alert");
             var rings = g.GetComponentsInChildren<LineRenderer>(); Check(rings.Any(r => r.enabled && r.name == "goose_ring"), "honk ring visible");
-            yield return new WaitForSeconds(0.4f); Pet.FreezeAll = 999;
+            bool dogCame = false;   // v0.9.18 deflake: sample the dog while unfrozen (it may spot the kid and chase; FreezeAll then resets it to Patrol)
+            for (float w = 0; w < 0.4f; w += Time.deltaTime) { if (dog && (dog.Curious || dog.st == Pet.St.Notice || dog.st == Pet.St.Chase)) dogCame = true; yield return null; }
+            if (dog && (dog.Curious || dog.st == Pet.St.Notice || dog.st == Pet.St.Chase)) dogCame = true; Pet.FreezeAll = 999;
             yield return CamShot(g.transform.position + out0 * 11f + Vector3.Cross(out0, Vector3.up) * 6f + Vector3.up * 8f, g.transform.position, "v0917_goose_honk", 0.05f);
-            Check(dog && dog.Curious, "guard dog comes to the honk");
+            Check(dogCame || dog && dog.Curious, "guard dog comes to the honk (" + (dog ? dog.st.ToString() : "none") + ")");
             Pet.FreezeAll = 0; for (float w = 0; w < 4f && g.st == Goose.St.Honk; w += Time.deltaTime) yield return null; Check(g.st == Goose.St.Cool, "honk lasts ~3 s then calms");
             Pet.FreezeAll = 999; if (dog) dog.ForceState(Pet.St.Patrol);
             for (float w = 0; w < 7f && g.st != Goose.St.Wander; w += Time.deltaTime) yield return null;

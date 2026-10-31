@@ -161,6 +161,20 @@ public static partial class LevelGen
         rooms.Add(new ARoom { name = "bath", x0 = -9, x1 = -3, z0 = 6, z1 = 12, wall = H("8fcab8"), trim = SkyD, floor = Tiles(Sky, White) });
         rooms.Add(new ARoom { name = "bedroom", x0 = -3, x1 = 3, z0 = 6, z1 = 12, wall = H("e7a49a"), trim = Coral, floor = (x, z) => (Mathf.FloorToInt(z / 0.55f) & 1) == 0 ? Lite(Wood, 0.22f) : Lite(Wood, 0.32f) });
         rooms.Add(new ARoom { name = "aunt", x0 = 3, x1 = 9, z0 = 6, z1 = 12, wall = H("efc77a"), trim = PinkD, floor = Tiles(Lav, Lite(Lav, 0.5f)) });
+        if (FarmHouse)
+        {   // v0.9.18 外婆家 interior: warm old-house materials instead of the grey garage tiles / cool pastel tiles (read as cold + industrial)
+            System.Func<float, float, Color> plank = (x, z) => Color.Lerp((Mathf.FloorToInt(z / 0.5f) & 1) == 0 ? H("a87650") : H("b8875c"), H("7a5236"), 0.3f * VN(new Vector3(x * 0.6f, 0, z * 0.6f), 5));
+            System.Func<float, float, Color> terra = Tiles(H("d9a07a"), H("e8b894"));
+            foreach (var r in rooms)
+                switch (r.name)
+                {
+                    case "garage": r.wall = H("e6cfa6"); r.trim = H("8a5a3c"); r.floor = plank; break;   // 柴房 / 工具間
+                    case "living": r.wall = H("f0d9b8"); r.trim = H("9a5a3a"); break;
+                    case "kitchen": r.wall = H("efe2c4"); r.trim = H("b8573e"); r.floor = terra; break;
+                    case "bath": r.wall = H("e9dcc0"); r.trim = H("6f9a7a"); r.floor = Tiles(H("cfd9c4"), H("efe8d4")); break;
+                    case "aunt": r.wall = H("f2d29a"); r.trim = H("a85a40"); r.floor = plank; break;
+                }
+        }
 
         // ---- openings
         ops.Add(new Op { ax = true, fc = 0, c = -6, w = 4.4f, y0 = 0, y1 = 2.5f });            // garage mouth
@@ -443,8 +457,18 @@ public static partial class LevelGen
         }
     }
 
-    static Level BuildAunt(int seed, ThemeDef th, float vmult, int luckLv)
+    static System.Diagnostics.Stopwatch PSW = new System.Diagnostics.Stopwatch(); static string PLog = "";
+    public static void PT(string n) { PLog += " " + n + "=" + PSW.ElapsedMilliseconds; PSW.Restart(); int i = System.Array.IndexOf(PN, n); if (i >= 0) { float c = 0; for (int k = 0; k <= i; k++) c += PW[k]; LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * c / PWT, PL[i]); } }
+    public static float LoadFrom = 0.03f, LoadTo = 0.85f;
+    // measured stage costs (ms, v0.9.18 desktop) -> honest progress weights
+    static readonly string[] PN = { "ground", "house", "townrows", "backrow", "shop", "park", "lamps", "planters", "props", "clearstreet", "backdrop", "loot+pets", "toonify" };
+    static readonly string[] PL = { "鋪馬路和草地…", "蓋阿姨家…", "蓋街上的房子…", "蓋後面那排房子…", "開糖果店…", "整理小公園…", "點亮路燈…", "種花盆…", "種行道樹…", "把路清乾淨…", "畫遠方的天空…", "藏好寶物、叫醒狗狗…", "上色中…" };
+    static readonly float[] PW = { 100, 2600, 2700, 2700, 300, 1400, 250, 450, 2400, 30, 150, 220, 10 }; static float PWT { get { float t = 0; foreach (var w in PW) t += w; return t; } }
+    static Level BuildAunt(int seed, ThemeDef th, float vmult, int luckLv) { Level r = null; var it = BuildAuntCo(seed, th, vmult, luckLv, l => r = l); while (it.MoveNext()) { } return r; }
+    /// v0.9.18 staged: yields between build stages so the loading screen keeps drawing and shows real progress
+    public static System.Collections.IEnumerator BuildAuntCo(int seed, ThemeDef th, float vmult, int luckLv, System.Action<Level> done)
     {
+        PSW.Restart(); PLog = "";
         rng = new System.Random(seed); luck = luckLv; GlobalSeed = seed; SoftProps.ResetSigns();
         L = new Level { theme = th, seed = seed, vmult = vmult, root = new GameObject("Level").transform };
         Openings.Clear(); NoRide.Clear(); TrimCrossBefore = TrimPieces = 0;
@@ -464,29 +488,36 @@ public static partial class LevelGen
         foreach (var (p, s) in new[] { (new Vector3(0, 2, 60), new Vector3(130, 6, 1)), (new Vector3(0, 2, -60), new Vector3(130, 6, 1)), (new Vector3(60, 2, 0), new Vector3(1, 6, 130)), (new Vector3(-60, 2, 0), new Vector3(1, 6, 130)) })
         { var b = new GameObject("bound"); b.transform.SetParent(root, false); b.transform.localPosition = p; b.AddComponent<BoxCollider>().size = s; }
 
+        PT("ground"); yield return null;
         // ---- the house + street
         var rooms = new List<ARoom>(); var lockedC = new List<LootContainer>(); var petSpots = new List<Vector3>();
         var house = AuntHouse(root, new Vector3(-6, 0, 9), rooms, lockedC, petSpots);
+        PT("house"); yield return null;
         int k = 0;
         TownRow(root, -58f, -15.4f, 9f, 0, deco, ref k);
         TownRow(root, 3.4f, 58f, 9f, 0, deco, ref k);
         TownRow(root, -58f, -28.8f, -9.5f, 180, deco, ref k);
         TownRow(root, -18.4f, -10.6f, -9.5f, 180, deco, ref k);
         TownRow(root, 22.6f, 58f, -9.5f, 180, deco, ref k);
+        PT("townrows"); yield return null;
         // back row silhouettes (seen from the high shots)
         for (float x = -54; x < 56; x += 9.5f) { SoftProps.TownHouse(root, new Vector3(x, 0, 24f), 0, 9f, 9, 3 + deco.Next(2), new[] { Lite(Lav, 0.2f), Lite(Sky, 0.2f), Lite(Mint, 0.2f), Lite(Butter, 0.2f) }[deco.Next(4)], White, new[] { Rose, LavD, SkyD }[deco.Next(3)], deco); }
+        PT("backrow"); yield return null;
         var shop = CandyShop(root, new Vector3(-23.6f, 0, -9.5f), 180);
         // no-ride zones (scooter must be parked outside; dismount to go in)
         { Bounds Z(Transform t, Vector3 a, Vector3 b) { var bb = new Bounds(t.TransformPoint(a), Vector3.zero); bb.Encapsulate(t.TransformPoint(b)); bb.Expand(new Vector3(0.6f, 10, 0.6f)); return bb; }
           NoRide.Add(Z(house, new Vector3(-9.3f, 0, -0.2f), new Vector3(9.3f, 4, 12.3f))); NoRide.Add(Z(shop, new Vector3(-4.7f, 0, -0.2f), new Vector3(4.7f, 4, 6.2f))); }
         Debug.Log("[trimcheck] bands crossing openings if unsplit: " + TrimCrossBefore + ", pieces now " + TrimPieces + (LegacyTrim ? " (LEGACY unsplit mode)" : ""));
+        PT("shop"); yield return null;
         Park(root, deco);
         foreach (var st in root.GetComponentsInChildren<Transform>()) if (st.name == "slide") { st.gameObject.AddComponent<SlideRide>(); break; }
+        PT("park"); yield return null;
         // rideable toy scooter, parked on the sidewalk near the spawn + one in front of the house
         Moto.Build(root, new Vector3(-47.5f, 0.12f, 5.3f), 90, Pink); Moto.Build(root, new Vector3(-13.5f, 0.12f, 5.2f), 90, Sky);
 
         // street furniture
         for (float x = -50; x <= 50; x += 16) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, 4.6f), 180);
+        PT("lamps"); yield return null;
         int plOld = 0, plNow = 0;
         for (float x = -46; x <= 46; x += 16) foreach (int sd in new[] { -1, 1 }) { if (sd < 0 && x > 25 && x < 43) continue; float px = x + (sd < 0 ? 4 : 0);
             bool lampHit(float q) { for (float lx = (sd > 0 ? -50 : -42); lx <= 50; lx += 16) if ((sd > 0 || lx < 27 || lx > 41) && Mathf.Abs(q - lx) < 1.3f) return true; return false; }
@@ -510,6 +541,7 @@ public static partial class LevelGen
             }
             Goods.Shrub(pg, new Vector3(-0.2f, 0.5f, 0), 0.26f, 0.42f, Leaf, null, (int)px * 3 + sd); Goods.Shrub(pg, new Vector3(0.18f, 0.5f, 0), 0.24f, 0.46f, MintD, k2c(px), (int)px * 5 + sd);
             }
+        PT("planters"); yield return null;
         Debug.Log("[placeaudit] sidewalk planters on lamp posts: before " + plOld + " after " + plNow);
         for (float x = -42; x <= 50; x += 16) if (x < 27 || x > 41) SoftProps.StreetLamp(root, new Vector3(x, 0.12f, -4.6f), 0);
         Color[] sc = { Mint, Pink, Butter, Sky, Lav, Coral };
@@ -523,12 +555,15 @@ public static partial class LevelGen
         SoftProps.Mailbox(root, new Vector3(30.5f, 0.12f, -5.6f), 0);
         foreach (float x in new[] { -44f, -36f, 18f, 30f }) SoftProps.FlowerPot(root, new Vector3(x, 0.12f, 5.6f), Coral, Rose, 1.1f);
         SCont(root, "box", new Vector3(-42f, 0.12f, 8.2f), 0, Wood, "回收箱");
+        PT("props"); yield return null;
         ClearStreet(root);
+        PT("clearstreet"); yield return null;
         // backdrop: hills + clouds
         for (int i = 0; i < 9; i++) { float x = -64 + i * 16; SoftProps.Hill(root, new Vector3(x, -4, 62 + (i % 2) * 4), new Vector3(30 + (i % 3) * 8, 26 + (i % 2) * 10, 18), i % 2 == 0 ? H("a8dc8f") : H("bfe6a2")); SoftProps.Hill(root, new Vector3(x + 8, -4, -64), new Vector3(30, 22 + (i % 3) * 6, 18), i % 2 == 0 ? H("b5e09a") : H("a3d48c")); }
         for (int i = 0; i < 5; i++) { SoftProps.Hill(root, new Vector3(68, -4, -48 + i * 24), new Vector3(18, 22, 30), H("b2df98")); SoftProps.Hill(root, new Vector3(-68, -4, -48 + i * 24), new Vector3(18, 22, 30), H("aedb93")); }
         for (int i = 0; i < 10; i++) SoftProps.Cloud(root, new Vector3(-55 + i * 12 + deco.Next(6), 24 + deco.Next(10), (i % 2 == 0 ? 48 : -48) + deco.Next(10)), 1.2f + (float)deco.NextDouble());
 
+        PT("backdrop"); yield return null;
         // ---- key (never inside the locked room), ground loot
         var keyable = L.containers.FindAll(c => !c.special && !lockedC.Contains(c));
         if (keyable.Count > 0) { var kc = Pick(keyable); kc.slots.Insert(rng.Next(kc.slots.Count + 1), new LootSlot { it = new Item { r = 2, ic = "🔑", name = "神秘鑰匙", v = 0, key = true } }); }
@@ -545,9 +580,11 @@ public static partial class LevelGen
         L.bus = Bus.Build(root, new Vector3(34, 0.12f, -5.4f), Vector3.left);
         SpawnPets(Mathf.Max(1, th.enemies), petSpots);
         L.spawn = new Vector3(-52, 0.2f, 1.5f); L.spawnYaw = 90;
+        PT("loot+pets"); yield return null;
         Art.Toonify(root.gameObject, 0.012f);
+        PT("toonify"); yield return null; Debug.Log("[loadprof] aunt" + PLog + SoftKit.PwLog());
         Debug.Log("[aunt] containers " + L.containers.Count + " locked " + lockedC.Count);
-        return L;
+        done(L); yield break;
     }
 
     public static int SignBlocked, OverlapShrunk;
