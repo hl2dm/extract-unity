@@ -110,7 +110,7 @@ public static class Data
     public string shoes = "s0", bag = "b0"; public int cans = 3, meats = 3;
     public int luck, stashLv, shelf, secure;
     public Quest quest; public bool hasQuest; public int questN; public Stats stats = new Stats();
-    public bool inRaid; public int seedN = 1;
+    public bool inRaid; public int seedN = 1; public List<string> found = new List<string>(); public int bestStars;
     public bool Owns(string id) => Data.GearOf(id[0] == 's' ? "shoes" : "bag", id).price == 0 || GearN(id) > 0;
     public int GearN(string id) { foreach (var g in gear) if (g.id == id) return g.n; return 0; }
     public void AddGear(string id, int d) { foreach (var g in gear) if (g.id == id) { g.n = Mathf.Max(0, g.n + d); return; } if (d > 0) gear.Add(new GearCount { id = id, n = d }); }
@@ -127,7 +127,7 @@ public static class SaveSys
     {
         try { var j = PlayerPrefs.GetString(Key, ""); S = string.IsNullOrEmpty(j) ? new SaveData() : JsonUtility.FromJson<SaveData>(j); } catch { S = new SaveData(); }
         if (S == null) S = new SaveData();
-        if (S.stash == null) S.stash = new List<Item>(); if (S.trophies == null) S.trophies = new List<Item>(); if (S.gear == null) S.gear = new List<GearCount>(); if (S.stats == null) S.stats = new Stats();
+        if (S.stash == null) S.stash = new List<Item>(); if (S.trophies == null) S.trophies = new List<Item>(); if (S.gear == null) S.gear = new List<GearCount>(); if (S.stats == null) S.stats = new Stats(); if (S.found == null) S.found = new List<string>();
     }
     public static void Save() { PlayerPrefs.SetString(Key, JsonUtility.ToJson(S)); PlayerPrefs.Save(); }
 }

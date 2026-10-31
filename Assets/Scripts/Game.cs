@@ -9,7 +9,7 @@ public class Game : MonoBehaviour
     static readonly Color Accent = Data.H("ffb347"), Good = Data.H("7dffa0"), Dim = new Color(1, 1, 1, 0.7f);
     public static Game I; public UI ui; public Player player; public Level level; Transform baseRoot;
     public enum St { Base, Raid, Cine, End } public St state;
-    public List<Item> bag = new List<Item>(); public int keys; public float runT; public int searched, caughtRun, luresRun; bool warn60, warn20;
+    public List<Item> bag = new List<Item>(); public int keys; public float runT; public int searched, caughtRun, luresRun, busN, newFound; public List<Wish> wishes; public Vector3Int lastPlay; bool warn60, warn20;
     LootContainer openC; Interactable focus; float tickT;
     public const float RaidTime = Data.RaidTime;
     public bool lightOnly; public bool autoshots, doorOnly, gallery, scaleOnly, polyOnly; string shotDir;
@@ -96,12 +96,13 @@ public class Game : MonoBehaviour
         int seed = SaveSys.S.seedN * 7919 + 17;
         Pet.All.Clear();
         level = LevelGen.BuildHouse(seed, th, th.mult, SaveSys.S.luck); EnvTown(th); PlaceAudit.Fix(level.root); PlaceAudit.ContactShadows(level.root); LightQ.Apply(level.root); Art.PrewarmText();
-        bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; warn60 = warn20 = false;
+        bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; busN = 0; newFound = 0; wishes = Gameplay.MakeWishes(th, seed); warn60 = warn20 = false;
         player.Equip(SaveSys.S.shoes); player.hp = 100; player.alive = true; player.inRaid = true; player.caught = 0; player.cryT = 0; player.Teleport(level.spawn, level.spawnYaw);
         state = St.Raid; deploying = false;
         yield return null;
         for (float t = 1; t > 0; t -= Time.deltaTime * 1.5f) { ui.Fade(t); yield return null; }
         ui.Fade(0); Toast("<b>" + th.name + "</b>　" + th.twist, 4); Sfx.Play("sting", 0.5f);
+        yield return new WaitForSeconds(4.2f); if (state == St.Raid) Toast("家人有願望！帶回畫面上方的東西有獎勵。越晚的公車，回家加碼越多喔！", 4.5f);
     }
 
     // ---------- update ----------
@@ -180,9 +181,9 @@ public class Game : MonoBehaviour
     string Objective()
     {
         var b = level != null ? level.bus : null; if (!b) return "";
-        if (b.CanBoard) return "公車到站了！快去公車站（E 上車）";
+        if (b.CanBoard) return "公車到站了！快去公車站（E 上車）・回家加碼 ×" + Gameplay.LateMul(busN).ToString("0.0");
         if (TimeLeft <= 63) return "最後一班公車要來了，快去公車站！";
-        return "找點心和寶貝・小心貓咪狗狗・下一班公車 " + Mathf.Max(0, Mathf.CeilToInt(b.NextIn)) + " 秒";
+        return "找點心和寶貝・下一班公車 " + Mathf.Max(0, Mathf.CeilToInt(b.NextIn)) + " 秒・<color=#8c4e32>現在上車加碼 ×" + Gameplay.LateMul(Mathf.Max(1, busN)).ToString("0.0") + "，下一班 ×" + Gameplay.LateMul(busN + 1).ToString("0.0") + "</color>";
     }
 
     // ---------- loot ----------
@@ -210,7 +211,11 @@ public class Game : MonoBehaviour
     {
         if (it.key) { keys++; Sfx.Play("confirmation_001", 0.7f); Toast("撿到 <color=#3a78c9>神秘鑰匙</color>！好像可以打開某扇門。"); return true; }
         if (bag.Count(b => !b.key) >= BagCap) { Toast("<color=#ff6a5a>袋子裝滿了！</color>（" + BagCap + " 格）回房間可以換大一點的袋子。"); Sfx.Play("error_004", 0.6f); if (ui.autoTake) ui.autoTake = false; return false; }
-        bag.Add(it); Sfx.Play("cash", 0.45f, 0.9f + it.r * 0.08f); return true;
+        bag.Add(it); Sfx.Play("cash", 0.45f, 0.9f + it.r * 0.08f);
+        var wsh = wishes != null ? wishes.FirstOrDefault(w => !w.got && w.name == it.name) : null; Gameplay.MatchWishes(wishes, bag);
+        if (Gameplay.Discover(it)) { newFound++; Toast("<color=#d97a2a>新發現！</color>「" + it.name + "」收進寶貝圖鑑（" + SaveSys.S.found.Count + "/" + Gameplay.BookTotal + "）", 2.4f); Sfx.Play("sting", 0.35f); }
+        else if (wsh != null) Toast("<color=#2f7a4a>這是" + wsh.who + "想要的「" + it.name + "」！</color>平安帶回家就有獎勵", 2.4f);
+        return true;
     }
     public void LootAll() { if (!openC) return; ui.autoTake = true; for (int i = 0; i < openC.slots.Count; i++) if (openC.slots[i].state == 2) { TakeSlot(i); if (!ui.autoTake) break; } }
     public void PaySkip()
@@ -230,7 +235,7 @@ public class Game : MonoBehaviour
     public void OnLureEaten() { luresRun++; SaveSys.S.stats.lures++; }
 
     // ---------- settle ----------
-    class Info { public long sold, bonus; public List<Item> kept = new List<Item>(); public bool quest; }
+    class Info { public long late, wish; public int wishN, stars; public long sold, bonus; public List<Item> kept = new List<Item>(); public bool quest; }
     long AddToStash(IEnumerable<Item> items) { var S = SaveSys.S; long sold = 0; foreach (var it in items) { if (it.key) continue; var o = new Item { r = it.r, ic = it.ic, name = it.name, v = it.v }; if (S.stash.Count < S.StashCap) S.stash.Add(o); else sold += Mathf.RoundToInt(it.v * 0.5f); } S.money += sold; return sold; }
     long BagValue => bag.Where(b => !b.key).Sum(b => (long)b.v);
     bool CheckQuest(bool ok)
@@ -242,7 +247,7 @@ public class Game : MonoBehaviour
     Info Settle(bool ok)
     {
         var S = SaveSys.S; var info = new Info();
-        if (ok) { long bv0 = BagValue; info.bonus = 100 + bv0 / 5 + (caughtRun == 0 ? 150 : 0); S.money += info.bonus; Debug.Log("[casual] run earnings bag=" + bv0 + " bonus=" + info.bonus + " items=" + bag.Count(i => !i.key)); info.sold = AddToStash(bag); S.stats.extracts++; S.stats.best = (int)Mathf.Max(S.stats.best, BagValue); S.stats.earned += BagValue; }
+        if (ok) { long bv0 = BagValue; info.bonus = 100 + bv0 / 5 + (caughtRun == 0 ? 150 : 0); info.wishN = Gameplay.MatchWishes(wishes, bag); info.wish = wishes == null ? 0 : wishes.Where(w => w.got).Sum(w => (long)w.reward); info.late = (long)(bv0 * (Gameplay.LateMul(busN) - 1f) * 0.5f); info.stars = Gameplay.Stars(true, bv0, info.wishN, caughtRun); S.bestStars = Mathf.Max(S.bestStars, info.stars); S.money += info.bonus + info.wish + info.late; lastPlay = new Vector3Int((int)info.late, info.wishN, info.stars); Debug.Log("[casual] gameplay bus=" + busN + " late=" + info.late + " wishes=" + info.wishN + "/" + (wishes == null ? 0 : wishes.Count) + " wish$=" + info.wish + " stars=" + info.stars + " book=" + S.found.Count + "/" + Gameplay.BookTotal + " new=" + newFound); Debug.Log("[casual] run earnings bag=" + bv0 + " bonus=" + info.bonus + " items=" + bag.Count(i => !i.key)); info.sold = AddToStash(bag); S.stats.extracts++; S.stats.best = (int)Mathf.Max(S.stats.best, BagValue); S.stats.earned += BagValue; }
         else { int N = (int)Data.Upg[3].eff[S.secure]; info.kept = bag.Where(i => !i.key).OrderByDescending(i => i.v).Take(N).ToList(); info.sold = AddToStash(info.kept); S.stats.deaths++; }
         info.quest = CheckQuest(ok); S.inRaid = false; S.seedN++; SaveSys.Save(); return info;
     }
@@ -295,9 +300,11 @@ public class Game : MonoBehaviour
         if (fs > 0) sb.Append("　·　傳說寶貝 " + fs + " 個！");
         if (info.sold > 0) sb.Append("\n<color=#c95a5a>玩具箱滿了，" + Data.Fmt(info.sold) + " 的東西半價賣掉了。</color>");
         sb.Append("\n<color=#3f9a6a>回家獎勵 +" + Data.Fmt(info.bonus) + (caughtRun == 0 ? "（沒被抓到，額外加碼！）" : "") + "</color>");
+        sb.Append("\n<color=#2f7a4a>家人願望 " + info.wishN + "/" + (wishes == null ? 0 : wishes.Count) + "　+" + Data.Fmt(info.wish) + "</color>　<color=#8c4e32>第 " + busN + " 班公車加碼 +" + Data.Fmt(info.late) + "</color>　<color=#5c3d4a>寶貝圖鑑 " + SaveSys.S.found.Count + "/" + Gameplay.BookTotal + (newFound > 0 ? "（新發現 " + newFound + "）" : "") + "</color>");
         if (info.quest) sb.Append("\n<color=#c98a1a>任務完成！去找熊熊領獎勵。</color>");
         sb.Append("\n<size=22>按空白鍵回房間</size>");
-        var t = UiKit.Txt(c, sb.ToString(), 26, new Color(1, 1, 1, 0.9f), TextAnchor.LowerCenter); t.rectTransform.Place(Vector2.zero, new Vector2(1, 0), new Vector2(0, 0), new Vector2(0, 140));
+        var t = UiKit.Txt(c, sb.ToString(), 26, new Color(1, 1, 1, 0.9f), TextAnchor.LowerCenter); t.rectTransform.Place(Vector2.zero, new Vector2(1, 0), new Vector2(0, 0), new Vector2(0, 180));
+        { var st = UiKit.Txt(c, "今天的評價　<size=54>" + Gameplay.StarText(info.stars) + "</size>", 28, KnitKit.Ink1, TextAnchor.MiddleRight, true); st.rectTransform.At(new Vector2(1, 1), new Vector2(-30, -16), new Vector2(460, 70)); st.name = "stars"; }
         Sfx.Play("cash", 0.8f);
     }
     public void BackToBase() { if (state != St.End) return; StartCoroutine(BackCo()); }
@@ -431,6 +438,7 @@ public class Game : MonoBehaviour
             var b = UiKit.Btn(c, "領獎勵", () => { var S2 = SaveSys.S; S2.money += S2.quest.reward; S2.questN++; S2.quest = Data.MakeQuest(S2.questN); SaveSys.Save(); Sfx.Play("cash"); Toast("熊熊：「好棒！這是給你的零用錢。」"); RebuildBaseKeepPos(); MenuQuest(); }, Data.H("3fae5a"), 28);
             ((RectTransform)b.transform).Place(Vector2.zero, new Vector2(0, 0), Vector2.zero, new Vector2(320, 70));
         }
+        UiKit.Txt(c, "寶貝圖鑑 " + S.found.Count + "/" + Gameplay.BookTotal + "　最佳評價 " + Gameplay.StarText(S.bestStars) + "\n<size=20>還沒找到：" + string.Join("、", Gameplay.AllBook().Where(n => !S.found.Contains(n)).Take(8)) + (Gameplay.AllBook().Count(n => !S.found.Contains(n)) > 8 ? "…" : "") + "</size>", 24, Color.white, TextAnchor.UpperLeft).rectTransform.Place(new Vector2(0, 0), Vector2.one, new Vector2(0, 40), new Vector2(0, -260));
         UiKit.Txt(c, "紀錄：出門 " + S.stats.raids + "　平安回家 " + S.stats.extracts + "　被叫回家 " + S.stats.deaths + "　被抓 " + S.stats.caught + "　最多一次 " + Data.Fmt(S.stats.best), 22, Dim, TextAnchor.LowerRight).rectTransform.Place(Vector2.zero, new Vector2(1, 0), new Vector2(340, 0), new Vector2(0, 60));
     }
     public Interactable Focus => focus;
@@ -630,6 +638,8 @@ public class Game : MonoBehaviour
             Pet.FreezeAll = 999; S0.cans = S0.meats = 5;
             Check(Pet.All.Count == th.enemies, tn + " pets " + Pet.All.Count + "/" + th.enemies);
             Check(level.bus != null, tn + " bus stop");
+            Check(wishes != null && wishes.Count == 3 && wishes.Select(w => w.name).Distinct().Count() == 3, tn + " 3 distinct family wishes");
+            Check(ui.wishT.text.Contains("家人的願望"), "wish line on HUD");
             yield return new WaitForSeconds(0.5f); yield return Shot("oneMap_" + tn + "_spawn_" + run);
             var bld = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "House").OrderByDescending(t => t.GetComponentsInChildren<LootContainer>().Length).FirstOrDefault();
             if (bld) { yield return CamShot(bld.position + new Vector3(9, 6.5f, -15), bld.position + new Vector3(0, 3, 3), "oneMap_" + tn + "_ext_" + run); }
@@ -729,6 +739,17 @@ public class Game : MonoBehaviour
                 runT = RaidTime - 0.5f; for (float w = 0; w < 3 && state != St.End; w += Time.deltaTime) yield return null;
                 Check(state == St.End && bag.Count >= 0, "mom timer ends run"); yield return new WaitForSeconds(1.5f); yield return Shot("oneMap_mom_fail"); continue;
             }
+            // v0.9.15 gameplay: satisfy two wishes, check book + late-bus bonus
+            if (run == 0)
+            {
+                int f0 = SaveSys.S.found.Count; var w0 = wishes[0]; bag.RemoveAll(i => i.name == w0.name || i.name == wishes[1].name); while (bag.Count > 0 && bag.Count > BagCap - 2) bag.RemoveAt(0); int bc = bag.Count;
+                for (int k = 0; k < 2; k++) { var dd = wishes[k]; var src = Data.Items.Concat(level.theme.items).First(d => d.name == dd.name); Pickup(new Item { r = src.r, ic = src.ic, name = src.name, v = src.v }); }
+                Check(bag.Count > bc, "wish items picked (bag cap " + BagCap + ")");
+                Check(Gameplay.MatchWishes(wishes, bag) >= 1, "wish ticked on pickup"); Check(ui.wishT.text.Contains("✔") || bag.Count == bc, "wish tick shown on HUD");
+                Check(SaveSys.S.found.Count >= f0, "treasure book records finds (" + SaveSys.S.found.Count + "/" + Gameplay.BookTotal + ")");
+                Check(busN >= 2, "several buses came this run (" + busN + ")"); Check(Objective().Contains("加碼"), "late-bus bonus shown in objective");
+                yield return new WaitForSeconds(0.6f); yield return Shot("oneMap_wishes");
+            }
             // bus stop + cinematic
             if (!level.bus.CanBoard) level.bus.ForceArrive();
             var bp = level.bus.Point; yield return Aim(bp + new Vector3(-2.2f, 0, -2.0f) + Vector3.up * 0.2f, bp); yield return new WaitForSeconds(0.8f);
@@ -739,6 +760,7 @@ public class Game : MonoBehaviour
             yield return new WaitForSeconds(3.5f); if (run == 0) yield return Shot("oneMap_bus_cine_b");
             for (float w = 0; w < 20 && state != St.End; w += Time.deltaTime) yield return null; yield return new WaitForSeconds(1f);
             Check(state == St.End, tn + " extract"); yield return Shot("oneMap_" + tn + "_results");
+            Check(lastPlay.z >= 1 && lastPlay.z <= 3, "run rating 1-3 stars (" + lastPlay.z + ")"); Check(lastPlay.x > 0, "late-bus bonus paid (" + lastPlay.x + ")"); Check(lastPlay.y >= 1, "wish reward paid (" + lastPlay.y + ")");
         }
         Pet.FreezeAll = 0; BackToBase(); yield return new WaitForSeconds(2f);
         OpenStation("stash"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_stash"); yield return TextStability("inventory", 60, true); CloseModal();

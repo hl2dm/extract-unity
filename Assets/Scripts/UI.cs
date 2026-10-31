@@ -21,6 +21,7 @@ public class UI : MonoBehaviour
         ammoPatch = KnitKit.Patch(hud, KnitKit.PatchA, "ammoPatch"); ammoPatch.rectTransform.At(new Vector2(1, 0), new Vector2(-22, 20), new Vector2(640, 122));
         bagPatch = KnitKit.Patch(hud, KnitKit.PatchA, "bagPatch"); bagPatch.rectTransform.At(new Vector2(0, 1), new Vector2(18, -14), new Vector2(520, 72));
         objPatch = KnitKit.Patch(hud, KnitKit.PatchB, "objPatch"); objPatch.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -86), new Vector2(1040, 58)); objPatch.rectTransform.pivot = new Vector2(0.5f, 1); objPatch.rectTransform.anchoredPosition = new Vector2(0, -86);
+        wishPatch = KnitKit.Patch(hud, KnitKit.PatchA, "wishPatch"); wishPatch.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1040, 46)); wishPatch.rectTransform.pivot = new Vector2(0.5f, 1); wishPatch.rectTransform.anchoredPosition = new Vector2(0, -150);
         moneyPatch = KnitKit.Patch(root, KnitKit.PatchA, "moneyPatch"); moneyPatch.rectTransform.At(new Vector2(1, 1), new Vector2(-50, -14), new Vector2(420, 64));
         hintPatch = UiKit.Img(root, KnitKit.HintBg, Art.Rounded, "hintPill"); hintPatch.color = KnitKit.HintBg; hintPatch.rectTransform.At(new Vector2(0.5f, 0), new Vector2(0, 10), new Vector2(1180, 42)); hintPatch.rectTransform.pivot = new Vector2(0.5f, 0); hintPatch.rectTransform.anchoredPosition = new Vector2(0, 10);
         var hpBg = UiKit.Img(hud, KnitKit.SlotEmpty, Art.Rounded, "hpbg"); hpBg.color = KnitKit.SlotEmpty; hpBg.rectTransform.At(new Vector2(0, 0), new Vector2(40, 40), new Vector2(360, 26));
@@ -31,6 +32,7 @@ public class UI : MonoBehaviour
         { var tb = UiKit.Img(hud, KnitKit.TimerBg, Art.Rounded, "timerBg"); tb.color = KnitKit.TimerBg; KnitKit.AsFelt(tb); var st = KnitKit.Line(tb.transform, new Color(0.95f, 0.91f, 0.89f, 0.55f), "stitch"); st.rectTransform.Fill(5); timerBg = tb; { var sd = tb.gameObject.AddComponent<Shadow>(); sd.effectColor = new Color(0.08f, 0.05f, 0.12f, 0.5f); sd.effectDistance = new Vector2(0, -4); } tb.raycastTarget = false; tb.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -14), new Vector2(380, 62)); tb.rectTransform.pivot = new Vector2(0.5f, 1); }
         timerT = Chip(UiKit.Txt(hud, "4:00", 46, KnitKit.TimerInk, TextAnchor.UpperCenter, true), KnitKit.TimerBg, KnitKit.TimerInk); timerT.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -18), new Vector2(300, 60));
         objT = Chip(UiKit.Txt(hud, "", 24, KnitKit.Ink1, TextAnchor.MiddleCenter), KnitKit.PatchB); objT.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -86), new Vector2(1000, 58)); objT.rectTransform.pivot = new Vector2(0.5f, 1); objT.rectTransform.anchoredPosition = new Vector2(0, -86);
+        wishT = Chip(UiKit.Txt(hud, "", 21, KnitKit.Ink1, TextAnchor.MiddleCenter), KnitKit.PatchA); wishT.rectTransform.At(new Vector2(0.5f, 1), new Vector2(0, -150), new Vector2(1000, 46)); wishT.rectTransform.pivot = new Vector2(0.5f, 1); wishT.rectTransform.anchoredPosition = new Vector2(0, -150);
         bagT = Chip(UiKit.Txt(hud, "", 24, KnitKit.Ink1, TextAnchor.MiddleLeft, true), KnitKit.PatchA); bagT.rectTransform.At(new Vector2(0, 1), new Vector2(96, -14), new Vector2(480, 72)); HudIcon(hud, "hud_bag", new Vector2(0, 1), new Vector2(42, -26), 48);
         moneyT = Chip(UiKit.Txt(root, "", 28, KnitKit.Money, TextAnchor.MiddleCenter, true), KnitKit.PatchA); moneyT.rectTransform.At(new Vector2(1, 1), new Vector2(-50, -14), new Vector2(420, 64));
         promptBox = UiKit.Img(root, new Color(0.2f, 0.24f, 0.42f, 0.85f), Art.Rounded, "promptBox"); promptBox.rectTransform.At(new Vector2(0.5f, 0.5f), new Vector2(0, -96), new Vector2(400, 54)); promptBox.rectTransform.pivot = new Vector2(0.5f, 0.5f); promptBox.rectTransform.anchoredPosition = new Vector2(0, -96);
@@ -59,7 +61,7 @@ public class UI : MonoBehaviour
         fade = UiKit.Img(full, Color.black, null, "fade").rectTransform; fade.Fill(); fade.GetComponent<Image>().color = new Color(0, 0, 0, 0);
     }
 
-    Image moodPatch, ammoPatch, bagPatch, objPatch, moneyPatch, hintPatch;
+    public Text wishT; Image wishPatch, moodPatch, ammoPatch, bagPatch, objPatch, moneyPatch, hintPatch;
     static Text Chip(Text t, Color bg, Color? fg = null) { if (Art.Casual) { var c = fg ?? t.color; ((InkText)t).Bg = bg; t.color = c; } return t; }
     static void HudIcon(Transform p, string art, Vector2 anchor, Vector2 pos, float sz)
     {
@@ -91,6 +93,7 @@ public class UI : MonoBehaviour
         ammoT.text = (p.sel == 0 ? "<color=#8c4e32>▶罐頭 ×" : "<color=#5c3d4a>罐頭 ×") + SaveSys.S.cans + "</color>　" + (p.sel == 1 ? "<color=#8c4e32>▶肉肉 ×" : "<color=#5c3d4a>肉肉 ×") + SaveSys.S.meats + "</color>" + (TouchIn.Active ? "" : "<size=20>\n[1][2] 切換　左鍵 丟出去</size>");
         int m = Mathf.Max(0, Mathf.CeilToInt(timeLeft)); timerT.text = "<size=24>媽媽叫你回家　</size>" + (m / 60) + ":" + (m % 60).ToString("00"); if (!Calm.On) timerT.color = timeLeft <= 60 ? (Mathf.Repeat(Time.time, 1) < 0.5f ? Bad : Color.white) : Color.white;
         else { float u = Mathf.Clamp01((75f - timeLeft) / 30f); u = Mathf.Round(u * 8) / 8f; var tc = Color.Lerp(KnitKit.TimerInk, KnitKit.Rar[4], u); if (timerT.color != tc) timerT.color = tc; }   // v0.8.2: stepped warm-up, no sine, no blinking
+        { var wl = Gameplay.WishLine(Game.I.wishes); wishT.text = wl; Show(wishPatch, wl.Length > 0); }
         objT.text = obj; long v = 0; int n = 0; foreach (var it in bag) if (!it.key) { v += it.v; n++; }
         bagT.text = "袋子 " + n + "/" + cap + "　<color=#8c4e32>" + Data.Fmt(v) + "</color>" + (Game.I.keys > 0 ? "　<size=20>鑰匙 ×" + Game.I.keys + "</size>" : "");
         hitT -= Time.deltaTime; hitM.enabled = hitT > 0; dmgT -= Time.deltaTime; dmgDir.enabled = false;

@@ -88,7 +88,7 @@ public class Bus : Interactable
         switch (state)
         {
             case BS.Away:
-                if (Game.I.runT >= nextArrive || tl <= 63f) { state = BS.Arriving; tState = 0; guaranteed = tl <= 63f; bus.gameObject.SetActive(true); bus.position = BusStopPos - dir * 60; Sfx.At("honk", BusStopPos, 1f, 6, 80); Game.I.Toast("叭叭！公車來了，快去公車站！"); }
+                if (Game.I.runT >= nextArrive || tl <= 63f) { state = BS.Arriving; tState = 0; Game.I.busN++; guaranteed = tl <= 63f; bus.gameObject.SetActive(true); bus.position = BusStopPos - dir * 60; Sfx.At("honk", BusStopPos, 1f, 6, 80); Game.I.Toast("叭叭！公車來了，快去公車站！"); }
                 break;
             case BS.Arriving:
                 { float k = Mathf.Clamp01(tState / 4.5f); float e = 1 - (1 - k) * (1 - k); bus.position = Vector3.Lerp(BusStopPos - dir * 60, BusStopPos, e); Spin(60 * (1 - e) + 2);
