@@ -618,20 +618,20 @@ public static partial class LevelGen
             var sb = RB(s);
             foreach (float ex in new[] { -3f, 0f, 3f })
             {
-                var eye = new Vector3(p0.x + ex, p0.y, 0);
+              foreach (var eye in new[] { new Vector3(p0.x + ex, p0.y, 0), new Vector3(p0.x + ex, 1.6f, 0), new Vector3(p0.x + ex, 1.6f, -Mathf.Sign(p0.z) * 2.5f) })   // v0.9.20: also the player's eye line (lamp heads covered signs from 1.6 m)
                 foreach (var tp in new[] { sb.center, new Vector3(sb.min.x, sb.center.y, sb.center.z), new Vector3(sb.max.x, sb.center.y, sb.center.z), new Vector3(sb.center.x, sb.min.y, sb.center.z), new Vector3(sb.center.x, sb.max.y, sb.center.z) })
                 { var d = tp - eye; rays.Add((new Ray(eye, d.normalized), d.magnitude - 0.3f)); }
             }
         }
         bool Blocks(Bounds b) { foreach (var (r, d) in rays) if (b.IntersectRay(r, out float h) && h < d) return true; return false; }
         var placed = new List<Bounds>(); int left = 0; OverlapProps = props.Count; SignBlocked = 0;
-        bool HitP(Transform p, Bounds b) => Hit(b) || (p.name == "sk_tree" && Blocks(b));
+        bool HitP(Transform p, Bounds b) => Hit(b) || ((p.name == "sk_tree" || p.name == "sk_lamp") && Blocks(b));
         bool Hit(Bounds b) { foreach (var o in bld) if (o.Intersects(b)) return true; foreach (var o in placed) if (o.Intersects(b)) return true; return false; }
         foreach (var p in props)
         {
             var b0 = Shrink(RB(p), 0.08f);
             if (!HitP(p, b0)) { placed.Add(b0); continue; }
-            if (!fix && p.name == "sk_tree" && !Hit(b0)) { SignBlocked++; Debug.Log("[overlap] tree blocks sign view @" + p.position); continue; }
+            if (!fix && (p.name == "sk_tree" || p.name == "sk_lamp") && !Hit(b0)) { SignBlocked++; Debug.Log("[overlap] " + p.name + " blocks sign view @" + p.position); continue; }
             if (!fix) { left++; string w = ""; foreach (var o in bld) if (o.Intersects(b0)) w += " B" + o.ToString("F1"); foreach (var o in placed) if (o.Intersects(b0)) w += " P" + o.ToString("F1"); Debug.Log("[overlap] " + p.name + " " + b0.ToString("F1") + " hits" + w); continue; }
             bool ok = false; float zs = p.position.z > 0 ? -1 : 1;
             for (int ring = 1; ring <= 16 && !ok; ring++)

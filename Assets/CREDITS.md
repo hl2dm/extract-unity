@@ -14,3 +14,6 @@
 - Poly Haven (CC0): exterior_aircon_unit, ammo_box, metal_jerrycan_green, old_military_crate; textures: carpet, wood desk, corrugated metal, container (polyhaven.com, CC0).
 - Twemoji (CC-BY 4.0, © Twitter/X): 📻 u1f4fb, 🧨 u1f9e8.
 - Cash register, desks, server racks, drinks coolers, partitions and pallet racks are procedural (no CC0 register model available).
+
+## v0.9.20
+- Hideout/menu music `Resources/Audio/bgm_hideout.ogg` — AI-generated (YuE) continuation, seed 20261101; only the generated part after 15.3 s of the extension is used (loop 18.30–103.63 s of the extended render, 128 beats @ ~90 BPM, 0.6 s equal-power seam, -18 LUFS). The 0–15 s prompt audio is not included anywhere in this project.

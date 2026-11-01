@@ -18,6 +18,7 @@ public static class PlaceAudit
     public static int BeforeProp, BeforeWall, BeforeDoor, BeforeSign, Hidden, Fixed;
     public static int PropHits, WallHits, DoorHits, SignHits;
 
+    public static void Forget(Transform root) => Facade.RemoveAll(f => f.root == root);   // v0.9.20: throw-away LOD build
     /// called by SoftProps.Merge before a facade piece is folded into a merged mesh
     public static void Record(Transform root, Transform c)
     {

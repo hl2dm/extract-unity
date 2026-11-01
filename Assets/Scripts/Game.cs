@@ -145,7 +145,7 @@ public class Game : MonoBehaviour
         PlaceAudit.ContactShadows(level.root); lp += " cshadow=" + sw.ElapsedMilliseconds; sw.Restart();
         LightQ.Apply(level.root); if (th.id == "farm") FarmGrade(); lp += " light=" + sw.ElapsedMilliseconds; LoadScreen.Set(0.94f, "打光中…"); yield return null; sw.Restart();
         Art.PrewarmText(); lp += " text=" + sw.ElapsedMilliseconds; sw.Restart();
-        HideSpot.Setup(level.root); lp += " hide=" + sw.ElapsedMilliseconds; sw.Restart(); if (!NoiseRing.I) NoiseRing.Make();
+        HideSpot.Setup(level.root); lp += " hide=" + sw.ElapsedMilliseconds; sw.Restart(); MeshMerge.Run(level.root); lp += " merge=" + sw.ElapsedMilliseconds; sw.Restart(); if (!NoiseRing.I) NoiseRing.Make();
         bag.Clear(); keys = 0; runT = 0; searched = 0; caughtRun = 0; luresRun = 0; busN = 0; newFound = 0; wishes = Gameplay.MakeWishes(th, seed); warn60 = warn20 = false;
         player.enabled = true; player.Unhide();
         player.Equip(SaveSys.S.shoes); player.hp = 100; player.alive = true; player.inRaid = true; player.caught = 0; player.cryT = 0; player.Teleport(level.spawn, level.spawnYaw);
@@ -828,7 +828,7 @@ public class Game : MonoBehaviour
             Check(level.bus != null, tn + " bus stop");
             Check(wishes != null && wishes.Count == 3 && wishes.Select(w => w.name).Distinct().Count() == 3, tn + " 3 distinct family wishes");
             Check(ui.wishT.text.Contains("家人的願望"), "wish line on HUD");
-            yield return new WaitForSeconds(0.5f); yield return Shot("oneMap_" + tn + "_spawn_" + run);
+            yield return new WaitForSeconds(0.5f); yield return Shot("oneMap_" + tn + "_spawn_" + run); if (run != 1) { yield return PerfWalk(tn); yield return SignSurvey(tn); }
             var bld = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "House").OrderByDescending(t => t.GetComponentsInChildren<LootContainer>().Length).FirstOrDefault();
             if (bld) { yield return CamShot(bld.position + new Vector3(9, 6.5f, -15), bld.position + new Vector3(0, 3, 3), "oneMap_" + tn + "_ext_" + run); }
             if (run == 0 && bld)
@@ -882,7 +882,7 @@ public class Game : MonoBehaviour
                 if (run == 0) yield return Shot("oneMap_container_prompt");
                 if (run == 0) yield return TextStability("hud_prompt", 60, false);
                 OpenLoot(c); yield return new WaitForSeconds(0.5f); if (run == 0) yield return Shot("oneMap_loot_spin");
-                if (run == 0) yield return TextStability("loot_searching", 45, false); if (run == 0) Check(Bgm.I && Bgm.I.Playing && Mathf.Abs(Bgm.I.Volume - Bgm.Default) < 0.01f, "BGM playing (vol " + (Bgm.I ? Bgm.I.Volume : -1) + ", searching duck " + ui.LootSearching + ")");
+                if (run == 0) yield return TextStability("loot_searching", 45, false); if (run == 0) Check(Bgm.I && Bgm.I.Playing && Mathf.Abs(Bgm.I.Volume - Bgm.Default) < 0.01f, "BGM playing (vol " + (Bgm.I ? Bgm.I.Volume : -1) + ", searching duck " + ui.LootSearching + ")"); if (run == 0) Check(Bgm.I && Bgm.I.HideoutMix < 0.05f, "raid: hideout song faded out (mix " + (Bgm.I ? Bgm.I.HideoutMix : -1) + ")");
                 for (float w = 0; w < 15 && c.slots.Any(s => s.state < 2); w += Time.deltaTime) yield return null; yield return new WaitForSeconds(0.3f);
                 UIContrast.PassNow(); Debug.Log("[contrast-ui] checked " + UIContrast.Checked + " fixed " + UIContrast.Fixed + " fails " + UIContrast.Fails); Check(UIContrast.Fails == 0, "UI text contrast >= 4.5 (fails " + UIContrast.Fails + ")");
                 if (run == 0) yield return TextStability("loot_done", 90, true);
@@ -1335,5 +1335,61 @@ public class Game : MonoBehaviour
         yield return new WaitForEndOfFrame();
         var path = System.IO.Path.Combine(shotDir, name + ".png"); System.IO.Directory.CreateDirectory(shotDir);
         ScreenCapture.CaptureScreenshot(path); Debug.Log("[autoshot] " + path); yield return null; yield return null;
+    }
+
+    // v0.9.20: play-feel frame-time probe (vsync as shipped) + sign occlusion survey
+    IEnumerator PerfWalk(string tn)
+    {
+        var pp = player; var p0 = pp.transform.position; float y0 = pp.yaw;
+        foreach (var ring in new[] { true, false })
+        {
+            if (NoiseRing.I) NoiseRing.I.gameObject.SetActive(ring);
+            var l = new List<float>(); int gc0 = System.GC.CollectionCount(0); long alloc = 0, m0 = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong();
+            float t0 = Time.realtimeSinceStartup; yield return null;
+            while (Time.realtimeSinceStartup - t0 < 12f)
+            {
+                float t = Time.realtimeSinceStartup - t0; pp.autoGait = ((int)(t / 4f)) % 3; float a = t * 0.9f; pp.autoMove = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a)); pp.yaw = a * Mathf.Rad2Deg;
+                yield return null; l.Add(Time.unscaledDeltaTime * 1000f);
+                long m1 = UnityEngine.Profiling.Profiler.GetMonoUsedSizeLong(); if (m1 > m0) alloc += m1 - m0; m0 = m1;
+            }
+            pp.autoGait = -1; pp.autoMove = Vector3.zero;
+            var raw = string.Join(",", l.Select(x => x.ToString("0.0")));
+            var srt = l.OrderByDescending(x => x).ToList(); float avg = l.Average();
+            float low1 = srt.Take(Mathf.Max(1, l.Count / 100)).Average(), low01 = srt.Take(Mathf.Max(1, l.Count / 1000)).Average();
+            Debug.Log("[perf2] " + tn + " ring " + ring + " frames " + l.Count + " avg_ms " + avg.ToString("0.00") + " low1_ms " + low1.ToString("0.0") + " low01_ms " + low01.ToString("0.0") + " max_ms " + srt[0].ToString("0.0") + " spikes33 " + l.Count(x => x > 33f) + " spikes20 " + l.Count(x => x > 20f) + " gc0 " + (System.GC.CollectionCount(0) - gc0) + " allocKB_per_frame " + (alloc / 1024f / l.Count).ToString("0.00"));
+            Debug.Log("[perfraw] " + tn + " ring " + ring + " " + raw);
+            pp.Teleport(p0, y0); yield return new WaitForSeconds(0.3f);
+        }
+        if (NoiseRing.I) NoiseRing.I.gameObject.SetActive(true);
+        var lights = FindObjectsByType<Light>(FindObjectsSortMode.None).Where(x => x.isActiveAndEnabled).ToList();
+        { var rs = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Where(r => r.enabled && !r.forceRenderingOff && r.gameObject.activeInHierarchy).ToList();
+          Debug.Log("[perf2] " + tn + " meshrenderers " + rs.Count + " shadowcasters " + rs.Count(r => r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) + " tris " + rs.Sum(r => { var f = r.GetComponent<MeshFilter>(); return f && f.sharedMesh ? (long)f.sharedMesh.triangles.Length / 3 : 0; }) + " uniqueMeshes " + rs.Select(r => r.GetComponent<MeshFilter>()?.sharedMesh).Distinct().Count() + " mats " + rs.SelectMany(r => r.sharedMaterials).Distinct().Count());
+          Debug.Log("[perf2] " + tn + " topnames " + string.Join(" ", rs.GroupBy(r => r.name).OrderByDescending(g => g.Count()).Take(14).Select(g => g.Key + "=" + g.Count() + "/sh" + g.Count(r => r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off))));
+          Debug.Log("[perf2] " + tn + " topbehaviours " + string.Join(" ", FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Where(b => b.isActiveAndEnabled).GroupBy(b => b.GetType().Name).OrderByDescending(g => g.Count()).Take(10).Select(g => g.Key + "=" + g.Count())));
+          var urp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;
+          if (urp) Debug.Log("[perf2] urp shadowDist " + urp.shadowDistance + " cascades " + urp.shadowCascadeCount + " msaa " + urp.msaaSampleCount + " srpBatcher " + urp.useSRPBatcher + " renderScale " + urp.renderScale + " addLights " + urp.maxAdditionalLightsCount + " hdr " + urp.supportsHDR); }
+        Debug.Log("[perf2] " + tn + " lights " + lights.Count + " shadowed " + lights.Count(x => x.shadows != LightShadows.None) + " renderers " + FindObjectsByType<Renderer>(FindObjectsSortMode.None).Count(r => r.enabled && r.gameObject.activeInHierarchy) + " behaviours " + FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Length + " vsync " + QualitySettings.vSyncCount + " tfr " + Application.targetFrameRate + " q " + QualitySettings.names[QualitySettings.GetQualityLevel()]);
+    }
+    IEnumerator SignSurvey(string tn)
+    {
+        var signs = level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_text3d" && t.gameObject.activeInHierarchy).ToList();
+        var rends = level.root.GetComponentsInChildren<Renderer>().Where(r => r.enabled && r.gameObject.activeInHierarchy).ToList();
+        int k = 0;
+        foreach (var sg in signs)
+        {
+            var srs = sg.GetComponentsInChildren<Renderer>().Where(r => r.enabled).ToList(); if (srs.Count == 0) continue;
+            var b = srs[0].bounds; foreach (var r in srs) b.Encapsulate(r.bounds);
+            var name = sg.GetComponentsInChildren<TextMesh>(true).Select(x => x.text).FirstOrDefault() ?? "?";
+            var eye = b.center - sg.forward * 8f; eye.y = Mathf.Max(sg.position.y - 2.5f, level.root.position.y + 1.6f);
+            var blk = new List<string>();
+            foreach (var off in new[] { Vector3.zero, sg.right * 2f, -sg.right * 2f })
+            {
+                var e = eye + off; var d = b.center - e; float len = d.magnitude; var ray = new Ray(e, d / len);
+                foreach (var r in rends) { if (r.transform.IsChildOf(sg) || (sg.parent && r.transform.IsChildOf(sg.parent) && r.bounds.size.magnitude < 8f && Vector3.Distance(r.bounds.center, b.center) < 1.6f)) continue; if (r.bounds.IntersectRay(ray, out float dist) && dist < len - 0.6f && dist > 0.3f && !r.bounds.Contains(e)) blk.Add(r.name + "@" + dist.ToString("0.0")); }
+            }
+            Debug.Log("[sign] " + tn + " #" + k + " '" + name + "' at " + sg.position + " fwd " + sg.forward + " blockers " + string.Join(" ", blk.Distinct().Take(8)));
+            if (k < 16) yield return CamShot(eye, b.center, "v0920_sign_" + tn + "_" + k, 0.15f);
+            k++;
+        }
     }
 }

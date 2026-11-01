@@ -376,6 +376,7 @@ public static class GeoQ
         }
     }
     static int tierF = -1, tierV = -1;
+    public static void Invalidate() { tierF = -1; tierV = -1; }   // v0.9.20: after a temporary Force (tree LOD build) the per-frame cache must not keep the forced tier
     static int Calc()
     {
         {

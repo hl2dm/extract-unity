@@ -14,4 +14,6 @@ All town, house, furniture, bus and bedroom geometry is procedural (SoftKit/Soft
 - Audio/*.ogg: Kenney (Impact Sounds, Interface Sounds), CC0. Audio/*.wav: procedurally synthesised.
 - ItemPics/: item illustrations generated for this project (not third-party stock).
 - Unused realistic assets (Poly Haven models, soldier, guns, Quaternius UAL animations, helicopter, car) were removed from this repository and from the casual build.
-- Audio/bgm_tea.ogg: background music "Sunday Tea in the Orchard", generated with Google Gemini.
+
+## v0.9.20
+- Hideout/menu music `Resources/Audio/bgm_hideout.ogg` — AI-generated (YuE) continuation, seed 20261101; only the generated part after 15.3 s of the extension is used (loop 18.30–103.63 s of the extended render, 128 beats @ ~90 BPM, 0.6 s equal-power seam, -18 LUFS). The 0–15 s prompt audio is not included anywhere in this project.

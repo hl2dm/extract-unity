@@ -11,7 +11,25 @@ public static class SoftProps
     static Color Lt(Color c, float k = 0.35f) => Color.Lerp(c, Color.white, k);
 
     // ---------------- nature
+    /// v0.9.20 stutter fix: the aunt street's 25 trees were ~97M triangles (4M each at desktop-high mesh density) and every
+    /// one is drawn into 4 shadow cascades. Same tree, same seed, rebuilt once at base density as a distance LOD: full
+    /// density within ~30 m (where the leaves can actually be read), base density beyond. Shape/colours/layout identical.
+    public static bool TreeLod = true;
     public static Transform Tree(Transform p, Vector3 pos, int kind, float s = 1f, Color? crown = null)
+    {
+        var g = TreeCore(p, pos, kind, s, crown);
+        if (!TreeLod || GeoQ.Tier < 2) return g;
+        int of = GeoQ.Force; Transform lo; GeoQ.Force = 0; GeoQ.Invalidate(); try { lo = TreeCore(p, pos, kind, s, crown); } finally { GeoQ.Force = of; GeoQ.Invalidate(); }
+        PlaceAudit.Forget(lo);
+        var hi = new List<Renderer>(); foreach (var r in g.GetComponentsInChildren<MeshRenderer>()) hi.Add(r);
+        var low = new List<Renderer>();
+        foreach (var r in lo.GetComponentsInChildren<MeshRenderer>()) { var t = r.transform; t.SetParent(g, false); t.name = "treelod"; low.Add(r); }
+        lo.SetParent(null); Object.Destroy(lo.gameObject);
+        var lg = g.gameObject.AddComponent<LODGroup>();
+        lg.SetLODs(new[] { new LOD(0.22f, hi.ToArray()), new LOD(0.0f, low.ToArray()) }); lg.fadeMode = LODFadeMode.None; lg.RecalculateBounds();
+        return g;
+    }
+    static Transform TreeCore(Transform p, Vector3 pos, int kind, float s, Color? crown)
     {
         SoftKit.PwTree.Start(); try {
         var g = Group(p, "sk_tree", pos); var cr = crown ?? (kind == 1 ? Mint : Leaf);

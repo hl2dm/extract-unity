@@ -31,9 +31,9 @@ public static class ScaleAudit
         any = false; var b = new Bounds();
         foreach (var r in g.GetComponentsInChildren<Renderer>())
         {
-            if (!r.enabled || r is ParticleSystemRenderer || r.gameObject.layer == Art.VMLayer) continue;
+            if (!r.enabled || r is ParticleSystemRenderer || r.name == "merged" || r.gameObject.layer == Art.VMLayer) continue;
             var mf = r.GetComponent<MeshFilter>(); Bounds mb; Transform t = r.transform;
-            if (mf && mf.sharedMesh) mb = mf.sharedMesh.bounds; else if (r is SkinnedMeshRenderer s && s.sharedMesh) mb = s.sharedMesh.bounds; else continue;
+            if (mf && mf.sharedMesh) mb = mf.sharedMesh.bounds; else if (mf && r.forceRenderingOff) mb = r.localBounds; /* v0.9.20: geometry moved into merged_static */ else if (r is SkinnedMeshRenderer s && s.sharedMesh) mb = s.sharedMesh.bounds; else continue;
             if (mb.size.sqrMagnitude < 1e-8f || (mf && mf.sharedMesh && mf.sharedMesh.vertexCount == 0)) continue;   // v0.9.5: empty text meshes (pet "!" mark) are not geometry
             for (int i = 0; i < 8; i++)
             {
