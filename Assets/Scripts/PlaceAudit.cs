@@ -161,8 +161,122 @@ public static class PlaceAudit
         Hidden = Fixed = 0; Run(root, false); pp0 = PropHits; pw0 = WallHits; pd0 = DoorHits; int s0 = SignHits;
         Run(root, true); BeforeSign = s0;
         int left = Run(root, false);
+        DoorSunkBefore = DoorGround(root, false); DoorGround(root, true); DoorSunkAfter = DoorGround(root, false);
+        Debug.Log("[dooraudit] doors sunk into step/plinth/ground before " + DoorSunkBefore + " after " + DoorSunkAfter + " (lifted " + DoorLifted + ", max " + DoorMaxLift.ToString("F2") + " m)");
+        MailSpots.Clear(); SmallClipBefore = SmallClipAfter = SmallClip(root, true); Debug.Log("[smallclip] small-prop interpenetrations " + SmallClipAfter);
+        CurtainOffBefore = CurtainAlign(root, false); CurtainAlign(root, true); CurtainOffAfter = CurtainAlign(root, false);
+        Debug.Log("[curtainaudit] curtains off-centre before " + CurtainOffBefore + " after " + CurtainOffAfter + " (max shift " + CurtainMaxOff.ToString("F2") + " m)");
         DressBefore = Dress(root, false); Dress(root, true); DressAfter = Dress(root, false); Debug.Log("[dressaudit] door-vs-dressing overlaps before " + DressBefore + " after " + DressAfter);
         Debug.Log("[placeaudit] before props " + pp0 + " wall " + pw0 + " door " + pd0 + " signs " + s0 + " | fixed " + Fixed + " hidden " + Hidden + " | after props " + PropHits + " wall " + WallHits + " door " + DoorHits + " signs " + SignHits);
+    }
+
+    /// v0.9.21 door grounding: a door whose bottom is buried in the step / plinth / sidewalk / terrain in front of it gets lifted
+    /// so its sill sits on the top of that surface (every door on every map, before MeshMerge so bounds are exact).
+    public static int DoorSunkBefore, DoorSunkAfter, DoorLifted; public static float DoorMaxLift;
+    public static readonly List<Transform> LiftedDoors = new List<Transform>(); public static readonly List<float> LiftAmt = new List<float>();
+    static float GroundUnder(Transform root, Transform dv, Bounds db, List<Renderer> rs)
+    {
+        var fwd = -dv.forward; fwd.y = 0; if (fwd.sqrMagnitude < 0.01f) fwd = Vector3.back; fwd.Normalize();
+        float baseY = db.min.y, top = baseY; var c = db.center;
+        // probe points just in front of the door leaf, across its width
+        var right = Vector3.Cross(Vector3.up, fwd).normalized; float hw = Mathf.Min(db.extents.x, db.extents.z) > 0.2f ? 0.3f : 0.3f;
+        foreach (float sx in new[] { -hw, 0f, hw }) foreach (float dz in new[] { 0.12f, 0.3f })
+        {
+            var pt = new Vector3(c.x, baseY, c.z) + right * sx + fwd * (Mathf.Min(db.extents.x, db.extents.z) + dz);
+            foreach (var r in rs)
+            {
+                if (!r || !r.enabled || r.transform.IsChildOf(dv)) continue;
+                var b = r.bounds; if (b.size.x < 0.5f && b.size.z < 0.5f) continue;
+                if (b.max.y <= baseY + 0.015f || b.max.y > baseY + 0.4f || b.min.y > baseY + 0.06f) continue;
+                if (pt.x < b.min.x || pt.x > b.max.x || pt.z < b.min.z || pt.z > b.max.z) continue;
+                var nm = r.name; if (nm.StartsWith("merged") || nm.Contains("glow") || nm.Contains("pool") || nm.Contains("shadow") || nm.Contains("blob") || nm.Contains("rug") || nm.Contains("mat")) continue;
+                top = Mathf.Max(top, b.max.y);
+            }
+            if (Physics.Raycast(pt + Vector3.up * 0.6f, Vector3.down, out var hit, 0.75f, ~0, QueryTriggerInteraction.Ignore) && !hit.transform.IsChildOf(dv) && hit.point.y > baseY + 0.015f && hit.point.y < baseY + 0.4f) top = Mathf.Max(top, hit.point.y);
+        }
+        return top - baseY;
+    }
+    public static int DoorGround(Transform root, bool fix)
+    {
+        int n = 0; if (fix) { DoorLifted = 0; DoorMaxLift = 0; LiftedDoors.Clear(); LiftAmt.Clear(); }
+        var doors = root.GetComponentsInChildren<Transform>().Where(t => (t.name == "sk_doorvis" || t.name == "Door" || t.name == "LockedDoor") && t.gameObject.activeInHierarchy).ToList();
+        var all = root.GetComponentsInChildren<Renderer>().Select(r => (r, r.bounds)).ToList();
+        foreach (var dv in doors)
+        {
+            var db = Art.RenderBounds(dv.gameObject); if (db.size.y < 1f) continue;
+            var near = new Bounds(db.center, db.size + new Vector3(2.4f, 0, 2.4f));
+            var rs = all.Where(x => x.Item2.Intersects(near)).Select(x => x.r).ToList();
+            float lift = GroundUnder(root, dv, db, rs); if (lift <= 0.015f) continue;
+            n++;
+            if (!fix) Debug.Log("[dooraudit] " + dv.name + " @" + db.center.ToString("F1") + " sunk " + lift.ToString("F2") + " m");
+            else { dv.position += Vector3.up * (lift + 0.005f); DoorLifted++; DoorMaxLift = Mathf.Max(DoorMaxLift, lift); LiftedDoors.Add(dv); LiftAmt.Add(lift + 0.005f); }
+        }
+        return n;
+    }
+
+    /// v0.9.21 small-prop interpenetration audit (mailboxes on posts and on walls): in the prop's own frame, a thin face part
+    /// (flap, slot, plate, card, rim) must not be cut through / covered by a solid part of the same prop, and loose bits
+    /// (letters, newspapers) must not sit inside a solid part. Backing plates against the wall are skipped.
+    public static int SmallClipBefore, SmallClipAfter; public static readonly List<(Bounds b, Vector3 face)> MailSpots = new List<(Bounds, Vector3)>();
+    static readonly HashSet<string> SmallN = new HashSet<string> { "sk_mailbox", "sk_wallmail" };
+    public static int SmallClip(Transform root, bool log)
+    {
+        int n = 0;
+        foreach (var g in root.GetComponentsInChildren<Transform>().Where(t => SmallN.Contains(t.name) && t.gameObject.activeInHierarchy))
+        {
+            var parts = new List<(string nm, Bounds b)>();
+            if (log) { var wb = Art.RenderBounds(g.gameObject); if (wb.size.y > 0.2f) MailSpots.Add((wb, g.name == "sk_wallmail" ? -g.forward : g.forward)); }
+            foreach (var mf in g.GetComponentsInChildren<MeshFilter>())
+            {
+                if (!mf.sharedMesh || mf.GetComponent<TextMesh>() || mf.name == "backing") continue;
+                var mb = mf.sharedMesh.bounds; var lb = new Bounds(g.InverseTransformPoint(mf.transform.TransformPoint(mb.center)), Vector3.zero);
+                for (int k = 0; k < 8; k++) lb.Encapsulate(g.InverseTransformPoint(mf.transform.TransformPoint(mb.center + Vector3.Scale(mb.extents, new Vector3((k & 1) * 2 - 1, (k & 2) - 1, (k & 4) / 2 - 1)))));
+                parts.Add((mf.name, lb));
+            }
+            for (int i = 0; i < parts.Count; i++)
+            {
+                var a = parts[i].b; var e = a.size; int ax = e.x < e.y ? (e.x < e.z ? 0 : 2) : (e.y < e.z ? 1 : 2);
+                bool thin = e[ax] <= 0.035f, loose = parts[i].nm == "sk_letter" || parts[i].nm == "sk_newspaper";
+                if (!thin && !loose) continue;
+                for (int j = 0; j < parts.Count; j++)
+                {
+                    if (i == j) continue; var o = parts[j].b; var oe = o.size; if (Mathf.Min(oe.x, Mathf.Min(oe.y, oe.z)) <= 0.035f) continue;   // decal-on-decal layering is fine
+                    bool hit;
+                    if (loose) { float ix = Mathf.Min(a.max.x, o.max.x) - Mathf.Max(a.min.x, o.min.x), iy = Mathf.Min(a.max.y, o.max.y) - Mathf.Max(a.min.y, o.min.y), iz = Mathf.Min(a.max.z, o.max.z) - Mathf.Max(a.min.z, o.min.z); hit = ix > 0.005f && iy > 0.005f && iz > 0.005f; }
+                    else
+                    {
+                        float pc = a.center[ax]; if (pc <= o.min[ax] + 0.004f || pc >= o.max[ax] - 0.004f) continue;   // plate plane not inside the solid
+                        int u = (ax + 1) % 3, v = (ax + 2) % 3;
+                        float iu = Mathf.Min(a.max[u], o.max[u]) - Mathf.Max(a.min[u], o.min[u]), iv = Mathf.Min(a.max[v], o.max[v]) - Mathf.Max(a.min[v], o.min[v]);
+                        hit = iu > 0 && iv > 0 && iu * iv > 0.04f * e[u] * e[v];
+                    }
+                    if (!hit) continue; n++; if (log) Debug.Log("[smallclip] " + g.name + " " + parts[i].nm + " cuts " + parts[j].nm + " @" + g.position.ToString("F1") + " plate " + a.center.ToString("F3") + "/" + a.size.ToString("F3") + " solid " + o.center.ToString("F3") + "/" + o.size.ToString("F3"));
+                    break;
+                }
+            }
+        }
+        return n;
+    }
+
+    /// v0.9.21 curtain alignment: every curtain set is centred (sideways) on the window / round window / wall plate it dresses.
+    public static int CurtainOffBefore, CurtainOffAfter; public static float CurtainMaxOff;
+    public static int CurtainAlign(Transform root, bool fix)
+    {
+        int n = 0; var all = root.GetComponentsInChildren<Transform>();
+        var wins = all.Where(t => (t.name == "sk_win" || t.name == "sk_roundwin" || t.name == "sk_plate") && t.gameObject.activeInHierarchy).Select(t => (t, Art.RenderBounds(t.gameObject))).ToList();
+        foreach (var cu in all.Where(t => t.name == "sk_curtain" && t.gameObject.activeInHierarchy))
+        {
+            Vector3 r = cu.right, f = cu.forward; float best = 9; Vector3 off = Vector3.zero;
+            foreach (var (w, b) in wins)
+            {
+                var d = b.center - cu.position; float depth = Mathf.Abs(Vector3.Dot(d, f)), lat = Vector3.Dot(d, r);
+                if (depth > 0.6f || Mathf.Abs(lat) > 1.0f || Mathf.Abs(d.y) > 1.2f) continue;
+                if (Mathf.Abs(lat) < Mathf.Abs(best)) { best = lat; off = r * lat; }
+            }
+            if (best > 8 || Mathf.Abs(best) < 0.04f) continue;
+            n++; if (fix) { cu.position += off; CurtainMaxOff = Mathf.Max(CurtainMaxOff, Mathf.Abs(best)); } else Debug.Log("[curtainaudit] " + cu.parent?.name + " off " + best.ToString("F2") + " m");
+        }
+        return n;
     }
 
     /// v0.9.5 dressing audit: facade/interior dressing pieces (shutters, pipes, lamps, signs, planters) must not cut through doors.

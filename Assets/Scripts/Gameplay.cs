@@ -40,7 +40,7 @@ public static class Gameplay
     public static List<string> AllBook()
     {
         var l = new List<string>(); foreach (var th in Data.Themes) if (th.playable) foreach (var d in th.items) if (!l.Contains(d.name)) l.Add(d.name);
-        foreach (var d in Data.Items) if (!l.Contains(d.name)) l.Add(d.name); return l;
+        foreach (var d in Data.Items) if (!l.Contains(d.name)) l.Add(d.name); foreach (var k in Pond.Kinds) if (!l.Contains(k.name)) l.Add(k.name); return l;
     }
     public static int BookTotal => AllBook().Count;
     public static bool Discover(Item it)

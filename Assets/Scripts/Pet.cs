@@ -14,7 +14,7 @@ public class Pet : MonoBehaviour
     public static float HearK = 1f, SightK = 1f; public float alarmT;   // v0.9.17 per-map sensitivity + goose alarm
     public static void Alarm(Vector3 pos)
     {
-        foreach (var p in All) if (p && p.isActiveAndEnabled && p.dog && (p.st == St.Patrol || p.st == St.Sleep || p.st == St.Investigate)) { p.Set(St.Investigate); p.target = pos; p.alarmT = 9f; p.Say("woof"); }
+        foreach (var p in All) if (p && p.isActiveAndEnabled && p.dog && (p.st == St.Patrol || p.st == St.Sleep || p.st == St.Investigate)) { p.Set(St.Investigate); p.target = pos; p.alarmT = 9f; p.Say(Voice.Alert); }
     }
     public static float FreezeAll; // autotest: >0 pets ignore the player
 
@@ -123,7 +123,7 @@ public class Pet : MonoBehaviour
     void Hear(Vector3 pos, float r)
     {
         if ((pos - transform.position).magnitude > r) return;
-        if (st == St.Patrol || st == St.Sleep || st == St.Investigate) { if (st == St.Sleep) Say(dog ? "woof" : "meow"); Set(St.Investigate); target = pos; }
+        if (st == St.Patrol || st == St.Sleep || st == St.Investigate) { if (st == St.Sleep) Say(Voice.Idle); Set(St.Investigate); target = pos; }
     }
     public void LureTo(Lure l)
     {
@@ -138,7 +138,24 @@ public class Pet : MonoBehaviour
     public bool Curious => st == St.Investigate;
     public void LoseTrack() { if (st == St.Chase || st == St.Notice || st == St.Investigate) Set(St.Patrol); }
     void Set(St s) { if (st == s) return; st = s; stT = 0; lostT = 0; }
-    void Say(string n) { Sfx.At(n, transform.position + Vector3.up * 0.4f, 0.9f, 3, 30); }
+    // v0.9.21 animal voice: real CC0 recordings (see CREDITS), several takes per kind, per-animal cooldown, never restart a clip that is
+    // still playing, a global limiter shared by every pet, no doppler, pitch only +-5%. Fixes the machine-gun meow/woof when riding past.
+    public enum Voice { Idle, Alert, Chase, Calm }
+    AudioSource voiceSrc; float voiceNext; int lastTake = -1;
+    public static float GlobalNext; public static int VoiceStarts, VoiceBlocked;
+    static readonly string[][] CatTakes = { new[] { "cat_meow0", "cat_meow1", "cat_meow2", "cat_meow3", "cat_meow4" }, new[] { "cat_hiss0", "cat_hiss1" }, new[] { "cat_meow2", "cat_meow3", "cat_meow4", "cat_hiss0" }, new[] { "cat_purr0" } };
+    static readonly string[][] DogTakes = { new[] { "dog_woof0", "dog_woof1", "dog_woof2", "dog_woof3" }, new[] { "dog_growl0", "dog_yip0", "dog_yip2" }, new[] { "dog_yip0", "dog_yip1", "dog_yip2", "dog_yip3", "dog_woof0" }, new[] { "dog_woof2" } };
+    public void TestSay(int v) => Say((Voice)v);
+    public static int Active() { int n = 0; foreach (var p in All) if (p && p.voiceSrc && p.voiceSrc.isPlaying) n++; return n; }
+    void Say(Voice v)
+    {
+        float now = Time.time;
+        if ((voiceSrc && voiceSrc.isPlaying) || now < voiceNext || now < GlobalNext || Active() >= 2) { VoiceBlocked++; return; }
+        var set = (dog ? DogTakes : CatTakes)[(int)v]; int k = Random.Range(0, set.Length); if (set.Length > 1 && k == lastTake) k = (k + 1) % set.Length; lastTake = k;
+        float vol = v == Voice.Calm ? 0.45f : v == Voice.Alert ? 0.7f : 0.6f;
+        voiceSrc = Sfx.Voice(set[k], transform.position + Vector3.up * 0.4f, vol, Random.Range(0.95f, 1.05f), 2.5f, 26f);
+        voiceNext = now + (dog ? 2.4f : 3.2f) + Random.Range(0f, 0.8f); GlobalNext = now + 0.7f; VoiceStarts++;
+    }
     Vector3 Eye => transform.position + Vector3.up * (dog ? 0.6f : 0.45f);
     bool Sees(Player p)
     {
@@ -157,7 +174,7 @@ public class Pet : MonoBehaviour
         var p = Player.I; bool active = p != null && p.inRaid && Game.I.RaidActive && !Game.I.InputLocked;
         Vector3 move = Vector3.zero; Vector3 face = transform.forward; float spd = 0;
         bool sees = active && FreezeAll <= 0 && p.alive && cool <= 0 && st != St.Flee && st != St.Lured && st != St.Sleep && Sees(p);
-        if (sees && (st == St.Patrol || st == St.Investigate)) { Set(St.Notice); Say(dog ? "woof" : "meow"); }
+        if (sees && (st == St.Patrol || st == St.Investigate)) { Set(St.Notice); Say(Voice.Alert); }
         switch (st)
         {
             case St.Sleep:
@@ -179,7 +196,7 @@ public class Pet : MonoBehaviour
                     if (p.hidden) lostT += dt * 2f; else if (Sees(p) || to.magnitude < 2.5f) lostT = 0; else lostT += dt;
                     if (lostT > 3 || stT > 8) { Set(St.Patrol); Game.I.Toast((dog ? "狗狗" : "貓咪") + pname + " 跟丟你了～"); break; }
                     move = to.normalized; spd = chaseSpeed; Play("run", "gallop", "walk");
-                    barkT -= dt; if (barkT <= 0) { barkT = dog ? 1.4f : 2.2f; Say(dog ? "woof" : "meow"); }
+                    barkT -= dt; if (barkT <= 0) { barkT = dog ? 2.6f : 3.4f; Say(Voice.Chase); }
                     if (to.magnitude < 0.9f && !p.hidden) Catch(p);
                 }
                 break;
@@ -194,7 +211,7 @@ public class Pet : MonoBehaviour
                     if (!lure) { cool = 2; Set(St.Patrol); break; }
                     var to = lure.transform.position - transform.position; to.y = 0;
                     if (to.magnitude > 0.55f) { move = to.normalized; spd = chaseSpeed * 0.8f; face = to; Play("run", "walk"); }
-                    else { face = to; Play("eat", "idle", "sit"); lure.Eating(this); }
+                    else { face = to; Play("eat", "idle", "sit"); lure.Eating(this); if (!dog && stT > 0.8f) Say(Voice.Calm); }
                 }
                 break;
         }
@@ -219,7 +236,7 @@ public class Pet : MonoBehaviour
     {
         catches++; cool = 8; carried = Game.I.StealOne();
         p.Caught(this);
-        Say(dog ? "woof" : "meow");
+        voiceNext = 0; Say(Voice.Chase);
         Game.I.Toast(carried != null ? (dog ? "狗狗" : "貓咪") + pname + " 叼走了你的「" + carried.name + "」！快追！" : (dog ? "狗狗" : "貓咪") + pname + " 撲了你一下，好險背包是空的！");
         Set(St.Flee);
     }

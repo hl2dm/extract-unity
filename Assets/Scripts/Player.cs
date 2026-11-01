@@ -73,7 +73,7 @@ public class Player : MonoBehaviour
         if (hidden) { if (mv.sqrMagnitude > 0.2f && autoGait < 0) Unhide(); else { mv = Vector3.zero; sprint = sneak = false; } }
         Sneaking = sneak && mv.sqrMagnitude > 0.1f;
         Sprinting = sprint && mv.sqrMagnitude > 0.1f;
-        float spd = (sprint ? Run : Walk) * (Sneaking ? 0.55f : 1) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1);
+        float spd = (sprint ? Run : Walk) * (Sneaking ? 0.55f : 1) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1) * Pond.Wade(transform.position);
         var vel = transform.TransformDirection(mv) * spd;
         if (cc.isGrounded) { vy = -1f; if (canAct && TouchIn.Down(KeyCode.Space)) vy = 4.4f; } else vy -= 14f * dt;
         vel.y = vy; cc.Move(vel * dt);
@@ -82,10 +82,11 @@ public class Player : MonoBehaviour
         {
             bobT += dt * hs * 2.1f; stepT += dt * hs;
             if (stepT > (sprint ? 1.7f : 1.4f)) { stepT = 0; Footstep(); }
-            noiseT -= dt; if (inRaid && noiseT <= 0) { noiseT = 0.4f; Pet.Noise(transform.position, NoiseR); }
+            noiseT -= dt; if (inRaid && noiseT <= 0) { noiseT = 0.4f; Pet.Noise(transform.position, NoiseR); if (Pond.In(transform.position)) Pond.Splash(transform.position, NoiseR, false); }
         }
         bool moving = cc.isGrounded && hs > 0.5f;
         NoiseR = hidden ? 0 : moving ? (Sprinting ? NoiseRing.Run : Sneaking ? NoiseRing.Sneak : NoiseRing.Walk) : searching ? NoiseRing.Search : 0;
+        if (moving && Pond.In(transform.position)) NoiseR *= 1.4f;   // wading splashes: louder than walking on grass
         if (!moving && searching && inRaid && !hidden) { noiseT -= dt; if (noiseT <= 0) { noiseT = 0.8f; Pet.Noise(transform.position, NoiseRing.Search); } }
         searching = false;
         if (!moving) bobT = Mathf.Lerp(bobT, Mathf.Round(bobT / Mathf.PI) * Mathf.PI, dt * 5);
@@ -122,6 +123,7 @@ public class Player : MonoBehaviour
 
     void Footstep()
     {
+        if (Pond.In(transform.position)) { Sfx.Play("water_step" + Random.Range(0, 4), Sneaking ? 0.3f : Sprinting ? 0.65f : 0.5f, Random.Range(0.93f, 1.07f)); Pond.Ripple(transform.position, Sprinting ? 1.1f : 0.7f); return; }
         string surf = "concrete";
         if (Physics.Raycast(transform.position + Vector3.up * 0.3f, Vector3.down, out var h, 1f)) { var n = h.collider.name; if (n.Contains("wood") || n.Contains("floor")) surf = "wood"; else if (n.Contains("grass")) surf = "grass"; }
         Sfx.PlayRand("footstep_" + surf + "_", 5, Sprinting ? 0.4f : 0.25f, 1.15f);

@@ -86,18 +86,19 @@ public static partial class LevelGen
         // ---- pond with lily pads, reeds, stones and a little dock (geese live here)
         {
             var pg = Group(root, "pond", PondC);
-            var mb = new FMB { a = MatK.Tile }; int N = 48; float rx = 7, rz = 5;
-            int ci = mb.V(new Vector3(0, 0.06f, 0), Vector3.up, H("5f8fa6"));
-            for (int k = 0; k <= N; k++) { float an = k * Mathf.PI * 2 / N; float w = 1 + 0.06f * Mathf.Sin(an * 3 + 1); mb.V(new Vector3(Mathf.Cos(an) * rx * w, 0.06f, Mathf.Sin(an) * rz * w), Vector3.up, Color.Lerp(H("7aa6b4"), H("c9b4b8"), 0.25f + 0.2f * Mathf.Sin(an))); if (k > 0) { mb.t.Add(ci); mb.t.Add(ci + k + 1); mb.t.Add(ci + k); } }
+            var mb = new FMB { a = MatK.Plastic }; int N = 48; float rx = 7, rz = 5;   // v0.9.21: smooth pastel water (Tile showed a grid)
+            int ci = mb.V(new Vector3(0, Pond.Surface, 0), Vector3.up, H("86bccb"));
+            for (int k = 0; k <= N; k++) { float an = k * Mathf.PI * 2 / N; float w = 1 + 0.06f * Mathf.Sin(an * 3 + 1); mb.V(new Vector3(Mathf.Cos(an) * rx * w, Pond.Surface, Mathf.Sin(an) * rz * w), Vector3.up, Color.Lerp(H("a9d6d6"), H("e6cbd3"), 0.3f + 0.22f * Mathf.Sin(an))); if (k > 0) { mb.t.Add(ci); mb.t.Add(ci + k + 1); mb.t.Add(ci + k); } }
             Obj(pg, "pond_water", mb.Build("pond"), Vector3.zero, Quaternion.identity, 0.0001f);
             // muddy bank ring
-            var bk = new FMB { a = MatK.Plaster };
-            for (int k = 0; k < N; k++) { float a0 = k * Mathf.PI * 2 / N, a1 = (k + 1) * Mathf.PI * 2 / N; float w0 = 1 + 0.06f * Mathf.Sin(a0 * 3 + 1), w1 = 1 + 0.06f * Mathf.Sin(a1 * 3 + 1);
-                Vector3 P(float a, float w, float o, float y) => new Vector3(Mathf.Cos(a) * (rx * w + o), y, Mathf.Sin(a) * (rz * w + o));
-                bk.Quad(P(a0, w0, -0.1f, 0.07f), P(a0, w0, 0.9f, 0.03f), P(a1, w1, 0.9f, 0.03f), P(a1, w1, -0.1f, 0.07f), Color.Lerp(H("a48c6c"), H("b9a27c"), (k % 3) / 3f)); }
+            var bk = new FMB { a = MatK.Plaster };   // v0.9.21: explicit up-facing ring (inner lip just above the raised water)
+            for (int k = 0; k <= N; k++) { float an = k * Mathf.PI * 2 / N; float w = 1 + 0.06f * Mathf.Sin(an * 3 + 1); var cc = Color.Lerp(H("b49a76"), H("c7b08a"), (k % 3) / 3f);
+                bk.V(new Vector3(Mathf.Cos(an) * (rx * w - 0.12f), Pond.Surface + 0.012f, Mathf.Sin(an) * (rz * w - 0.12f)), Vector3.up, Color.Lerp(cc, H("9fc4bf"), 0.35f));
+                bk.V(new Vector3(Mathf.Cos(an) * (rx * w + 0.9f), 0.03f, Mathf.Sin(an) * (rz * w + 0.9f)), Vector3.up, cc);
+                if (k > 0) { int i0 = (k - 1) * 2, i1 = k * 2; bk.t.Add(i0); bk.t.Add(i1 + 1); bk.t.Add(i0 + 1); bk.t.Add(i0); bk.t.Add(i1); bk.t.Add(i1 + 1); } }
             Obj(pg, "pond_bank", bk.Build("bank"), Vector3.zero, Quaternion.identity, 0.0001f);
             for (int k = 0; k < 14; k++) { float an = k * 0.45f + (float)deco.NextDouble() * 0.3f; var sp2 = new Vector3(Mathf.Cos(an) * (rx + 0.5f), 0.05f, Mathf.Sin(an) * (rz + 0.5f)); Ball(pg, sp2, new Vector3(0.5f + (float)deco.NextDouble() * 0.4f, 0.25f, 0.45f), Color.Lerp(H("b7aa98"), H("9a8e80"), (float)deco.NextDouble()), 10, false, null, "pond_stone", 0.12f); }
-            for (int k = 0; k < 9; k++) { float an = (float)deco.NextDouble() * 6.28f; float rr = (float)deco.NextDouble() * 0.7f; var lp = new Vector3(Mathf.Cos(an) * rx * rr, 0.075f, Mathf.Sin(an) * rz * rr);
+            for (int k = 0; k < 9; k++) { float an = (float)deco.NextDouble() * 6.28f; float rr = (float)deco.NextDouble() * 0.7f; var lp = new Vector3(Mathf.Cos(an) * rx * rr, Pond.Surface + 0.014f, Mathf.Sin(an) * rz * rr); lp.y = Pond.Surface + 0.014f;
                 var pad = new FMB { a = MatK.Foliage }; int nn = 14; int c0 = pad.V(Vector3.zero, Vector3.up, H("7fae5a")); for (int q = 0; q <= nn; q++) { float aa = 0.5f + q * (Mathf.PI * 2 - 1f) / nn; pad.V(new Vector3(Mathf.Cos(aa), 0, Mathf.Sin(aa)) * 0.45f, Vector3.up, H("95c06a")); if (q > 0) { pad.t.Add(c0); pad.t.Add(c0 + q + 1); pad.t.Add(c0 + q); } }
                 var po = Obj(pg, "lilypad", pad.Build("pad"), lp, Quaternion.Euler(0, deco.Next(360), 0), 0.004f); po.transform.localScale = Vector3.one * (0.7f + (float)deco.NextDouble() * 0.6f);
                 if (k % 3 == 0) Lath(pg, lp + Vector3.up * 0.01f, new List<Vector2> { new Vector2(0, 0), new Vector2(0.1f, 0.03f), new Vector2(0.13f, 0.1f), new Vector2(0.05f, 0.16f), new Vector2(0, 0.12f) }, H("f2b8c6"), 10, false, null, "lotus"); }
@@ -108,10 +109,10 @@ public static partial class LevelGen
             Obj(pg, "reeds", reeds.Build("reeds"), Vector3.zero, Quaternion.identity, 0.0001f);
             // little plank dock on the south bank
             var dk = Group(pg, "dock", new Vector3(-1.5f, 0, -rz + 0.2f));
-            for (int k = 0; k < 6; k++) Block(dk, new Vector3(0, 0.2f, -0.9f + k * 0.38f), new Vector3(1.4f, 0.06f, 0.34f), Color.Lerp(H("b08660"), H("9a7350"), (k % 2) * 0.6f), 0.02f, k < 3);
-            foreach (int sx in new[] { -1, 1 }) foreach (float z in new[] { -0.9f, 1.0f }) Cyl(dk, new Vector3(sx * 0.62f, 0.12f, z), 0.06f, 0.36f, H("7a5a40"), 0.02f, null, 8);
-            // invisible wall so kids walk around the water, not into it
-            var wc = new GameObject("pond_wall"); wc.transform.SetParent(pg, false); wc.transform.localPosition = new Vector3(0, 0.8f, 0.4f); var cap = wc.AddComponent<CapsuleCollider>(); cap.direction = 0; cap.radius = rz - 0.6f; cap.height = rx * 2 - 0.4f;
+            for (int k = 0; k < 6; k++) Block(dk, new Vector3(0, 0.27f, -0.9f + k * 0.38f), new Vector3(1.4f, 0.06f, 0.34f), Color.Lerp(H("b08660"), H("9a7350"), (k % 2) * 0.6f), 0.02f, k < 3);
+            foreach (int sx in new[] { -1, 1 }) foreach (float z in new[] { -0.9f, 1.0f }) Cyl(dk, new Vector3(sx * 0.62f, 0.15f, z), 0.06f, 0.42f, H("7a5a40"), 0.02f, null, 8);
+            // v0.9.21: no invisible wall any more - the pond is shin-deep, you can wade in and out anywhere (slower + splashy)
+            Pond.Build(pg, PondC, rx, rz, new System.Random(deco.Next()));
         }
         LoadScreen.Set(LoadFrom + (LoadTo - LoadFrom) * 5 / 13f, "蓋雞舍…"); yield return null;
         // ---- chicken coop with nest boxes + 2 hens

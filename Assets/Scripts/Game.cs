@@ -90,7 +90,7 @@ public class Game : MonoBehaviour
         state = St.Base; if (level != null) { Destroy(level.root.gameObject); level = null; }
         Pet.All.Clear(); foreach (var l in Lure.All.ToList()) if (l) Destroy(l.gameObject);
         if (baseRoot) Destroy(baseRoot.gameObject);
-        baseRoot = BaseHub.Build(out var sp, out var yaw); EnvBase(); LightQ.Apply(baseRoot);
+        Pond.Reset(); baseRoot = BaseHub.Build(out var sp, out var yaw); EnvBase(); LightQ.Apply(baseRoot);
         player.inRaid = false; player.alive = true; player.hp = 100; player.controlEnabled = true; player.enabled = true; player.cryT = 0;
         ReattachCam(); player.Equip(SaveSys.S.shoes); player.Teleport(sp, yaw);
         Sfx.Engine(0); ui.CloseEnd(); ui.Cine(false); ui.CloseLoot(); ui.CloseModal();
@@ -537,6 +537,9 @@ public class Game : MonoBehaviour
             var at = pp.transform.position + pp.transform.forward * 6f; pet.Warp(at, pp.transform.position); yield return null;
             Pet.Noise(pp.transform.position, NoiseRing.Sneak); yield return null; Check(!pet.Curious, "pet 6 m away doesn't hear sneaking");
             Pet.Noise(pp.transform.position, NoiseRing.Run); yield return null; Check(pet.Curious, "pet 6 m away hears running");
+            // v0.9.21 voice limiter: 40 frames of shouting at every pet (like riding past on the scooter) may start at most 2 voices
+            { int s0 = Pet.VoiceStarts; Pet.GlobalNext = 0; for (int f = 0; f < 40; f++) { foreach (var q in Pet.All) if (q) q.TestSay(f % 3); yield return null; }
+              int st = Pet.VoiceStarts - s0; Check(st >= 1 && st <= 2, "animal voices rate-limited (" + st + " starts, " + Pet.VoiceBlocked + " blocked, clip " + (Sfx.I && Sfx.I.Clip("cat_meow0") && Sfx.I.Clip("dog_woof0") ? "ok" : "MISSING") + ")"); }
         }
         Check(HideSpot.Spots.Count >= 2, "hiding spots in the house (" + HideSpot.Spots.Count + ", tables " + HideSpot.Spots.Count(h => h.low) + ")");
         var hs = HideSpot.Spots.Where(h => h.low).FirstOrDefault() ?? HideSpot.Spots.FirstOrDefault();
@@ -558,6 +561,70 @@ public class Game : MonoBehaviour
             hs.Use(); yield return new WaitForSeconds(0.6f); Check(!pp.hidden, "leave hiding spot");
             pp.Unhide();
         }
+    }
+    IEnumerator PondTest()
+    {   // v0.9.21 grandma's pond: wade (slower + splashy), splash alerts geese, fish timing catch -> bag, exit anywhere
+        var pp = player; var C = LevelGen.PondC; Pet.FreezeAll = 999;
+        Check(Pond.On && Fish.AllFish.Count == 6, "pond has 6 fish shadows (" + Fish.AllFish.Count + ")");
+        Check(Physics.OverlapSphere(C + new Vector3(0, 0.8f, 0.4f), 0.5f).All(c => c.isTrigger || c.name != "pond_wall"), "no invisible pond wall");
+        // speed outside vs inside
+        float[] sp = new float[2];
+        for (int k = 0; k < 2; k++)
+        {
+            var at = k == 0 ? C + new Vector3(-3, 0.15f, -Pond.RZ - 4.5f) : C + new Vector3(-3, 0.15f, -1.6f); pp.Teleport(at, 90); yield return new WaitForSeconds(0.25f);
+            pp.autoGait = 1; pp.autoMove = Vector3.forward; for (float w = 0; w < 0.3f; w += Time.deltaTime) yield return null;
+            var p0 = pp.transform.position; float t0 = Time.time; for (float w = 0; w < 0.8f; w += Time.deltaTime) yield return null;
+            var d = pp.transform.position - p0; d.y = 0; sp[k] = d.magnitude / Mathf.Max(0.01f, Time.time - t0); pp.autoMove = Vector3.zero; pp.autoGait = -1;
+            if (k == 1) Check(Pond.In(pp.transform.position), "player is standing in the pond");
+        }
+        Debug.Log("[pond] walk speed out " + sp[0].ToString("0.00") + " in water " + sp[1].ToString("0.00"));
+        Check(sp[1] > 0.5f && sp[1] < sp[0] * 0.7f, "wading is slower (" + sp[1].ToString("0.0") + " vs " + sp[0].ToString("0.0") + " m/s)");
+        {   // wading shot: walk a bit so ripples show
+            pp.Teleport(C + new Vector3(-2.5f, 0.15f, -2.2f), 60); pp.pitch = 32; pp.autoGait = 1; pp.autoMove = Vector3.forward; int s0 = Pond.Splashes; float nmax = 0;
+            for (float w = 0; w < 1.1f; w += Time.deltaTime) { nmax = Mathf.Max(nmax, player.NoiseR); yield return null; } pp.autoMove = Vector3.zero; pp.autoGait = -1;
+            Check(Pond.Splashes > s0, "wading makes splashes (" + (Pond.Splashes - s0) + ")"); Check(nmax > NoiseRing.Walk * 1.2f, "wading is louder than walking (" + nmax.ToString("0.0") + " m)"); yield return Shot("v0921_wade"); pp.pitch = 10;
+        }
+        // a splash wakes a goose that is NOT looking at you
+        var g = Goose.All.OrderBy(x => (x.transform.position - C).sqrMagnitude).FirstOrDefault();
+        for (float w = 0; w < 8f && g && g.st != Goose.St.Wander; w += Time.deltaTime) yield return null;
+        if (g)
+        {
+            var dir = g.transform.position - C; dir.y = 0; var inP = g.transform.position - dir.normalized * 4.2f; inP.y = 0.15f;
+            if (!Pond.In(inP)) { inP = C + dir.normalized * 2.5f; inP.y = 0.15f; }
+            pp.Teleport(inP, Quaternion.LookRotation(dir).eulerAngles.y); g.transform.rotation = Quaternion.LookRotation(dir); yield return null;
+            int a0 = Goose.AlertsRun; pp.autoGait = 2; pp.autoMove = Vector3.left;
+            for (float w = 0; w < 1.3f && Goose.AlertsRun == a0; w += Time.deltaTime) yield return null; pp.autoMove = Vector3.zero; pp.autoGait = -1;
+            Check(Goose.AlertsRun > a0, "splashing in the pond alerts a goose (" + g.st + ")");
+            for (float w = 0; w < 9f && g.st != Goose.St.Wander; w += Time.deltaTime) yield return null;
+        }
+        // fish: timing press, catch -> bag, miss -> darts off with a loud splash
+        var f = Fish.AllFish.OrderBy(x => (x.transform.position - C).sqrMagnitude).First();
+        { var fp = f.transform.position; var off = (C - fp); off.y = 0; if (off.sqrMagnitude < 0.5f) off = Vector3.back; var st = fp - off.normalized * 1.3f; if (!Pond.In(st)) st = fp + off.normalized * 1.3f; st.y = 0.15f;
+          pp.Teleport(st, Quaternion.LookRotation(fp - st).eulerAngles.y); pp.pitch = 38; yield return new WaitForSeconds(0.2f); }
+        Check(f.Prompt.Contains("抓魚"), "fish prompt: " + f.Prompt);
+        while (bag.Count(b => !b.key) >= BagCap) bag.RemoveAt(bag.FindLastIndex(b => !b.key));
+        f.StartTiming(); for (float w = 0; w < 0.35f; w += Time.deltaTime) yield return null;
+        Debug.Log("[pond] " + f.BarDbg()); Check(f.Timing && f.Prompt.Contains("綠色"), "timing bar shows"); yield return Shot("v0921_fish_timing");
+        int n0 = bag.Count; f.ForceResolve(true); yield return null;
+        Check(bag.Count == n0 + 1 && Pond.Kinds.Any(k => k.name == bag[bag.Count - 1].name), "caught fish goes into the bag (" + (bag.Count > 0 ? bag[bag.Count - 1].name : "-") + ")");
+        Check(!f.Timing && Pond.Catches == 1, "fish gone after the catch"); yield return new WaitForSeconds(0.55f); var fj = GameObject.Find("fish_jump"); Debug.Log("[pond] jump " + (fj ? fj.transform.position.ToString("F2") : "none")); yield return Shot("v0921_fish_caught");
+        var f2 = Fish.AllFish.Where(x => x != f).OrderBy(x => (x.transform.position - pp.transform.position).sqrMagnitude).First();
+        int m0 = Pond.Misses, s1 = Pond.Splashes; f2.ForceResolve(false); yield return null;
+        Check(Pond.Misses == m0 + 1 && Pond.Splashes > s1 && !f2.Timing, "missed fish darts away with a splash");
+        bag.RemoveAt(bag.Count - 1);
+        // pond overview with fish shadows
+        yield return CamShot(C + new Vector3(-3, 6.5f, -9.5f), C + new Vector3(0, 0, -0.5f), "v0921_pond", 0.4f);
+        // walk out in 6 directions from deep inside: never stuck
+        int outOk = 0;
+        for (int k = 0; k < 6; k++)
+        {
+            float an = k * Mathf.PI / 3 + 0.3f; var d = new Vector3(Mathf.Cos(an), 0, Mathf.Sin(an)); var st = C + new Vector3(d.x * Pond.RX * 0.55f, 0.15f, d.z * Pond.RZ * 0.55f);
+            pp.Teleport(st, Quaternion.LookRotation(d).eulerAngles.y); yield return null; pp.autoGait = 1; pp.autoMove = Vector3.forward;
+            for (float w = 0; w < 4.5f && Pond.In(pp.transform.position, 1.15f); w += Time.deltaTime) yield return null; pp.autoMove = Vector3.zero; pp.autoGait = -1;
+            if (!Pond.In(pp.transform.position, 1.1f)) outOk++; else Debug.Log("[pond] stuck leaving dir " + k + " at " + pp.transform.position);
+        }
+        Check(outOk == 6, "can walk out of the pond in every direction (" + outOk + "/6)");
+        pp.pitch = 10; for (float w = 0; w < 6f && Goose.All.Any(x => x.st != Goose.St.Wander); w += Time.deltaTime) yield return null;
     }
     IEnumerator FarmTest()
     {   // v0.9.17 外婆家農場: geese alarm, haystack + rice cover, farm loot -> book
@@ -599,6 +666,7 @@ public class Game : MonoBehaviour
             Pet.FreezeAll = 999; if (dog) dog.ForceState(Pet.St.Patrol);
             for (float w = 0; w < 7f && g.st != Goose.St.Wander; w += Time.deltaTime) yield return null;
         }
+        yield return PondTest();
         var hs = hays.OrderBy(h => (h.transform.position - LevelGen.PondC).sqrMagnitude).FirstOrDefault();
         if (hs && g)
         {   // hiding in a haystack: a goose right next to it can't see you
@@ -811,6 +879,11 @@ public class Game : MonoBehaviour
         var desk = FindObjectsByType<Station>(FindObjectsSortMode.None).FirstOrDefault(x => x.id == "deploy");
         if (desk) { var b = desk.WorldBounds; yield return Aim(b.center + new Vector3(0, 0.9f, 0) + (player.transform.position - b.center).normalized * 1.6f, b.center); yield return new WaitForSeconds(0.6f); Check(focus == desk, "bedroom desk focus"); yield return Shot("oneMap_bedroom_desk"); }
         { var bc0 = baseRoot.position; yield return CamShot(bc0 + new Vector3(3.6f, 2.6f, 3.4f), bc0 + new Vector3(-1.5f, 0.7f, -2f), "oneMap_bedroom_wide"); }
+        foreach (var cu in baseRoot.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_curtain").Take(2))
+        {   // v0.9.21 hideout curtain must sit centred on its window/plate
+            var b = Art.RenderBounds(cu.gameObject); if (b.size.y < 0.3f) continue; var f = -cu.forward; if (Vector3.Dot(f, baseRoot.position - b.center) < 0) f = -f;
+            yield return CamShot(b.center + f * 2.4f + Vector3.up * 0.2f, b.center, "v0921_curtain_hub_" + cu.GetSiblingIndex(), 0.3f);
+        }
         OpenStation("shop"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_shop"); CloseModal();
         OpenStation("deploy"); yield return new WaitForSeconds(0.4f); yield return Shot("oneMap_map"); CloseModal();
         int parkIdx = System.Array.FindIndex(Data.Themes, t => !t.playable); Deploy(parkIdx); yield return null; Check(state == St.Base, "park (施工中) not deployable");
@@ -1136,7 +1209,39 @@ public class Game : MonoBehaviour
         int left = PlaceAudit.Run(level.root, false);
         Debug.Log("[placeaudit] check before props " + PlaceAudit.BeforeProp + " wall " + PlaceAudit.BeforeWall + " door " + PlaceAudit.BeforeDoor + " signs " + PlaceAudit.BeforeSign + " fixed " + PlaceAudit.Fixed + " hidden " + PlaceAudit.Hidden + " -> after props " + PlaceAudit.PropHits + " wall " + PlaceAudit.WallHits + " door " + PlaceAudit.DoorHits + " signs " + PlaceAudit.SignHits);
         Check(left == 0, "placement overlap audit clean (" + left + " left)");
+        Check(PlaceAudit.DoorSunkAfter == 0, "doors stand on their step/ground (sunk before " + PlaceAudit.DoorSunkBefore + ", after " + PlaceAudit.DoorSunkAfter + ", max lift " + PlaceAudit.DoorMaxLift.ToString("F2") + " m)");
+        Check(PlaceAudit.CurtainOffAfter == 0, "curtains centred on their windows (off before " + PlaceAudit.CurtainOffBefore + ", after " + PlaceAudit.CurtainOffAfter + ")");
+        Check(PlaceAudit.SmallClipAfter == 0, "mailboxes: no part cuts through another (" + PlaceAudit.SmallClipAfter + " clips)");
         if (placeShot) yield break; placeShot = true;
+        {   // v0.9.21 before/after: doors (lift undone for the "before" frame), mailboxes, curtains
+            Vector3 View(Bounds b, Transform t, float dist, float up)
+            {   // thinnest horizontal axis = facing; pick the side with the most open space
+                var ax = b.size.x < b.size.z ? Vector3.right : Vector3.forward; float best = -1; var bp = b.center + ax * dist;
+                foreach (var d in new[] { ax, -ax })
+                {
+                    var o = b.center + d * (Vector3.Scale(b.extents, ax).magnitude + 0.05f) + Vector3.up * up; float free = Physics.Raycast(o, d, out var h, 6f, Art.ShotMask, QueryTriggerInteraction.Ignore) ? h.distance : 6f;
+                    if (free > best) { best = free; bp = b.center + d * Mathf.Min(dist, Mathf.Max(0.6f, free - 0.25f)) + Vector3.up * up; }
+                }
+                return bp;
+            }
+            string tag = level.theme.id;
+            for (int i = 0, shot = 0; i < PlaceAudit.LiftedDoors.Count && shot < 2; i++)
+            {
+                var dv = PlaceAudit.LiftedDoors[i]; if (!dv || !dv.GetComponentsInChildren<Renderer>().Any(r => r.enabled)) continue; var dp = Art.RenderBounds(dv.gameObject).center; if (FindObjectsOfType<Interactable>().Where(x => !(x is Door)).Any(lc => { var lb = Art.RenderBounds(lc.gameObject); lb.Expand(new Vector3(1.6f, 3f, 1.6f)); var d = lb.center - dp; d.y = 0; return lb.Contains(dp) || d.magnitude < 1.8f; })) continue; shot++; var b = Art.RenderBounds(dv.gameObject); float L = PlaceAudit.LiftAmt[i];   // skip doors with a prop in front so the sill stays visible
+                Debug.Log("[doorshot] " + dv.name + " b " + b.center.ToString("F2") + "/" + b.size.ToString("F2")); var bot = new Bounds(new Vector3(b.center.x, b.min.y + 0.5f, b.center.z), b.size); var from = View(bot, dv, 2.4f, 0.5f); var at = new Vector3(b.center.x, b.min.y + 0.35f, b.center.z);
+                dv.position -= Vector3.up * L; yield return CamShot(from, at, "v0921_door_" + tag + i + "_before", 0.8f);
+                dv.position += Vector3.up * L; yield return CamShot(from, at, "v0921_door_" + tag + i + "_after", 0.8f);
+            }
+            int mi = 0;
+            foreach (var (mbb, face) in PlaceAudit.MailSpots.Take(2))
+            {   // bounds + facing recorded before MeshMerge (the merged originals are gone by now)
+                var f = face; f.y = 0; f.Normalize(); var o = mbb.center + f * 0.3f; float free = Physics.Raycast(o, f, out var h, 3f, Art.ShotMask, QueryTriggerInteraction.Ignore) ? h.distance : 3f;
+                yield return CamShot(mbb.center + f * Mathf.Clamp(free + 0.1f, 0.7f, 1.6f) + Vector3.up * 0.25f, mbb.center, "v0921_mailbox_" + tag + (mi++), 0.15f);
+            }
+            int ci = 0;
+            foreach (var cu in level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_curtain").Take(2))
+            { var b = Art.RenderBounds(cu.gameObject); if (b.size.y < 0.3f) continue; yield return CamShot(View(b, cu, 3.2f, 0.1f), b.center - Vector3.up * 0.2f, "v0921_curtain_" + tag + (ci++), 0.15f); }
+        }
         var pick = new List<PlaceAudit.Move>();
         pick.AddRange(PlaceAudit.Moves.Where(m => m.t && (m.what == "sk_scooter" || m.what == "RideScooter" || m.what == "sk_tree")).Take(2));
         pick.AddRange(PlaceAudit.Moves.Where(m => m.t && m.what == "sign").Take(2));
@@ -1363,7 +1468,7 @@ public class Game : MonoBehaviour
         if (NoiseRing.I) NoiseRing.I.gameObject.SetActive(true);
         var lights = FindObjectsByType<Light>(FindObjectsSortMode.None).Where(x => x.isActiveAndEnabled).ToList();
         { var rs = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Where(r => r.enabled && !r.forceRenderingOff && r.gameObject.activeInHierarchy).ToList();
-          Debug.Log("[perf2] " + tn + " meshrenderers " + rs.Count + " shadowcasters " + rs.Count(r => r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) + " tris " + rs.Sum(r => { var f = r.GetComponent<MeshFilter>(); return f && f.sharedMesh ? (long)f.sharedMesh.triangles.Length / 3 : 0; }) + " uniqueMeshes " + rs.Select(r => r.GetComponent<MeshFilter>()?.sharedMesh).Distinct().Count() + " mats " + rs.SelectMany(r => r.sharedMaterials).Distinct().Count());
+          Debug.Log("[perf2] " + tn + " meshrenderers " + rs.Count + " shadowcasters " + rs.Count(r => r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off) + " tris " + rs.Sum(r => { var f = r.GetComponent<MeshFilter>(); if (!f || !f.sharedMesh) return 0L; long n = 0; for (int i = 0; i < f.sharedMesh.subMeshCount; i++) n += (long)f.sharedMesh.GetIndexCount(i); return n / 3; }) + " uniqueMeshes " + rs.Select(r => r.GetComponent<MeshFilter>()?.sharedMesh).Distinct().Count() + " mats " + rs.SelectMany(r => r.sharedMaterials).Distinct().Count());
           Debug.Log("[perf2] " + tn + " topnames " + string.Join(" ", rs.GroupBy(r => r.name).OrderByDescending(g => g.Count()).Take(14).Select(g => g.Key + "=" + g.Count() + "/sh" + g.Count(r => r.shadowCastingMode != UnityEngine.Rendering.ShadowCastingMode.Off))));
           Debug.Log("[perf2] " + tn + " topbehaviours " + string.Join(" ", FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None).Where(b => b.isActiveAndEnabled).GroupBy(b => b.GetType().Name).OrderByDescending(g => g.Count()).Take(10).Select(g => g.Key + "=" + g.Count())));
           var urp = UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline as UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset;

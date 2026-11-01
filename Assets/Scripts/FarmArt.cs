@@ -302,7 +302,7 @@ public class Goose : MonoBehaviour
 {
     public enum St { Wander, Alert, Honk, Cool, Eat }
     public static readonly List<Goose> All = new List<Goose>();
-    public St st = St.Wander; public float stT; public Vector3 home; public float homeR = 5f; public static int HonksRun, AlertsRun; static bool toldAlert, toldHonk;
+    public St st = St.Wander; public float stT; public Vector3 home; public float homeR = 5f; public static int HonksRun, AlertsRun; static bool toldAlert, toldHonk; int honkN;
     public const float SightR = 7.5f, Cone = 60f, RingR = 8f;
     FarmArt.Rig rig; Vector3 goal; float lostT, noiseT, peckT, phase; TextMesh mark; LineRenderer ring, pulse; Lure lure; public Vector3 seenAt;
     public static Goose Create(Transform p, Vector3 pos, Vector3 home, float yaw)
@@ -362,13 +362,13 @@ public class Goose : MonoBehaviour
                     var to = (p ? p.transform.position : seenAt) - transform.position; to.y = 0; face = to; neckPitch = -12;
                     if (!sees) lostT += dt; else { lostT = 0; seenAt = p.transform.position; }
                     if (lostT > 0.25f) { Set(St.Cool); stT = 3.5f; break; }   // lost you: short calm-down
-                    if (stT > 1.0f) { Set(St.Honk); HonksRun++; Pet.Alarm(transform.position); Sfx.At("goose", transform.position + Vector3.up * 0.6f, 1f, 4, 45); if (!toldHonk) { toldHonk = true; Game.I.Toast("鵝在叫！看門狗要來了！"); } }
+                    if (stT > 1.0f) { Set(St.Honk); HonksRun++; Pet.Alarm(transform.position); Sfx.Voice("goose", transform.position + Vector3.up * 0.6f, 0.6f, Random.Range(0.95f, 1.05f), 4, 40); if (!toldHonk) { toldHonk = true; Game.I.Toast("鵝在叫！看門狗要來了！"); } }
                     break;
                 }
             case St.Honk:
                 {
                     var to = seenAt - transform.position; to.y = 0; face = to; neckPitch = 38 + 6 * Mathf.Sin(stT * 22); jawOpen = 0.5f + 0.5f * Mathf.Sin(stT * 22); wing = 0.6f + 0.4f * Mathf.Sin(stT * 16);
-                    noiseT -= dt; if (noiseT <= 0) { noiseT = 0.5f; Pet.Noise(transform.position, RingR); if (stT > 0.4f) Sfx.At("goose", transform.position + Vector3.up * 0.6f, 0.8f, 4, 45); }
+                    noiseT -= dt; if (noiseT <= 0) { noiseT = 0.5f; Pet.Noise(transform.position, RingR); if (stT > 0.4f && (honkN++ & 1) == 0) Sfx.Voice("goose", transform.position + Vector3.up * 0.6f, 0.5f, Random.Range(0.95f, 1.05f), 4, 40); }
                     if (stT > 3f) Set(St.Cool);
                     break;
                 }

@@ -22,6 +22,14 @@ public class Sfx : MonoBehaviour
         if (!I) return; var c = I.Clip(n); if (!c) return;
         var g = new GameObject("sfx"); g.transform.position = p; var a = g.AddComponent<AudioSource>(); a.clip = c; a.spatialBlend = 1; a.volume = vol; a.minDistance = minD; a.maxDistance = maxD; a.rolloffMode = AudioRolloffMode.Linear; a.pitch = Random.Range(0.94f, 1.06f); a.Play(); Destroy(g, c.length + 0.2f);
     }
+    // v0.9.21 one-shot 3D voice with explicit pitch + log falloff; returns the source so callers can tell if it is still playing
+    public static AudioSource Voice(string n, Vector3 p, float vol, float pitch, float minD, float maxD)
+    {
+        if (!I) return null; var c = I.Clip(n); if (!c) return null;
+        var g = new GameObject("sfx_voice"); g.transform.position = p; var a = g.AddComponent<AudioSource>(); a.clip = c; a.spatialBlend = 1; a.volume = vol; a.minDistance = minD; a.maxDistance = maxD;
+        a.rolloffMode = AudioRolloffMode.Custom; a.SetCustomCurve(AudioSourceCurveType.CustomRolloff, new AnimationCurve(new Keyframe(0, 1), new Keyframe(0.15f, 0.75f), new Keyframe(0.45f, 0.28f), new Keyframe(1, 0)));
+        a.dopplerLevel = 0; a.pitch = pitch; a.Play(); Destroy(g, c.length / Mathf.Max(0.5f, pitch) + 0.2f); return a;
+    }
     public static void Rotor(float v, float pitch = 1f) { if (!I) return; if (v > 0 && !I.rotor.isPlaying) I.rotor.Play(); I.rotor.volume = v; I.rotor.pitch = pitch; if (v <= 0) I.rotor.Stop(); }
     public static void Reveal(int r) => Play("reveal" + r, 0.9f);
 }

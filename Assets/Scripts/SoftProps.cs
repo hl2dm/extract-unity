@@ -261,10 +261,10 @@ public static class SoftProps
         var g = Group(p, "sk_mailbox", pos, yaw);
         Cyl(g, new Vector3(0, 0.5f, 0), 0.07f, 1f, GreyD); Block(g, new Vector3(0, 1.15f, 0), new Vector3(0.5f, 0.4f, 0.35f), Coral, 0.15f, false);
         Cyl(g, new Vector3(0, 1.35f, 0), 0.175f, 0.5f, Coral, 0.05f, Q(0, 0, 90), 16);   // v0.9.9 rounded mail-box roof
-        Block(g, new Vector3(0, 1.22f, 0.176f), new Vector3(0.34f, 0.1f, 0.012f), Dk(Coral, 0.8f), 0.02f, false); Block(g, new Vector3(0, 1.22f, 0.182f), new Vector3(0.26f, 0.025f, 0.01f), Plum, 0.008f, false);   // flap + slot
-        Picture(g, new Vector3(0, 1.07f, 0.184f), Q(0, 180, 0), 0.46f, 0.3f, "art_mail");   // v0.9.9 r3 illustrated MAIL plate
+        Block(g, new Vector3(0, 1.27f, 0.178f), new Vector3(0.34f, 0.1f, 0.012f), Dk(Coral, 0.8f), 0.02f, false); Block(g, new Vector3(0, 1.27f, 0.186f), new Vector3(0.26f, 0.025f, 0.006f), Plum, 0.004f, false);   // flap + slot (v0.9.21: clear of the plate)
+        Picture(g, new Vector3(0, 1.075f, 0.19f), Q(0, 180, 0), 0.42f, 0.2f, "art_mail");   // v0.9.21: plate sized between trim band and flap   // v0.9.9 r3 illustrated MAIL plate
         { var fp = Block(g, new Vector3(0.27f, 1.3f, -0.05f), new Vector3(0.02f, 0.32f, 0.03f), GreyD, 0.006f, false); Block(g, new Vector3(0.27f, 1.42f, 0.04f), new Vector3(0.025f, 0.11f, 0.16f), H("e8473f"), 0.01f, false); }   // side flag
-        foreach (float ry in new[] { 0.94f, 1.6f }) Block(g, new Vector3(0, ry, 0), new Vector3(0.53f, 0.035f, 0.39f), Dk(Coral, 0.6f), 0.015f, false);   // dark trim bands
+        foreach (float ry in new[] { 0.95f, 1.35f }) Block(g, new Vector3(0, ry, 0), new Vector3(0.53f, 0.035f, 0.39f), Dk(Coral, 0.6f), 0.015f, false);   // dark trim bands
         Block(g, new Vector3(0, 0.85f, 0), new Vector3(0.2f, 0.12f, 0.2f), GreyD, 0.03f, false); Cyl(g, new Vector3(0, 0.3f, 0), 0.085f, 0.04f, Dk(GreyD, 0.8f), 0.01f, null, 14);   // post bracket + collar
         Cyl(g, new Vector3(0, 0.02f, 0), 0.16f, 0.04f, GreyD, 0.01f, null, 14);
         var bc = g.gameObject.AddComponent<BoxCollider>(); bc.size = new Vector3(0.5f, 1.4f, 0.4f); bc.center = new Vector3(0, 0.7f, 0); return g;
@@ -661,26 +661,27 @@ public static class SoftProps
             // v0.9.7: townhouse (gt 2) mailbox goes on the far side of the door and the number plaque above the arch, so the window grille never covers them
             float mx = gt == 2 ? dx - 1.15f : dx + (dx > 0 ? -1.45f : 1.45f);
             Color mbc = new[] { Coral, MintD, Sky }[r.Next(3)];
-            Block(fr, new Vector3(mx, 1.25f, -0.17f), new Vector3(0.42f, 0.52f, 0.24f), mbc, 0.04f, false);   // wall mailbox body
-            Block(fr, new Vector3(mx, 1.54f, -0.2f), new Vector3(0.48f, 0.07f, 0.32f), Dk(mbc, 0.85f), 0.02f, false);   // lid
-            Block(fr, new Vector3(mx, 1.38f, -0.3f), new Vector3(0.28f, 0.035f, 0.02f), Dk(mbc, 0.45f), 0.005f, false);   // letter slot
-            Block(fr, new Vector3(mx, 1.1f, -0.3f), new Vector3(0.16f, 0.1f, 0.02f), White, 0.01f, false);   // name card
-            Block(fr, new Vector3(mx + 0.23f, 1.32f, -0.17f), new Vector3(0.03f, 0.24f, 0.05f), Coral, 0.008f, false);   // flag
+            var mb = Group(fr, "sk_wallmail", Vector3.zero);   // v0.9.21: grouped so the small-prop clip audit can check it
+            Block(mb, new Vector3(mx, 1.25f, -0.17f), new Vector3(0.42f, 0.52f, 0.24f), mbc, 0.04f, false);   // wall mailbox body
+            Block(mb, new Vector3(mx, 1.54f, -0.19f), new Vector3(0.48f, 0.07f, 0.28f), Dk(mbc, 0.85f), 0.02f, false);   // lid
+            Block(mb, new Vector3(mx, 1.38f, -0.3f), new Vector3(0.28f, 0.035f, 0.02f), Dk(mbc, 0.45f), 0.005f, false);   // letter slot
+            Block(mb, new Vector3(mx, 1.1f, -0.3f), new Vector3(0.16f, 0.1f, 0.02f), White, 0.01f, false);   // name card
+            Block(mb, new Vector3(mx + 0.23f, 1.32f, -0.17f), new Vector3(0.03f, 0.24f, 0.05f), Coral, 0.008f, false);   // flag
             {   // v0.9.13 mailbox detail: back plate, raised rim, slot flap, rivets, keyhole door, name text, flag pivot, newspaper
-                Block(fr, new Vector3(mx, 1.28f, -0.06f), new Vector3(0.5f, 0.66f, 0.03f), Dk(wall, 0.85f), 0.01f, false);
-                foreach (int sx in new[] { -1, 1 }) Block(fr, new Vector3(mx + sx * 0.2f, 1.24f, -0.295f), new Vector3(0.025f, 0.5f, 0.015f), Lt(mbc, 0.25f), 0.006f, false);
-                Block(fr, new Vector3(mx, 1.0f, -0.295f), new Vector3(0.42f, 0.025f, 0.015f), Lt(mbc, 0.25f), 0.006f, false);
-                Block(fr, new Vector3(mx, 1.41f, -0.31f), new Vector3(0.3f, 0.05f, 0.012f), Lt(mbc, 0.15f), 0.006f, false).transform.localRotation = Q(-18, 0, 0);   // slot flap
-                Block(fr, new Vector3(mx, 1.18f, -0.298f), new Vector3(0.3f, 0.26f, 0.012f), Dk(mbc, 0.92f), 0.01f, false);   // collection door
-                Cyl(fr, new Vector3(mx + 0.11f, 1.18f, -0.307f), 0.016f, 0.008f, Data.H("d9b24a"), 0.002f, Q(90, 0, 0), 12); Block(fr, new Vector3(mx + 0.11f, 1.18f, -0.312f), new Vector3(0.004f, 0.014f, 0.003f), GreyD, 0.001f, false);   // keyhole
-                foreach (int sx in new[] { -1, 1 }) foreach (float sy in new[] { 1.03f, 1.47f }) Ball(fr, new Vector3(mx + sx * 0.18f, sy, -0.305f), Vector3.one * 0.018f, Lt(Grey, 0.3f), 6);   // rivets
-                Text(fr, new Vector3(mx, 1.1f, -0.312f), Quaternion.identity, "林宅", 0.018f, Data.H("3a2f35"));
-                Text(fr, new Vector3(mx, 1.27f, -0.306f), Quaternion.identity, "信 件", 0.022f, Lt(mbc, 0.55f));
-                Cyl(fr, new Vector3(mx + 0.23f, 1.22f, -0.17f), 0.02f, 0.05f, GreyD, 0.006f, Q(0, 0, 90), 10);   // flag pivot
-                Block(fr, new Vector3(mx + 0.23f, 1.42f, -0.17f), new Vector3(0.03f, 0.08f, 0.12f), Coral, 0.008f, false);   // flag paddle
-                var np = Cyl(fr, new Vector3(mx - 0.05f, 1.5f, -0.33f), 0.03f, 0.22f, Data.H("eae4d6"), 0.01f, Q(0, 0, 80), 12); np.name = "sk_newspaper";
+                Block(mb, new Vector3(mx, 1.28f, -0.06f), new Vector3(0.5f, 0.66f, 0.03f), Dk(wall, 0.85f), 0.01f, false).name = "backing";
+                foreach (int sx in new[] { -1, 1 }) Block(mb, new Vector3(mx + sx * 0.2f, 1.24f, -0.307f), new Vector3(0.025f, 0.5f, 0.015f), Lt(mbc, 0.25f), 0.006f, false);
+                Block(mb, new Vector3(mx, 1.0f, -0.307f), new Vector3(0.42f, 0.025f, 0.015f), Lt(mbc, 0.25f), 0.006f, false);
+                Block(mb, new Vector3(mx, 1.41f, -0.31f), new Vector3(0.3f, 0.05f, 0.012f), Lt(mbc, 0.15f), 0.006f, false).transform.localRotation = Q(-18, 0, 0);   // slot flap
+                Block(mb, new Vector3(mx, 1.18f, -0.298f), new Vector3(0.3f, 0.26f, 0.012f), Dk(mbc, 0.92f), 0.01f, false);   // collection door
+                Cyl(mb, new Vector3(mx + 0.11f, 1.18f, -0.307f), 0.016f, 0.008f, Data.H("d9b24a"), 0.002f, Q(90, 0, 0), 12); Block(mb, new Vector3(mx + 0.11f, 1.18f, -0.312f), new Vector3(0.004f, 0.014f, 0.003f), GreyD, 0.001f, false);   // keyhole
+                foreach (int sx in new[] { -1, 1 }) foreach (float sy in new[] { 1.03f, 1.47f }) Ball(mb, new Vector3(mx + sx * 0.18f, sy, -0.305f), Vector3.one * 0.018f, Lt(Grey, 0.3f), 6);   // rivets
+                Text(mb, new Vector3(mx, 1.1f, -0.312f), Quaternion.identity, "林宅", 0.018f, Data.H("3a2f35"));
+                Text(mb, new Vector3(mx, 1.27f, -0.306f), Quaternion.identity, "信 件", 0.022f, Lt(mbc, 0.55f));
+                Cyl(mb, new Vector3(mx + 0.255f, 1.22f, -0.17f), 0.02f, 0.014f, GreyD, 0.004f, Q(0, 0, 90), 10);   // flag pivot cap (v0.9.21: outside the flag, was skewered through it)
+                Block(mb, new Vector3(mx + 0.23f, 1.42f, -0.17f), new Vector3(0.03f, 0.08f, 0.12f), Coral, 0.008f, false);   // flag paddle
+                var np = Block(mb, new Vector3(mx - 0.03f, 1.43f, -0.322f), new Vector3(0.2f, 0.085f, 0.006f), Data.H("f4efe2"), 0.004f, false); np.transform.localRotation = Q(-14, 0, 4); np.name = "sk_letter";   // v0.9.21: letter peeking from the slot (old newspaper roll cut through the lid + wall)
             }
-            float py = gt == 2 ? 2.72f : 2.15f, ppx = gt == 2 ? dx : mx;
+            float py = gt == 2 ? 2.98f : 2.15f, ppx = gt == 2 ? dx : mx;
             Block(fr, new Vector3(ppx, py, -0.08f), new Vector3(0.56f, 0.32f, 0.04f), Dk(trim, 0.6f), 0.02f, false);   // plaque back
             Block(fr, new Vector3(ppx, py, -0.11f), new Vector3(0.5f, 0.26f, 0.03f), Lt(Butter, 0.2f), 0.03f, false);   // enamel face
             Text(fr, new Vector3(ppx, py, -0.135f), Quaternion.identity, (r.Next(2, 98)).ToString(), 0.035f, Dk(trim, 0.45f));
