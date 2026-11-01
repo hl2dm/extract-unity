@@ -7,7 +7,9 @@ public class Bus : Interactable
 {
     public enum BS { Away, Arriving, Waiting, Leaving }
     public BS state = BS.Away; public Transform bus, door, sign; public Vector3 stopPos; public float nextArrive = Data.BusFirst, waitLeft; public bool cine, guaranteed;
-    Vector3 lane, dir; float tState; Transform[] wheels = new Transform[0];
+    Vector3 lane, dir, prevBus; float tState; public static int Hits; public static bool TestDrive;   // v0.9.24 bus-hit shove
+    public Vector3 LanePoint(float t) => lane + dir * t; public Vector3 Dir => dir; public Vector3 LanePointPrev(Vector3 hd, float step) => bus.position - hd * step;
+    public void ResetPrev() { prevBus = bus.position; } Transform[] wheels = new Transform[0];
     public bool CanBoard => state == BS.Waiting;
     public override string Prompt => CanBoard ? "<color=#3f9a6a>[E] 上公車回家！</color>" + (guaranteed ? "" : "（再 " + Mathf.CeilToInt(waitLeft) + " 秒開走）") : state == BS.Arriving ? "公車快到了，等一下下～" : "公車站：下一班大約 " + Mathf.Max(0, Mathf.CeilToInt(NextIn)) + " 秒後";
     public float NextIn => Game.I ? nextArrive - Game.I.runT : 0;
@@ -42,7 +44,8 @@ public class Bus : Interactable
         var col = root.AddComponent<BoxCollider>(); col.isTrigger = true; col.center = Vector3.up * 1.2f; col.size = new Vector3(1.4f, 2.6f, 1.4f);
         // bus
         b.lane = stop + side * 2.6f;
-        var bt = new GameObject("Bus").transform; bt.SetParent(parent, false); b.bus = bt; bt.rotation = Quaternion.LookRotation(laneDir);
+        var bt = new GameObject("Bus").transform; bt.SetParent(parent, false); b.bus = bt; SafetyNet.Movers.RemoveAll(m => !m); SafetyNet.Movers.Add(bt);
+        var brb = bt.gameObject.AddComponent<Rigidbody>(); brb.isKinematic = true; brb.interpolation = RigidbodyInterpolation.None; brb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;   // moving collider done properly bt.rotation = Quaternion.LookRotation(laneDir);
         // SoftKit chubby bus: butter body, sky roof + skirt, mint stripe, headlight eyes and a smile
         var C = SoftKit.Butter;
         SoftKit.Block(bt, new Vector3(0, 1.75f, 0), new Vector3(2.5f, 2.4f, 8.4f), C, 0.55f, true, 0, 0.02f);
@@ -83,6 +86,7 @@ public class Bus : Interactable
     Vector3 BusStopPos => lane - dir * 3.3f; // door lines up with the sign
     void Update()
     {
+        if (TestDrive) return;
         if (cine || !Game.I || !Game.I.RaidActive) return;
         float dt = Time.deltaTime; tState += dt; float tl = Game.I.TimeLeft;
         switch (state)
@@ -102,9 +106,26 @@ public class Bus : Interactable
                 { float k = Mathf.Clamp01(tState / 4f); bus.position = BusStopPos + dir * (k * k * 70); Spin(k * 60); if (k >= 1) { state = BS.Away; bus.gameObject.SetActive(false); } }
                 break;
         }
+        if (bus.gameObject.activeSelf) { if ((bus.position - prevBus).sqrMagnitude > 100f) prevBus = bus.position; HitCheck(prevBus, bus.position); prevBus = bus.position; }
         if (door) door.localPosition = new Vector3(-1.27f, 1.5f, 3.3f - (state == BS.Waiting ? Mathf.Clamp01(tState * 2) * 1.1f : 0));
         if (Player.I && bus.gameObject.activeSelf) { float d = Vector3.Distance(Player.I.transform.position, bus.position); Sfx.Engine(Mathf.Clamp01(1 - d / 50f) * 0.5f, state == BS.Waiting ? 0.8f : 1.1f); } else Sfx.Engine(0);
     }
+    /// v0.9.24: a moving bus never drives its colliders into the player (that let the CharacterController depenetrate down through the
+    /// ground). The swept body (+ margin) is checked right after the bus moves; anyone inside gets a bounded sideways shove + short stagger.
+    public bool HitCheck(Vector3 a, Vector3 b)
+    {
+        var p = Player.I; if (!p || !p.cc || !p.cc.enabled || (b - a).sqrMagnitude < 1e-6f) return false;
+        Vector3 f = bus.forward, r = bus.right, pp = p.transform.position, d = pp - b;
+        float rad = p.cc.radius + 0.35f, hw = 1.3f + rad, s = Vector3.Dot(b - a, f), hl = 4.3f + rad + Mathf.Abs(s);
+        float lx = Vector3.Dot(d, r), lz = Vector3.Dot(d, f);
+        if (Mathf.Abs(lx) > hw || Mathf.Abs(lz) > hl || d.y > 3.2f || d.y < -1.5f) return false;
+        float sx = lx >= 0 ? 1 : -1; Vector3 tgt = pp + r * (sx * (hw + 0.2f) - lx);
+        if (!SafetyNet.FreeSpot(tgt, p.cc.radius, p.cc.height, p.cc, out _)) { var alt = pp + r * (-sx * (hw + 0.2f) - lx); if (SafetyNet.FreeSpot(alt, p.cc.radius, p.cc.height, p.cc, out _)) { tgt = alt; sx = -sx; } }
+        p.BusShove(tgt, r * sx); Hits++;
+        if (Game.I && Time.time - lastHitToast > 3f) { lastHitToast = Time.time; Game.I.Toast("哎唷！被公車擦到了，小心馬路！"); Sfx.At("honk", b, 1f, 6, 60); }
+        return true;
+    }
+    float lastHitToast = -9;
     void Spin(float v) { foreach (var w in wheels) if (w) w.Rotate(Vector3.up, v * Time.deltaTime * 20, Space.Self); }
     /// test helper: bring the bus to the stop right now
     public void ForceArrive() { bus.gameObject.SetActive(true); bus.position = BusStopPos; state = BS.Waiting; tState = 1; waitLeft = 8; guaranteed = true; }

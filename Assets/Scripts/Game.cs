@@ -38,6 +38,7 @@ public class Game : MonoBehaviour
         SaveSys.Load();
         ui = gameObject.AddComponent<UI>(); ui.Build(); TouchIn.Ensure();
         player = Player.Create();
+        TitleSplash.SetWindowTitle(); if (!autoshots && !System.Environment.GetCommandLineArgs().Contains("-autotest")) TitleSplash.Show();   // v0.9.24 《熊熊搜刮隊》
         if (SaveSys.S.inRaid)
         {
             SaveSys.S.inRaid = false; SaveSys.S.seedN++; SaveSys.Save();
@@ -499,6 +500,50 @@ public class Game : MonoBehaviour
     public Interactable Focus => focus;
 
     // v0.9.16 noise ring + hiding spots
+    // v0.9.24: bus hits at many road points / angles / speeds / gaits (+ scooter, + wading); player must end on the ground, outside the bus. Then the safety net itself.
+    int bhCases, bhBad, bhHit; string bhWhy;
+    IEnumerator BusCase(Bus b, Vector3 c, Vector3 heading, float lx, float speed, int gait)
+    {
+        var bt = b.bus; var r = Vector3.Cross(Vector3.up, heading).normalized;
+        if (SafetyNet.Ray(c + Vector3.up * 3, Vector3.down, 6, null, out var g)) c.y = g.point.y; 
+        if (!Player.Riding) player.Teleport(c + Vector3.up * 0.05f, Random.Range(0f, 360f)); else player.Teleport(c + Vector3.up * 0.15f, player.yaw);
+        player.autoGait = Player.Riding ? -1 : gait; player.autoMove = new Vector3(0, 0, gait >= 0 ? 1 : 0); yield return null;
+        var pc = player.transform.position; var center = pc - r * lx; center.y = pc.y - 0.0f;
+        bt.rotation = Quaternion.LookRotation(heading); bt.position = new Vector3(center.x, bt.position.y, center.z) - heading * 9f; b.ResetPrev();
+        int h0 = Bus.Hits, s0 = SafetyNet.Restores; float step = speed / 30f;
+        for (float d = 0; d < 18f; d += step) { bt.position += heading * step; b.HitCheck(b.LanePointPrev(heading, step), bt.position); b.ResetPrev(); yield return null; }
+        player.autoGait = -1; player.autoMove = Vector3.zero; for (int k = 0; k < 4; k++) yield return null;
+        var q = player.transform.position; var lp = bt.InverseTransformPoint(q); bhCases++; if (Bus.Hits > h0) bhHit++;
+        bool inBus = Mathf.Abs(lp.x) < 1.3f && Mathf.Abs(lp.z) < 4.25f && lp.y < 3.2f;
+        bool ok = q.y > -0.25f && !SafetyNet.Lost(q, player.cc) && !inBus && SafetyNet.Restores == s0;
+        if (!ok) { bhBad++; bhWhy = "lx " + lx + " v " + speed + " gait " + gait + " ride " + Player.Riding + " at " + q.ToString("F2") + (inBus ? " inBus" : "") + (SafetyNet.Restores != s0 ? " netCaught" : ""); Debug.Log("[busHit] FAIL " + bhWhy); }
+    }
+    IEnumerator BusHitTest()
+    {
+        float runT0 = runT, fz0 = Pet.FreezeAll; int cr0 = caughtRun, pc0 = player.caught; Pet.FreezeAll = 999; var b = level.bus; var bt = b.bus; bool act = bt.gameObject.activeSelf; var p0 = bt.position; var r0 = bt.rotation; Bus.TestDrive = true; bt.gameObject.SetActive(true);
+        bhCases = bhBad = bhHit = 0; bhWhy = ""; var dir = b.Dir; var side = Vector3.Cross(Vector3.up, dir).normalized;
+        float[] ts = { -30, -18, -7, 4, 15, 26 }; float[] lxs = { -1.2f, -0.35f, 0.4f, 1.15f }; float[] sp = { 7, 15, 26 }; int[] gaits = { 1, 2, 0 }; int k = 0;
+        foreach (var t in ts) foreach (var lx in lxs) { var lpt = b.LanePoint(t); if (Mathf.Abs(lpt.x) > 52 || Mathf.Abs(lpt.z) > 52) continue; var hd = Quaternion.Euler(0, (k % 3 - 1) * 20f, 0) * (k % 2 == 0 ? dir : -dir); yield return BusCase(b, b.LanePoint(t), hd, lx, sp[k % 3], gaits[(k / 3) % 3]); k++; }
+        var moto = level.root.GetComponentsInChildren<Moto>().FirstOrDefault();
+        if (moto) { player.Teleport(moto.transform.position - moto.transform.right * 1.2f, 0); yield return null; moto.Use(); yield return null;
+            if (Player.Riding) { foreach (var t in new float[] { -15, 10, 24 }) yield return BusCase(b, b.LanePoint(t), t > 0 ? dir : -dir, 0.2f, 18, -1); moto.Use(); yield return null; } }
+        if (Pond.On) foreach (var lx in new[] { -0.5f, 0.6f }) yield return BusCase(b, Pond.C + new Vector3(lx * 2, 0, 0.5f), Vector3.right, lx, 12, 1);
+        Bus.TestDrive = false; bt.position = p0; bt.rotation = r0; b.ResetPrev(); bt.gameObject.SetActive(act); runT = runT0;   // the test must not eat the raid clock
+        Check(bhBad == 0 && bhHit >= bhCases * 0.5f, "bus hits: " + bhCases + " cases (" + bhHit + " shoved), player always stays on the ground" + (bhBad > 0 ? " - " + bhBad + " bad, e.g. " + bhWhy : ""));
+        // safety net: kill plane, buried under the ground, pet below the world
+        var safe = b.LanePoint(-30) + side * 8f;
+        foreach (var lt in new float[] { -30, -18, -7, 4 }) foreach (var sk in new float[] { 4, -4, 7, -7 }) { var c = b.LanePoint(lt) + side * sk; c.y = 0.1f; if (Mathf.Abs(c.x) < 52 && Mathf.Abs(c.z) < 52 && SafetyNet.FreeSpot(c, 0.4f, 1.6f, player.cc, out var fs) && !SafetyNet.Lost(fs, player.cc)) { safe = fs; goto found; } }
+        found: player.Teleport(safe + Vector3.up * 0.1f, 0); for (int i = 0; i < 20; i++) yield return null;
+        int r1 = SafetyNet.Restores; player.Teleport(new Vector3(safe.x, -12f, safe.z), 0); for (int i = 0; i < 3; i++) yield return null;
+        bool killOk = SafetyNet.Restores > r1 && player.transform.position.y > -0.3f;
+        r1 = SafetyNet.Restores; player.Teleport(new Vector3(safe.x + 1, -0.7f, safe.z), 0); for (int i = 0; i < 12; i++) yield return null;
+        bool buryOk = SafetyNet.Restores > r1 && player.transform.position.y > -0.3f && !SafetyNet.Lost(player.transform.position, player.cc);
+        Check(killOk && buryOk, "safety net: player below kill plane " + (killOk ? "restored" : "LOST") + ", buried under ground " + (buryOk ? "restored" : "LOST"));
+        var pet = Pet.All.FirstOrDefault(x => x && x.cc && x.cc.enabled);
+        if (pet) { for (int i = 0; i < 30; i++) yield return null; var pp = pet.transform.position; pet.Warp(new Vector3(pp.x, -0.8f, pp.z), pp + Vector3.forward); for (int i = 0; i < 30; i++) yield return null;
+            Check(pet.transform.position.y > -0.3f && !SafetyNet.Lost(pet.transform.position, pet.cc), "safety net: pet buried under ground restored (" + pet.transform.position.y.ToString("F2") + ")"); }
+        runT = runT0; Pet.FreezeAll = fz0; caughtRun = cr0; player.caught = pc0; player.cryT = 0;
+    }
     IEnumerator StealthTest()
     {
         var pp = player; pp.Unhide(); float pitch0 = pp.pitch; pp.pitch = 30;
@@ -1012,8 +1057,14 @@ public class Game : MonoBehaviour
                 Check(busN >= 2, "several buses came this run (" + busN + ")"); Check(Objective().Contains("加碼"), "late-bus bonus shown in objective");
                 yield return new WaitForSeconds(0.6f); yield return Shot("oneMap_wishes");
             }
+            if (run == 0 && !string.IsNullOrEmpty(shotDir)) { bool iok = false; string iw = ""; yield return TitleSplash.Probe(System.IO.Path.Combine(shotDir, "v0924_intro.png"), (a, w) => { iok = a; iw = w; });
+#if !UNITY_WEBGL
+                Check(iok, "intro movie ships + decodes (" + iw + ")");
+#endif
+            }
             if (run == 0) yield return StealthTest();
             if (run == 2) yield return FarmTest();
+            if (run == 0 || run == 2) yield return BusHitTest();
             if (run == 0) { int add = 30 - bag.Count; for (int k = 0; k < add; k++) { var d = Data.Items[k % Data.Items.Length]; bag.Add(new Item { r = d.r, ic = d.ic, name = d.name, v = d.v }); } Check(bag.Count(i => !i.key) > 24, "full bag for results layout (" + bag.Count + ")"); }
             // bus stop + cinematic
             if (!level.bus.CanBoard) level.bus.ForceArrive();

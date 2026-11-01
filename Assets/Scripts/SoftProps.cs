@@ -336,6 +336,16 @@ public static class SoftProps
     // ---------------- building parts (all facing local -Z = outward from a facade at z=0)
     /// v0.9.7 鐵窗花 wrought-iron grille: slim frame + bars, and a fine forged motif inset inside every pane cell
     /// (outline petals / diamond lattice / sunrise fan chosen per window) - no fat balls, nothing over a bar.
+    /// v0.9.24 simple window frame: four bars, no grille/mullion
+    public static Transform WinFrame(Transform p, Vector3 center, float w, float h, Color c)
+    {
+        var g = Group(p, "sk_winframe", center); float t = 0.1f;
+        Block(g, new Vector3(0, h / 2 + t / 2, 0), new Vector3(w + 2 * t, t, t), c, 0.025f, false); Block(g, new Vector3(0, -h / 2 - t / 2, -0.03f), new Vector3(w + 2 * t + 0.1f, t, t + 0.08f), c, 0.025f, false);
+        Block(g, new Vector3(-w / 2 - t / 2, 0, 0), new Vector3(t, h, t), c, 0.025f, false); Block(g, new Vector3(w / 2 + t / 2, 0, 0), new Vector3(t, h, t), c, 0.025f, false);
+        foreach (int s in new[] { -1, 1 }) Block(g, new Vector3(s * (w / 2 + t + 0.02f), -0.03f, t / 2 - 0.005f), new Vector3(0.04f, h + t, 0.012f), Dk(c, 0.62f), 0.004f, false);   // soft contact shadow so the frame sits in the wall
+        Block(g, new Vector3(0, -h / 2 - t - 0.035f, t / 2 - 0.005f), new Vector3(w + 2 * t + 0.1f, 0.05f, 0.012f), Dk(c, 0.62f), 0.004f, false);
+        return g;
+    }
     public static Transform Grille(Transform p, Vector3 center, float w, float h, Color c, bool bulge = true)
     {
         var g = Group(p, "sk_grille", center);
@@ -424,41 +434,22 @@ public static class SoftProps
         int hs = Mathf.Abs(Mathf.RoundToInt(p.TransformPoint(center).x * 7.3f + p.TransformPoint(center).y * 3.1f + p.TransformPoint(center).z * 5.7f));
         float rise = arch ? Mathf.Min(w / 2, 0.42f) : 0f, fb = 0.1f, dep = 0.13f;
         Color inside = Color.Lerp(new Color(0.36f, 0.28f, 0.32f), new Color(0.5f, 0.4f, 0.34f), (hs % 5) / 4f);
-        Block(g, new Vector3(0, 0, 0.03f), new Vector3(w, h, 0.04f), inside, 0.01f, false);                                // room back wall (recess)
-        Block(g, new Vector3(0, h / 2 - 0.12f, 0.0f), new Vector3(w * 0.9f, 0.06f, 0.03f), new Color(1f, 0.82f, 0.6f), 0.01f, false);   // warm lit ceiling edge
+        // v0.9.24 simple pastel window: deep recess, soft warm back-light, one pair of flat tied-back curtains, single frame, one glass sheen.
+        // Strict depth layers (z): back wall +0.01..+0.05 > glow +0.008 > curtains -0.02..-0.03 > glass -0.09 > frame -0.08..-0.21. Nothing crosses another layer.
+        Block(g, new Vector3(0, 0, 0.03f), new Vector3(w * 1.02f, h * 1.02f, 0.04f), inside, 0.01f, false);   // room back wall (opaque, hides the interior)
         foreach (int sx in new[] { -1, 1 }) Block(g, new Vector3(sx * w / 2, 0, -0.07f), new Vector3(0.03f, h, 0.2f), Dk(frame, 0.7f), 0.005f, false);   // reveal sides
         Block(g, new Vector3(0, -h / 2, -0.07f), new Vector3(w, 0.03f, 0.2f), Dk(frame, 0.7f), 0.005f, false);
-        Color[] cc = { new Color(0.98f, 0.93f, 0.86f), new Color(0.95f, 0.82f, 0.86f), new Color(0.86f, 0.9f, 0.96f), new Color(0.95f, 0.9f, 0.72f) };
-        Color cu = cc[hs % 4]; float open = 0.26f + (hs % 3) * 0.05f;
-        if (hs % 5 == 4) { var bl = Drape(g, new Vector3(0, h / 2 - h * 0.2f, -0.05f), Quaternion.identity, w * 0.94f, h * 0.36f, Mathf.Max(6, Mathf.RoundToInt(w * 8)), 0.06f, cu); bl.name = "sk_curtainp"; }
-        if (true) foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(5, Mathf.RoundToInt(w * open * 14)), 0.075f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; if (hs % 2 == 0) { Ring(g, new Vector3(sx * w * (0.5f - open / 2), -0.08f, -0.06f), Q(90, 0, 0), w * open * 0.28f, 0.012f, Dk(cu, 0.75f), 16); } }   // v0.9.14 r2: every window gets side cloth panels
-        // half-drawn cafe curtain (was a slab)
-        if (false) foreach (int sx in new[] { -1, 1 }) { var c = Drape(g, new Vector3(sx * w * (0.5f - open / 2), -0.01f, -0.055f), Quaternion.identity, w * open, h * 0.9f, Mathf.Max(5, Mathf.RoundToInt(w * open * 14)), 0.075f, cu, (hs % 2 == 0) ? 0.45f : -1, sx); c.name = "sk_curtainp"; if (hs % 2 == 0) { Ring(g, new Vector3(sx * w * (0.5f - open / 2), -0.08f, -0.06f), Q(90, 0, 0), w * open * 0.28f, 0.012f, Dk(cu, 0.75f), 16); } }   // v0.9.12 pleated cloth panels (were boxes)
-        { var glw = Art.Prim(PrimitiveType.Quad, g, new Vector3(0, 0.02f, 0.008f), new Vector3(w * 0.94f, h * 0.88f, 1), Art.Emissive(Color.Lerp(new Color(1f, 0.83f, 0.58f), cu, 0.35f), 0.75f)); glw.name = "sk_winglow"; }   // v0.9.13 warm back-light behind the cloth
-        Cyl(g, new Vector3(0, h / 2 - 0.035f, -0.075f), 0.012f, w * 0.96f, Dk(frame, 0.6f), 0.005f, Q(0, 0, 90), 8); for (int ri = 0; ri < 7; ri++) Ring(g, new Vector3(-w * 0.45f + ri * w * 0.15f, h / 2 - 0.035f, -0.075f), Q(0, 90, 0), 0.02f, 0.005f, Dk(frame, 0.5f), 10);   // v0.9.13 rod + rings
-        if (hs % 2 == 0) { float ix = w * 0.22f * ((hs % 4) - 1.5f) / 1.5f; Block(g, new Vector3(ix, -h / 2 + 0.12f, 0.0f), new Vector3(0.16f, 0.2f, 0.12f), Color.Lerp(inside, Color.black, 0.35f), 0.03f, false); Ball(g, new Vector3(ix, -h / 2 + 0.32f, 0.0f), new Vector3(0.26f, 0.22f, 0.1f), Color.Lerp(inside, new Color(0.2f, 0.3f, 0.2f), 0.6f), 8); }   // pot-plant silhouette on the inner sill
-        else Block(g, new Vector3(w * 0.25f, -h * 0.05f, 0.015f), new Vector3(w * 0.3f, h * 0.5f, 0.02f), Color.Lerp(inside, Color.black, 0.25f), 0.02f, false);   // bookcase silhouette
+        Block(g, new Vector3(0, h / 2, -0.07f), new Vector3(w, 0.03f, 0.2f), Dk(frame, 0.7f), 0.005f, false);
+        Color[] cc = { new Color(0.98f, 0.93f, 0.86f), new Color(0.95f, 0.84f, 0.87f), new Color(0.87f, 0.91f, 0.96f), new Color(0.95f, 0.91f, 0.76f) };
+        Color cu = cc[hs % 4]; float open = 0.22f + (hs % 3) * 0.04f;
+        { var glw = Art.Prim(PrimitiveType.Quad, g, new Vector3(0, 0, 0.008f), new Vector3(w * 0.96f, h * 0.96f, 1), Art.Emissive(Color.Lerp(new Color(1f, 0.85f, 0.62f), cu, 0.4f), 0.6f)); glw.name = "sk_winglow"; }
+        foreach (int sx in new[] { -1, 1 }) { var c = Block(g, new Vector3(sx * w * (0.5f - open / 2), 0, -0.025f), new Vector3(w * open, h * 0.97f, 0.01f), cu, 0.004f, false); c.name = "sk_curtainp"; }
+        Block(g, new Vector3(0, h / 2 - h * 0.07f, -0.025f), new Vector3(w * 0.97f, h * 0.12f, 0.012f), Dk(cu, 0.92f), 0.004f, false);   // flat pelmet (no scallops / swatches)
         // frame: four bars with depth (not a pillow slab)
         foreach (int sx in new[] { -1, 1 }) Block(g, new Vector3(sx * (w / 2 + fb / 2), 0, -0.15f), new Vector3(fb, h + fb * 2, dep), frame, 0.025f, false);
         if (!arch) Block(g, new Vector3(0, h / 2 + fb / 2, -0.15f), new Vector3(w + fb * 2, fb, dep), frame, 0.025f, false);
         Block(g, new Vector3(0, -h / 2 - fb / 2, -0.15f), new Vector3(w + fb * 2, fb, dep), frame, 0.025f, false);
-        // mullions + transom (a grille window uses the grille's own bar grid, so the two never cross)
-        if (!grille)
-        {
-            Block(g, new Vector3(0, 0, -0.11f), new Vector3(0.05f, h, 0.06f), Lt(frame, 0.2f), 0.01f, false);
-            Block(g, new Vector3(0, h * 0.18f, -0.11f), new Vector3(w, 0.05f, 0.06f), Lt(frame, 0.2f), 0.01f, false);
-        }
-        // glass hint: one faint horizontal sky sheen across the upper pane (no diagonal sticks)
-        Block(g, new Vector3(0, h * 0.36f, -0.09f), new Vector3(w * 0.96f, h * 0.2f, 0.004f), Color.Lerp(inside, new Color(0.88f, 0.86f, 0.98f), 0.35f), 0.002f, false);
-        Drape(g, new Vector3(0, h / 2 - 0.085f, -0.08f), Quaternion.identity, w * 0.96f, 0.15f, Mathf.Max(3, Mathf.RoundToInt(w * 3.5f)), 0.03f, Dk(cu, 0.9f));   // v0.9.14 soft gathered valance
-        {   // v0.9.14 scalloped hem: soft half-round fabric lobes + piping (was spiky ruffle teeth)
-            int nsc = Mathf.Max(3, Mathf.RoundToInt(w * 4f)); float scw = w * 0.96f / nsc; var omv = PushM(MatK.Fabric);
-            for (int i = 0; i < nsc; i++) { var lb = Ball(g, new Vector3(-w * 0.48f + (i + 0.5f) * scw, h / 2 - 0.165f, -0.095f), new Vector3(scw * 1.02f, 0.085f, 0.03f), Dk(cu, 0.84f), 12); }
-            Cyl(g, new Vector3(0, h / 2 - 0.155f, -0.112f), 0.008f, w * 0.96f, Lt(cu, 0.35f), 0.004f, Q(0, 0, 90), 8);   // piping
-            MatA = omv;
-        }
-        Cyl(g, new Vector3(0, h / 2 - 0.005f, -0.075f), 0.012f, w * 0.98f, Dk(frame, 0.6f), 0.004f, Q(0, 0, 90), 10);   // curtain rod
-        if (hs % 3 != 2) { var lp = Art.Prim(PrimitiveType.Sphere, g, new Vector3(w * 0.15f * ((hs % 2) * 2 - 1), h * 0.22f, 0.0f), Vector3.one * Mathf.Min(0.16f, w * 0.08f), WinLampM ?? (WinLampM = Art.Emissive(new Color(1f, 0.8f, 0.55f), 0.9f))); lp.name = "sk_winlamp"; }   // dim pendant inside
+        Block(g, new Vector3(0, h * 0.3f, -0.045f), new Vector3(w * 0.94f, h * 0.16f, 0.004f), Color.Lerp(inside, new Color(0.9f, 0.9f, 0.98f), 0.3f), 0.002f, false);   // soft glass sheen
         // sill + lintel
         Block(g, new Vector3(0, -h / 2 - fb - 0.04f, -0.16f), new Vector3(w + 0.3f, 0.08f, 0.22f), Lt(frame, 0.15f), 0.02f, false);
         Block(g, new Vector3(0, -h / 2 - fb - 0.11f, -0.2f), new Vector3(w + 0.2f, 0.06f, 0.16f), Dk(frame, 0.85f), 0.01f, false);
@@ -470,7 +461,7 @@ public static class SoftProps
         }
         else Block(g, new Vector3(0, h / 2 + fb + 0.07f, -0.14f), new Vector3(w + 0.36f, 0.14f, 0.18f), Dk(frame, 0.92f), 0.03f, false);
         if (flowers.HasValue) { Block(g, new Vector3(0, -h / 2 - 0.36f, -0.36f), new Vector3(w * 0.9f, 0.3f, 0.22f), WoodD, 0.03f, false); for (int i = 0; i < 4; i++) Goods.Shrub(g, new Vector3(-w * 0.45f + 0.2f + i * (w * 0.9f - 0.4f) / 3, -h / 2 - 0.21f, -0.36f), 0.17f, 0.24f, i % 2 == 0 ? Leaf : LeafD, flowers.Value, 41 + i + hs % 7); }
-        if (grille) Grille(g, new Vector3(0, 0, -0.08f), w + 0.1f, h + 0.1f, White);
+        // v0.9.24: no iron grille over windows (simple style)
         MatA = om; return g;
     }
     public static Transform Awning(Transform p, Vector3 center, float w, float depth, Color a, Color b)
@@ -782,7 +773,7 @@ public static class SoftProps
         var doorRects = new List<Vector3>();   // x centre, top y, half width (fr-local)
         foreach (Transform dv in fr) if (dv.name == "sk_doorvis") { var db = Art.RenderBounds(dv.gameObject); var c0 = fr.InverseTransformPoint(db.min); var c1 = fr.InverseTransformPoint(db.max); doorRects.Add(new Vector3((c0.x + c1.x) / 2, Mathf.Max(c0.y, c1.y), Mathf.Abs(c1.x - c0.x) / 2)); }
         // 1) windows: reveals (depth) + louvred shutters + hinges
-        foreach (Transform wn in fr) if (wn.name == "sk_win")
+        if (false) foreach (Transform wn in fr) if (wn.name == "sk_win")   // v0.9.24: louvred shutters retired (they crowded / clipped the simple window)
         {
             if (!WinDim.TryGetValue(wn, out var wd)) continue; var lc = wn.localPosition; float ww = wd.x + 0.2f, wh = wd.y; if (ww < 0.6f || wh < 0.6f) continue;   // v0.9.6: true opening size; Win() has its own frame/reveal now
             if (T == 0 && r.Next(2) == 0) continue;
@@ -1201,25 +1192,14 @@ public static class SoftProps
         return g;
     }
     public static Transform Curtains(Transform p, Vector3 center, float w, float h, Color c)
-    {   // v0.9.12: two pleated cloth panels gathered on a turned rod with rings + finials, tied back with sashes (was two rounded boxes)
-        var g = Group(p, "sk_curtain", center); float rodY = h / 2 + 0.1f, pw = Mathf.Max(0.55f, w * 0.34f), ph = h + 0.05f;
-        var omw = PushM(MatK.Wood); Cyl(g, new Vector3(0, rodY, -0.02f), 0.022f, w + 0.75f, WoodD, 0.008f, Q(0, 0, 90), 16);
+    {   // v0.9.24: simple + robust: a slim flat rod and two flat cloth panels with a soft hem (no pleats/rings/sashes that clipped and shimmered)
+        var g = Group(p, "sk_curtain", center); float rodY = h / 2 + 0.1f, pw = Mathf.Max(0.45f, w * 0.28f), ph = h + 0.05f;
+        Block(g, new Vector3(0, rodY, -0.02f), new Vector3(w + 0.7f, 0.05f, 0.05f), WoodD, 0.015f, false);
         foreach (int s in new[] { -1, 1 })
         {
-            float ex = s * (w / 2 + 0.38f);
-            Lath(g, new Vector3(ex, rodY, -0.02f), new[] { new Vector2(0, 0), new Vector2(0.035f, 0.005f), new Vector2(0.05f, 0.03f), new Vector2(0.03f, 0.06f), new Vector2(0.045f, 0.085f), new Vector2(0, 0.11f) }, Lt(WoodD, 0.1f), 16, false, Q(0, 0, -s * 90));   // turned finial
-            Block(g, new Vector3(s * (w / 2 + 0.22f), rodY + 0.0f, 0.03f), new Vector3(0.03f, 0.05f, 0.08f), Dk(WoodD, 0.85f), 0.012f, false);   // wall bracket
-        }
-        MatA = omw;
-        foreach (int s in new[] { -1, 1 })
-        {
-            float cx = s * (w / 2 + 0.1f);
-            Drape(g, new Vector3(cx, rodY - 0.04f - ph / 2, -0.02f), Quaternion.identity, pw, ph, 9, 0.095f, c, 0.42f, s);   // v0.9.13 more, deeper folds
-            for (int k = 0; k < 6; k++) Ring(g, new Vector3(cx - pw / 2 + 0.05f + k * (pw - 0.1f) / 5f, rodY, -0.02f), Q(0, 90, 0), 0.032f, 0.006f, Lt(WoodD, 0.25f), 14);   // curtain rings
-            float tx = s * (w / 2 + 0.1f + pw * 0.3f), ty = rodY - 0.04f - ph * 0.58f;
-            var sash = Obj(g, "sk_sash", Torus(pw * 0.24f, 0.02f, Dk(c, 0.78f), 24, 10, 3), new Vector3(tx, ty, -0.08f), Q(90, 0, 0) * Quaternion.Euler(0, 0, 0)); sash.transform.localScale = new Vector3(1f, 1f, 0.55f);   // fabric tie-back band
-            Ball(g, new Vector3(tx - s * 0.04f, ty - 0.02f, -0.14f), new Vector3(0.07f, 0.05f, 0.04f), Dk(c, 0.72f), 10);   // sash knot
-            Cyl(g, new Vector3(s * (w / 2 + 0.3f), ty, 0.02f), 0.018f, 0.06f, Dk(WoodD, 0.9f), 0.006f, Q(90, 0, 0), 12);   // wall hook
+            float cx = s * (w / 2 + 0.12f);
+            Block(g, new Vector3(cx, rodY - 0.03f - ph / 2, 0f), new Vector3(pw, ph, 0.04f), c, 0.015f, false);
+            Block(g, new Vector3(cx, rodY - 0.03f - ph + 0.05f, -0.005f), new Vector3(pw + 0.01f, 0.08f, 0.045f), Dk(c, 0.82f), 0.012f, false);   // hem band
         }
         return g;
     }

@@ -9,7 +9,7 @@ public class Pet : MonoBehaviour
     public static readonly List<Pet> All = new List<Pet>();
     public bool dog; public string pname; public St st = St.Patrol; public float speed, chaseSpeed, sight; public List<Vector3> patrol = new List<Vector3>();
     public bool sleeper; public Item carried; public int catches;
-    CharacterController cc; Animation anim; readonly Dictionary<string, string> clips = new Dictionary<string, string>(); string cur;
+    public CharacterController cc; Animation anim; readonly Dictionary<string, string> clips = new Dictionary<string, string>(); string cur;
     int wp; float stT, lostT, cool, idleT, barkT, stuckT; Vector3 target, lastPos; Lure lure; Transform icon; TextMesh mark; GameObject zzz;
     public static float HearK = 1f, SightK = 1f; public float alarmT;   // v0.9.17 per-map sensitivity + goose alarm
     public static void Alarm(Vector3 pos)
@@ -168,9 +168,18 @@ public class Pet : MonoBehaviour
         return true;
     }
 
+    Vector3 petSafe; bool petHasSafe; int netK; public static int Restores;
+    bool NetCheck()
+    {
+        var pos = transform.position;
+        if (pos.y >= SafetyNet.KillY && !SafetyNet.Lost(pos, cc)) { if (cc.isGrounded && SafetyNet.OnGround(pos, cc)) { petSafe = pos; petHasSafe = true; } return false; }
+        var to = petHasSafe ? petSafe : new Vector3(pos.x, 2f, pos.z); if (SafetyNet.FreeSpot(to + Vector3.up * 0.5f, cc.radius, cc.height, cc, out var sp)) to = sp;
+        Restores++; SafetyNet.Restores++; Debug.Log("[safety] pet " + name + " restored from " + pos.ToString("F2") + " " + SafetyNet.Why); Warp(to, transform.forward + transform.position); return true;
+    }
     void Update()
     {
         float dt = Time.deltaTime; stT += dt; cool -= dt; alarmT -= dt;
+        if (cc && cc.enabled && ((transform.position.y < SafetyNet.KillY && NetCheck()) || (++netK % 12 == 0 && NetCheck()))) return;   // v0.9.24 safety net
         var p = Player.I; bool active = p != null && p.inRaid && Game.I.RaidActive && !Game.I.InputLocked;
         Vector3 move = Vector3.zero; Vector3 face = transform.forward; float spd = 0;
         bool sees = active && FreezeAll <= 0 && p.alive && cool <= 0 && st != St.Flee && st != St.Lured && st != St.Sleep && Sees(p);

@@ -236,7 +236,7 @@ public static partial class LevelGen
             gc = mid; gc.y = 0.12f + 0.95f - 0.03f; Art.Box(p, gc, D3(w + 0.3f, 0.07f, WT + 0.2f), fm, false); // sill (protrudes)
             gc.y = 0.12f + 2.15f + fw / 2; Art.Box(p, gc, D3(w + 2 * fw, fw, fd), fm, false); // header
             foreach (float e in new[] { s0 - fw / 2, s1 + fw / 2 }) { var sc = a + u * e; sc.y = 0.12f + 1.55f; Art.Box(p, sc, D3(fw, 1.2f + fw, fd), fm, false); }
-            gc.y = 0.12f + 1.55f; Art.Box(p, gc, D3(0.05f, 1.2f, WT - 0.06f), fm, false); // mullion
+            gc.y = 0.12f + 1.55f; /* v0.9.24: no mullion */
             gc.y = 0.12f + 1.8f; Art.Box(p, gc, D3(w, 0.045f, WT - 0.06f), fm, false); // transom
             // daylight spilling in: spot just inside the window, aimed into the room and down
             var n = new Vector3(-u.z, 0, u.x); if (Vector3.Dot(n, -mid) < 0) n = -n;

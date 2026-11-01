@@ -347,7 +347,7 @@ public static class SoftKit
         }
         var g = Obj(p, name, mb.Build(name), pos, Quaternion.identity, ol);
         if (ol <= 0) g.GetComponent<MeshRenderer>().sharedMaterial = Mat(0.0001f);
-        if (col) { var bc = g.AddComponent<BoxCollider>(); bc.center = new Vector3(0, -0.1f, 0); bc.size = new Vector3(sx, 0.2f, sz); }
+        if (col) { var bc = g.AddComponent<BoxCollider>(); float th = pos.y < 0.3f ? 3f : 0.2f; bc.center = new Vector3(0, -th / 2, 0); bc.size = new Vector3(sx, th, sz); }   // v0.9.24 (ground-level fields only): 3 m thick slab (was 0.2) - nothing can be depenetrated through the ground
         return g;
     }
     public static TextMesh Text(Transform p, Vector3 pos, Quaternion rot, string s, float size, Color c)

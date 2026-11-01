@@ -80,7 +80,7 @@ public static partial class LevelGen
             var b = r.bounds; float len = Mathf.Max(b.size.x, b.size.z);
             if (b.size.y > 0.35f || len < 0.5f || len < b.size.y * 3) continue;
             bool skip = false;
-            for (var q = r.transform; q && q != root; q = q.parent) { var nm = q.name; if (nm == "Door" || nm == "LockedDoor" || nm == "sk_grille" || nm == "sk_curtain" || nm == "sk_curtainp" || nm == "flowerbox" || q.GetComponent<Interactable>()) { skip = true; break; } }
+            for (var q = r.transform; q && q != root; q = q.parent) { var nm = q.name; if (nm == "Door" || nm == "LockedDoor" || nm == "sk_grille" || nm == "sk_winframe" || nm == "sk_curtain" || nm == "sk_curtainp" || nm == "flowerbox" || q.GetComponent<Interactable>()) { skip = true; break; } }
             if (skip) continue;
             foreach (var o in Openings) if (o.Intersects(b) && b.max.y > o.min.y + 0.05f) {   // v0.9.16: floor-level pads/mats at a doorstep don't cross the opening
                 n++; if (log) Debug.Log("[trimcheck] " + r.name + " " + b.ToString("F2") + " crosses opening " + o.ToString("F2")); break; }
@@ -138,8 +138,9 @@ public static partial class LevelGen
     {
         var o = new Op { ax = ax, fc = fc, c = c, w = w, y0 = y0, y1 = y1 }; ops.Add(o);
         var ctr = ax ? new Vector3(c, FY + (y0 + y1) / 2, fc) : new Vector3(fc, FY + (y0 + y1) / 2, c);
-        var gr = SoftProps.Grille(h, ctr + outDir * (AWT / 2 + 0.03f), w + 0.1f, y1 - y0 + 0.1f, White); gr.localRotation = Quaternion.Euler(0, outYaw, 0);
-        var cu = SoftProps.Curtains(h, ctr - outDir * (AWT / 2 + 0.1f) + Vector3.up * 0.05f, w, y1 - y0 + 0.2f, curtain); cu.localRotation = Quaternion.Euler(0, outYaw, 0);
+        var gr = SoftProps.WinFrame(h, ctr + outDir * (AWT / 2 + 0.03f), w, y1 - y0, White); gr.localRotation = Quaternion.Euler(0, outYaw, 0);   // v0.9.24 simple frame, no grille
+        var gi = SoftProps.WinFrame(h, ctr - outDir * (AWT / 2 + 0.03f), w, y1 - y0, White); gi.localRotation = Quaternion.Euler(0, outYaw + 180, 0);   // same frame + sill inside, so it reads as built in
+        var cu = SoftProps.Curtains(h, ctr - outDir * (AWT / 2 + 0.14f) + Vector3.up * 0.05f, w, y1 - y0 + 0.2f, curtain); cu.localRotation = Quaternion.Euler(0, outYaw, 0);
         var blk = new GameObject("winblock"); blk.transform.SetParent(h, false); blk.transform.localPosition = ctr; blk.AddComponent<BoxCollider>().size = ax ? new Vector3(w, y1 - y0, AWT) : new Vector3(AWT, y1 - y0, w);
         if (flowers)
         {

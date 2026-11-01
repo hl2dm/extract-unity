@@ -13,6 +13,34 @@ public class Player : MonoBehaviour
     public float NoiseR; public bool searching, hidden; public HideSpot hideAt; public int autoGait = -1; public Vector3 autoMove; float hideY;
     float bobT, stepT, vy, shake, throwT, throwAnim, noiseT; int handSel = -1;
     public float Sens = 2.0f;
+    public Vector3 lastSafe; bool hasSafe; float safeT, stunT; Vector3 shoveV; int netK;   // v0.9.24 safety net + bus shove
+    public bool Stunned => stunT > 0;
+    /// v0.9.24: bounded horizontal shove out of a moving bus's path. Collision-aware move to `target`; if blocked, a ground-snapped free spot; else last safe spot.
+    public void BusShove(Vector3 target, Vector3 away)
+    {
+        Physics.SyncTransforms(); var d = target - transform.position; d.y = 0;
+        if (cc.enabled) cc.Move(d);
+        var at = transform.position; at.y = target.y;
+        if ((at - target).sqrMagnitude > 0.05f || !SafetyNet.OnGround(transform.position, cc))
+        { if (SafetyNet.FreeSpot(target, cc.radius, cc.height, cc, out var sp)) Teleport(sp, yaw); else RestoreSafe("bus"); }
+        else if (SafetyNet.Ray(transform.position + Vector3.up * 0.6f, Vector3.down, 1.6f, cc, out var g) && Mathf.Abs(g.point.y - transform.position.y) > 0.04f) Teleport(g.point + Vector3.up * 0.02f, yaw);   // ground snap
+        away.y = 0; shoveV = Vector3.ClampMagnitude(away, 1f) * 3.2f; stunT = Riding ? 0 : 0.8f; vy = 0; shake = Mathf.Max(shake, 1.2f);
+    }
+    public void RestoreSafe(string why)
+    {
+        var to = hasSafe ? lastSafe : transform.position; if (!hasSafe || to.y < SafetyNet.KillY) to = new Vector3(transform.position.x, 2f, transform.position.z);
+        if (SafetyNet.FreeSpot(to + Vector3.up * 0.5f, cc.radius, cc.height, cc, out var sp)) to = sp;
+        SafetyNet.Restores++; Debug.Log("[safety] player restored (" + why + ") from " + transform.position.ToString("F2") + " to " + to.ToString("F2") + " " + SafetyNet.Why);
+        Teleport(to, yaw); shoveV = Vector3.zero;
+    }
+    void Net(float dt)
+    {
+        if (!cc || !cc.enabled) return; var pos = transform.position;
+        if (pos.y < SafetyNet.KillY) { RestoreSafe("kill plane"); return; }
+        if (++netK % 4 != 0) return;
+        if (!hidden && SafetyNet.Lost(pos, cc)) { RestoreSafe("under floor"); return; }
+        safeT -= dt * 4; if (safeT <= 0 && stunT <= 0 && cc.isGrounded && SafetyNet.OnGround(pos, cc)) { safeT = 0.25f; lastSafe = pos; hasSafe = true; }
+    }
 
     public static float Walk = 3.5f, Run = 5.6f, Eye = 1.15f, Fov = 70f;
     public static Player Create()
@@ -31,7 +59,7 @@ public class Player : MonoBehaviour
     }
     public void Equip(string shoesId) { shoes = Data.GearOf("shoes", shoesId); }
     public static void SetLayer(GameObject g, int l) { foreach (var t in g.GetComponentsInChildren<Transform>(true)) t.gameObject.layer = l; }
-    public void Teleport(Vector3 p, float yawDeg) { cc.enabled = false; transform.position = p; cc.enabled = true; yaw = yawDeg; pitch = 0; vy = 0; }
+    public void Teleport(Vector3 p, float yawDeg) { cc.enabled = false; transform.position = p; cc.enabled = true; yaw = yawDeg; pitch = 0; vy = 0; Physics.SyncTransforms(); }
     public bool Locked => Game.I.InputLocked;
     public void Hide(HideSpot h) { hidden = true; hideAt = h; foreach (var pet in Pet.All) if (pet) pet.LoseSight(); }
     public void Unhide() { if (!hidden) return; hidden = false; hideAt = null; }
@@ -54,6 +82,7 @@ public class Player : MonoBehaviour
     {
         float dt = Time.deltaTime;
         if (Input.GetKeyDown(KeyCode.F8) && Game.I) Game.I.Toast(AAQuality.Cycle(cam));
+        Net(dt);
         if (!alive || Riding) return;
         bool canAct = controlEnabled && !Locked;
         if (canAct) { yaw += TouchIn.Look("Mouse X") * Sens; pitch = Mathf.Clamp(pitch - TouchIn.Look("Mouse Y") * Sens, -85, 85); }
@@ -75,6 +104,7 @@ public class Player : MonoBehaviour
         Sprinting = sprint && mv.sqrMagnitude > 0.1f;
         float spd = (sprint ? Run : Walk) * (Sneaking ? 0.55f : 1) * (shoes != null ? shoes.spd : 1) * (Crying ? 0.55f : 1) * Pond.Wade(transform.position);
         var vel = transform.TransformDirection(mv) * spd;
+        if (stunT > 0) { stunT -= dt; vel = shoveV; shoveV = Vector3.MoveTowards(shoveV, Vector3.zero, 6f * dt); Sneaking = Sprinting = false; }   // v0.9.24 bus knock: short stagger, no input
         if (cc.isGrounded) { vy = -1f; if (canAct && TouchIn.Down(KeyCode.Space)) vy = 4.4f; } else vy -= 14f * dt;
         vel.y = vy; cc.Move(vel * dt);
         float hs = new Vector2(vel.x, vel.z).magnitude;

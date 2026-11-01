@@ -1,0 +1,40 @@
+## Findings
+
+**Windows (w)**
+- `v0921_curtain_hub_27.png` — cleanest example: flat frame, simple glass, two flat pink curtain panels flanking the circular portrait. No clutter, no leftover louvers/grilles, reads well against the wall.
+- `v0921_curtain_aunt1.png` — frame + glass + two flat gray curtain panels, correctly simplified. But the window reads as pasted onto the wall: no sill/drop shadow grounding it, and the orange header bar above the frame isn't quite centered/symmetric with the frame edges, giving a faint floating-sticker look rather than built-in architecture.
+- `v0922_curtain_aunt0_side.png` — same simplified kit (pink flat panels) viewed at an angle; the frame's right edge doesn't fully track the wall's perspective, producing a thin seam/mismatch where frame meets wall — a mild z-fighting/parallax artifact rather than a solid inset window.
+- Wide shots (`oneMap_*`) — at street scale the simplified windows read fine; no obvious clipping or clutter, consistent silhouette across buildings, no stray old-style shutters/grilles/pleats visible.
+- Overall: clutter is gone and the two-curtain-panel language is consistent across all three close-ups, which is the main ask. The remaining weakness is that the windows feel layered on top of walls rather than seated in them (no shadow/sill), and one asymmetric header + one perspective seam keep it from looking fully solid.
+
+**Title card (t)**
+- Logo "熊熊搜刮隊" is bold, high-contrast, legible, with consistent outline/gradient treatment; mascot bear (knit texture, red scarf, candy + fish) is cute and overlaps the characters in a deliberate, non-clipping way.
+- "BEAR BAG SQUAD" subtitle uses matching outline styling, slightly thinner stroke but still cohesive.
+- Prompt line "按任意鍵 / 點一下開始" renders in a single consistent bold Chinese font — no tofu boxes, no mixed/fallback glyphs, good weight match to the casual tone.
+- Layout is centered, background is a calm cream flat color, overall cozy/cute storybook tone achieved cleanly.
+
+SCORES w=7 t=9
+
+
+===== round 2 =====
+
+## Window findings (w)
+
+- **Leftover structure contradicts the "flat panel only" simplification**: in `v0921_curtain_aunt1.png` (close zoom on the aunt-room window) there's still a visible horizontal crossbar and a recessed, shuttered-looking grey panel with real depth — this reads as leftover louvre/mullion geometry rather than a flat curtain panel. The far room-shot of the same window (`v0921_curtain_aunt0.png`) hides this at a distance, but it's there once the camera gets close.
+- **Floating/undefined geometry**: `v0921_curtain_hub_29.png` (oval window) has an unexplained brown blob shape poking out behind the top of the oval ring — looks like a stray mesh fragment, not a recognizable prop. Reads as a floating-part / clipping bug.
+- **Panel asymmetry**: in `v0921_curtain_aunt0.png` the right curtain panel extends further out/down than the left, breaking the otherwise clean mirrored look (minor, could be lighting/perspective but worth a check).
+- **What works well**: the pink-curtain windows in `v0921_curtain_aunt0.png`, `v0922_curtain_aunt0_side.png`, and the picture-frame "window" in `v0921_curtain_hub_27.png` are genuinely clean — flat panels, no visible mullions/grilles, good readability, and the color of curtains matches each room's palette (pink in the yellow room, grey-blue in the green room), so the cross-room palette variation is intentional, not an inconsistency.
+- **Street-level exterior windows** (`oneMap_street.png`) are small and simple, no z-fighting or clutter visible at that distance.
+
+Net: the wide/room shots look properly simplified and consistent, but the two close-up windows show the simplification wasn't fully finished — real depth/crossbar geometry and a floating artifact survive scrutiny.
+
+## Title card findings (t)
+
+- Logo "熊熊搜刮隊" — bold orange gradient with brown outline, excellent legibility, cute knit-bear mascot integrates well (holding candy + fish, matches "scavenging" theme).
+- "BEAR BAG SQUAD" subtitle — clean condensed caps, consistent cream/white fill with outline matching the logo's palette; contrast against the cream background is a little soft but still readable.
+- Prompt text "按任意鍵 / 點一下開始" — single consistent bold CJK font, no mixed glyphs or fallback tofu, brown color ties back to the palette, well centered.
+- Background is plain and uncluttered, appropriate for a storybook-style title screen.
+
+Overall the title card is polished and tonally consistent; only minor nitpicks (subtitle contrast).
+
+SCORES w=6 t=8
