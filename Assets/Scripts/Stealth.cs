@@ -3,25 +3,36 @@ using UnityEngine;
 
 /// v0.9.16: visible noise ring under the kid + hiding spots (under tables, behind curtains)
 public class NoiseRing : MonoBehaviour
-{
+{   // v0.9.19: soft translucent glow disc on the ground instead of a solid LineRenderer line
     public const float Sneak = 1.6f, Walk = 4f, Run = 10f, Search = 3f;
-    LineRenderer lr; const int N = 72; float shown; Material mSneak, mWalk, mRun;
+    public MeshRenderer mr; float shown; Material mSneak, mWalk, mRun; Transform q;
     public static NoiseRing I;
+    public bool Visible => mr && mr.enabled;
     public static NoiseRing Make() { var g = new GameObject("NoiseRing"); I = g.AddComponent<NoiseRing>(); return I; }
+    Material M(string hex, float a, float edge)
+    {
+        var sh = Resources.Load<Shader>("Shaders/NoiseRing") ?? Shader.Find("Soft/NoiseRing");
+        Material m = sh ? new Material(sh) : Art.Unlit(Data.H(hex)); var c = Data.H(hex);
+        m.SetColor("_Color", c); m.SetFloat("_A", a); m.SetFloat("_Edge", edge); m.renderQueue = 3010; return m;
+    }
     void Awake()
     {
-        lr = gameObject.AddComponent<LineRenderer>(); lr.useWorldSpace = true; lr.loop = true; lr.positionCount = N; lr.widthMultiplier = 0.07f; lr.numCornerVertices = 2;
-        lr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; lr.receiveShadows = false; lr.textureMode = LineTextureMode.Tile;
-        mSneak = Art.Unlit(Data.H("5fb889")); mWalk = Art.Unlit(Data.H("e8a640")); mRun = Art.Unlit(Data.H("e06a5a")); lr.sharedMaterial = mWalk; lr.enabled = false;
+        var go = GameObject.CreatePrimitive(PrimitiveType.Quad); go.name = "noise_glow"; Destroy(go.GetComponent<Collider>());
+        q = go.transform; q.SetParent(transform, false); q.rotation = Quaternion.Euler(90, 0, 0);
+        mr = go.GetComponent<MeshRenderer>(); mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
+        mr.lightProbeUsage = UnityEngine.Rendering.LightProbeUsage.Off; mr.reflectionProbeUsage = UnityEngine.Rendering.ReflectionProbeUsage.Off;
+        // bigger rings get a thinner rim in uv so the glow band stays ~0.3-0.5 m wide on the floor
+        mSneak = M("a8ffe0", 0.62f, 0.34f / Sneak); mWalk = M("ffc93a", 0.44f, 0.62f / Walk); mRun = M("f2655a", 0.44f, 0.95f / Run);   // rim ~0.3-0.4 m wide on the floor; red boosted so the biggest ring stays readable
+        mr.sharedMaterial = mWalk; mr.enabled = false;
     }
     void LateUpdate()
     {
         var p = Player.I; bool on = p && p.inRaid && Game.I && Game.I.RaidActive && !p.hidden && p.NoiseR > 0.1f;
         shown = Mathf.MoveTowards(shown, on ? p.NoiseR : 0, Time.deltaTime * 14f);
-        lr.enabled = shown > 0.15f; if (!lr.enabled) return;
-        lr.sharedMaterial = p.NoiseR >= Run - 0.1f ? mRun : p.NoiseR <= Sneak + 0.1f ? mSneak : mWalk;
-        var c = p.transform.position; float y = c.y + 0.04f, r = shown * (1 + 0.025f * Mathf.Sin(Time.time * 6));
-        for (int i = 0; i < N; i++) { float a = i * Mathf.PI * 2 / N; float w = 1 + 0.02f * Mathf.Sin(a * 9 + Time.time * 2); lr.SetPosition(i, new Vector3(c.x + Mathf.Cos(a) * r * w, y, c.z + Mathf.Sin(a) * r * w)); }
+        mr.enabled = shown > 0.15f; if (!mr.enabled) return;
+        mr.sharedMaterial = p.NoiseR >= Run - 0.1f ? mRun : p.NoiseR <= Sneak + 0.1f ? mSneak : mWalk;
+        var c = p.transform.position; float r = shown * (1 + 0.02f * Mathf.Sin(Time.time * 4));
+        q.position = new Vector3(c.x, c.y + 0.05f, c.z); q.localScale = new Vector3(r * 2, r * 2, 1);
     }
 }
 

@@ -501,15 +501,33 @@ public class Game : MonoBehaviour
     // v0.9.16 noise ring + hiding spots
     IEnumerator StealthTest()
     {
-        var pp = player; pp.Unhide(); float pitch0 = pp.pitch; pp.pitch = 42;
+        var pp = player; pp.Unhide(); float pitch0 = pp.pitch; pp.pitch = 30;
         string[] gn = { "sneak", "walk", "run" }; float[] want = { NoiseRing.Sneak, NoiseRing.Walk, NoiseRing.Run };
         for (int g = 0; g < 3; g++)
         {
             pp.autoGait = g; pp.autoMove = new Vector3(g == 1 ? 0.7f : -0.7f, 0, g == 2 ? 1f : 0.3f).normalized; float seen = 0;
             for (float w = 0; w < 1.0f; w += Time.deltaTime) { seen = Mathf.Max(seen, pp.NoiseR); yield return null; }
             Check(Mathf.Abs(seen - want[g]) < 0.05f, "noise ring " + gn[g] + " radius " + seen.ToString("0.0") + " (want " + want[g] + ")");
-            Check(NoiseRing.I && NoiseRing.I.GetComponent<LineRenderer>().enabled, "noise ring visible while " + gn[g]);
-            yield return Shot("v0916_noise_" + gn[g]);
+            Check(NoiseRing.I && NoiseRing.I.Visible, "noise ring visible while " + gn[g]);
+            yield return Shot("v0919_noise_" + gn[g]); { var c0 = pp.transform.position; float rr = want[g]; yield return CamShot(c0 + new Vector3(-rr * 0.55f - 0.8f, rr * 0.9f + 2.2f, -rr * 0.55f - 0.8f), c0, "v0919_top_" + gn[g], 0.12f); }
+        }
+        {   // v0.9.19 review shots: ripple pulse sequence + ring meeting a wall (must stop at the wall, not show through)
+            var c0 = pp.transform.position; Vector3 wallAt = Vector3.zero, wdir = Vector3.zero; float bestD = 99;
+            for (int i = 0; i < 16; i++)
+            {
+                var d = Quaternion.Euler(0, i * 22.5f, 0) * Vector3.forward;
+                if (Physics.Raycast(c0 + Vector3.up * 1f, d, out var h, 14f, ~0, QueryTriggerInteraction.Ignore) && Mathf.Abs(h.normal.y) < 0.3f && h.distance > 2f && h.distance < bestD) { bestD = h.distance; wallAt = h.point; wdir = d; }
+            }
+            if (bestD < 99)
+            {
+                var st = wallAt - wdir * 1.8f; st.y = c0.y; pp.Teleport(st, Quaternion.LookRotation(wdir).eulerAngles.y); pp.autoGait = 1; pp.autoMove = Vector3.Cross(Vector3.up, wdir).normalized * 0.3f;
+                for (float w = 0; w < 0.8f; w += Time.deltaTime) yield return null; var cw = pp.transform.position;
+                yield return CamShot(cw - wdir * 5.5f + Vector3.up * 5.5f, cw + wdir * 1.5f, "v0919_wall_walk", 0.1f);
+                yield return CamShot(wallAt + wdir * 3.5f + Vector3.up * 1.7f, cw, "v0919_wall_behind", 0.1f);
+            }
+            var cp = pp.transform.position;
+               // camera locked in world space so only the ripple changes between frames
+            for (int k = 0; k < 3; k++) { yield return CamShot(cp + new Vector3(-3, 6.2f, -3), cp, "v0919_pulse_" + k, 0.6f); }
         }
         pp.autoGait = 1; pp.autoMove = Vector3.zero; yield return new WaitForSeconds(0.5f); pp.autoGait = -1; pp.pitch = pitch0;
         Check(pp.NoiseR == 0, "standing still is silent");
@@ -544,6 +562,16 @@ public class Game : MonoBehaviour
     IEnumerator FarmTest()
     {   // v0.9.17 外婆家農場: geese alarm, haystack + rice cover, farm loot -> book
         var pp = player; pp.Unhide(); yield return new WaitForSeconds(4f);   // let loot toasts fade before the art shots
+        {   // v0.9.19 glow noise ring on the farm (outdoor ground / grass)
+            float pi0 = pp.pitch; { var yd = LevelGen.PondC + new Vector3(-9, 0, -11); yd.y = 0.15f; pp.Teleport(yd, 45); yield return new WaitForSeconds(0.3f); } pp.pitch = 30; string[] fg = { "sneak", "walk", "run" };
+            for (int k = 0; k < 3; k++)
+            {
+                pp.autoGait = k; pp.autoMove = new Vector3(k == 1 ? 0.6f : -0.6f, 0, 0.4f).normalized;
+                for (float w = 0; w < 0.8f; w += Time.deltaTime) yield return null;
+                Check(NoiseRing.I && NoiseRing.I.Visible, "farm noise glow visible while " + fg[k]); yield return Shot("v0919_farm_noise_" + fg[k]); { var c0 = pp.transform.position; float rr = k == 0 ? NoiseRing.Sneak : k == 1 ? NoiseRing.Walk : NoiseRing.Run; yield return CamShot(c0 + new Vector3(-rr * 0.55f - 0.8f, rr * 0.9f + 2.2f, -rr * 0.55f - 0.8f), c0, "v0919_farm_top_" + fg[k], 0.12f); }
+            }
+            pp.autoMove = Vector3.zero; pp.autoGait = -1; pp.pitch = pi0; yield return new WaitForSeconds(0.4f);
+        }
         Check(Goose.All.Count == 3, "farm has 3 geese (" + Goose.All.Count + ")"); Check(LevelGen.Rice.Count == 8, "8 rice paddies (" + LevelGen.Rice.Count + ")");
         var hays = HideSpot.Spots.Where(h => h.kind == "草堆裡面").ToList(); Check(hays.Count >= 6, "haystack hide spots (" + hays.Count + ")");
         Check(Mathf.Abs(Pet.HearK - 0.9f) < 0.01f && Mathf.Abs(Pet.SightK - 0.9f) < 0.01f, "farm pet hearing/sight from theme");
