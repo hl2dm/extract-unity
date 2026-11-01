@@ -1,0 +1,26 @@
+## QA Review
+
+**Signs (s)**
+- `aunt1_before→after`: Fix confirmed — the awning/canopy no longer clips through the sign face; "柑仔店" text + cookie-jar icon now render cleanly on top of the plank, legible at distance.
+- `aunt2_named` (阿姨家): Clean close-up. House icon and text are fully contained inside the plaque border; the window planter sits behind/beside the sign with no geometry bleeding onto the face.
+- `aunt3_named` (second 柑仔店, eye-height): **Defect found.** A small magenta/pink triangular shape is poking down from the top edge of the sign, sitting directly between the cookie-jar icon and the "柑" character (~x510–560, y305–345). It reads as a stray piece of geometry (looks like a torn flag corner or an awning-fold fragment) clipping through the plaque face. This directly contradicts the "0 signs blocked" log line — the sign isn't *blocked*, but it does have an unresolved visual overlap artifact on its face, which the brief explicitly asked to check for.
+
+**Bus-stop disc (b)**
+- Before: ring disc sits left-of-center on the yellow wall panel, asymmetric margins, door/shelf framing unchanged.
+- After: disc is now centered on the yellow panel, margins look symmetric, and the ring pattern, border color, and surrounding wall/door/shelving are unchanged — matches the "keep original look, only recenter" instruction and lines up with the logged 0.000 m offset.
+- No new defects introduced by the move (no stretching/squash artifacts visible at this resolution).
+
+**Fishing (f)**
+- Timing bar: tan (fail) vs. green (success) zone contrast is clear, and the purple marker line is distinguishable against both zones — minigame is readable.
+- Caught-fish pop-up: the "抓到了！泥鰍（稀有）" banner is crisp and easy to read, splash rings sell the catch moment. However, the fish model itself mid-air is a plain tan/beige blob with no visible fins, eyes, or other silhouette detail at this render distance — without the text banner, it would not read as "a fish" let alone "泥鰍" specifically. Readability leans on the UI text, not the art.
+
+**Doors/curtains side views (d)**
+- Door (`door_aunt0_side_after`): double door and bamboo-pole framing render cleanly, no clipping on the door itself.
+- Curtain (`curtain_aunt0_side`): diamond-lattice window with pink curtains visible through the glass is clean, planter box below doesn't overlap the window frame.
+- **Defect found (same frame as door):** top-left mailbox signage shows an orange name-tag plate partially hidden/cut behind the "信件" (mail) plate above it — the character(s) on the lower tag are truncated by the overlapping plate edge, an unrelated-but-visible clipping artifact in the same shot used as "proof."
+
+SCORES s=6 b=9 f=7 d=7
+ it — reads as a misplaced UI chip/number tag sitting on top of world geometry. Worth a look even if it's outside this fix's scope.
+- **Curtain (aunt0, side)**: the curtain itself is almost entirely occluded by the wooden diamond-lattice shutters — only a sliver of pink fabric is visible at the top edge. This image doesn't actually give enough visibility to confirm the curtain is clipping-free; it mostly proves the shutters, not the curtain.
+
+SCORES s=6 b=9 f=6 d=6
