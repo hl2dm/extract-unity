@@ -1,0 +1,14 @@
+**Findings**
+
+**Shop signs (s):**
+- `c3.png`, `v0922_sign_aunt1_moved_after.png`, `v0922_sign_aunt3_named.png` — all show the 柑仔店 sign cleanly: hand-painted wood plaque, cookie-jar icon, bold legible calligraphy, correctly framed under the shop's upper window/archway. No pink triangles, no clipped geometry, no stray facets visible on or around the sign face.
+- `v0922_sign_aunt2_named.png` — 阿姨家 sign is equally clean: house icon, fully legible text, properly centered plaque, no geometry poking through.
+- `v0922_sign_aunt4_bus_after.png` (and its `_before` counterpart) — decorative bus-stop medallion, no text sign present; panel renders cleanly with no artifacts.
+- `v0922_sign_aunt1_moved_before.png` — as expected, this is the intentional pre-fix state (blank red backing, no text) — not counted against the score.
+- `v0922_sign_aunt0_named_after/before.png` — these actually show an interior collectible shelf (sunflower painting + cat plate, "阿姨的收藏櫃" prompt), not the 柑仔店/阿姨家 storefront sign — no issues found here either, but it's not the asset the filename implies.
+
+Overall the storefront sign assets are in good shape: readable, correctly cropped, no pink/undershaded triangle facets breaking through the paint layer.
+
+**Mailbox (m):** In `v0922_door_aunt0_side_after.png`, the wall mailbox has "信件" (white, upper) and "林宅" (black, lower) on the same backing plate with a clear vertical gap between them — no character strokes are overlapped or obscured. A small "1" notification badge sits in the gap between the two labels but lands on empty plate space, not on top of any 林宅 character. Both labels are fully legible.
+
+SCORES s=9 m=9

@@ -665,7 +665,7 @@ public static class SoftProps
             Block(mb, new Vector3(mx, 1.25f, -0.17f), new Vector3(0.42f, 0.52f, 0.24f), mbc, 0.04f, false);   // wall mailbox body
             Block(mb, new Vector3(mx, 1.54f, -0.19f), new Vector3(0.48f, 0.07f, 0.28f), Dk(mbc, 0.85f), 0.02f, false);   // lid
             Block(mb, new Vector3(mx, 1.38f, -0.3f), new Vector3(0.28f, 0.035f, 0.02f), Dk(mbc, 0.45f), 0.005f, false);   // letter slot
-            Block(mb, new Vector3(mx, 1.1f, -0.3f), new Vector3(0.16f, 0.1f, 0.02f), White, 0.01f, false);   // name card
+            Block(mb, new Vector3(mx, 1.1f, -0.306f), new Vector3(0.2f, 0.075f, 0.01f), White, 0.003f, false);   // name card (v0.9.23: wider than the 林宅 text, thin, so it sits behind it)
             Block(mb, new Vector3(mx + 0.23f, 1.32f, -0.17f), new Vector3(0.03f, 0.24f, 0.05f), Coral, 0.008f, false);   // flag
             {   // v0.9.13 mailbox detail: back plate, raised rim, slot flap, rivets, keyhole door, name text, flag pivot, newspaper
                 Block(mb, new Vector3(mx, 1.28f, -0.06f), new Vector3(0.5f, 0.66f, 0.03f), Dk(wall, 0.85f), 0.01f, false).name = "backing";
@@ -675,7 +675,7 @@ public static class SoftProps
                 Block(mb, new Vector3(mx, 1.18f, -0.298f), new Vector3(0.3f, 0.26f, 0.012f), Dk(mbc, 0.92f), 0.01f, false);   // collection door
                 Cyl(mb, new Vector3(mx + 0.11f, 1.18f, -0.307f), 0.016f, 0.008f, Data.H("d9b24a"), 0.002f, Q(90, 0, 0), 12); Block(mb, new Vector3(mx + 0.11f, 1.18f, -0.312f), new Vector3(0.004f, 0.014f, 0.003f), GreyD, 0.001f, false);   // keyhole
                 foreach (int sx in new[] { -1, 1 }) foreach (float sy in new[] { 1.03f, 1.47f }) Ball(mb, new Vector3(mx + sx * 0.18f, sy, -0.305f), Vector3.one * 0.018f, Lt(Grey, 0.3f), 6);   // rivets
-                Text(mb, new Vector3(mx, 1.1f, -0.312f), Quaternion.identity, "林宅", 0.018f, Data.H("3a2f35"));
+                Text(mb, new Vector3(mx, 1.1f, -0.322f), Quaternion.identity, "林宅", 0.018f, Data.H("3a2f35"));
                 Text(mb, new Vector3(mx, 1.27f, -0.306f), Quaternion.identity, "信 件", 0.022f, Lt(mbc, 0.55f));
                 Cyl(mb, new Vector3(mx + 0.255f, 1.22f, -0.17f), 0.02f, 0.014f, GreyD, 0.004f, Q(0, 0, 90), 10);   // flag pivot cap (v0.9.21: outside the flag, was skewered through it)
                 Block(mb, new Vector3(mx + 0.23f, 1.42f, -0.17f), new Vector3(0.03f, 0.08f, 0.12f), Coral, 0.008f, false);   // flag paddle
@@ -908,7 +908,7 @@ public static class SoftProps
         {   // v0.9.10 B: one gouache sign system - painted arched board w/ icon + real-font CJK lettering
             var omp = PushM(MatK.Wood); float Hp = size * 9f * 1.25f, Wp = Hp * (300f + s.Length * 210f) / 300f;
             Block(g, new Vector3(0, -Hp * 0.06f, 0.3f), new Vector3(Wp * 0.97f, Hp * 0.78f, 0.22f), H("7a5236"), 0.06f, false);
-            SignFaces.Add(Picture(g, new Vector3(0, 0, 0.185f), Quaternion.identity, Wp, Hp, "art_sg" + sgi)); MatA = omp; SignCount++;
+            SignFaces.Add(Picture(g, new Vector3(0, 0, 0.165f), Quaternion.identity, Wp, Hp, "art_sg" + sgi));   // v0.9.23: 2.5 cm proud of the board so the Toon outline hull (~1 cm at sign range) cannot poke a facet through the painted face MatA = omp; SignCount++;
             var ht = Text(g, new Vector3(0, 0, 0.3f), Quaternion.identity, s, size / 8f, c); ht.GetComponent<MeshRenderer>().enabled = false;   // keeps name for tests
             return g;
         }
