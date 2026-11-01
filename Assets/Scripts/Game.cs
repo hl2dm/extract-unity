@@ -604,10 +604,11 @@ public class Game : MonoBehaviour
         Check(f.Prompt.Contains("抓魚"), "fish prompt: " + f.Prompt);
         while (bag.Count(b => !b.key) >= BagCap) bag.RemoveAt(bag.FindLastIndex(b => !b.key));
         f.StartTiming(); for (float w = 0; w < 0.35f; w += Time.deltaTime) yield return null;
-        Debug.Log("[pond] " + f.BarDbg()); Check(f.Timing && f.Prompt.Contains("綠色"), "timing bar shows"); yield return Shot("v0921_fish_timing");
+        Debug.Log("[pond] " + f.BarDbg()); Check(f.Timing && f.Prompt.Contains("綠色"), "timing bar shows"); yield return Shot("v0922_fish_timing");
         int n0 = bag.Count; f.ForceResolve(true); yield return null;
         Check(bag.Count == n0 + 1 && Pond.Kinds.Any(k => k.name == bag[bag.Count - 1].name), "caught fish goes into the bag (" + (bag.Count > 0 ? bag[bag.Count - 1].name : "-") + ")");
-        Check(!f.Timing && Pond.Catches == 1, "fish gone after the catch"); yield return new WaitForSeconds(0.55f); var fj = GameObject.Find("fish_jump"); Debug.Log("[pond] jump " + (fj ? fj.transform.position.ToString("F2") : "none")); yield return Shot("v0921_fish_caught");
+        Check(!f.Timing && Pond.Catches == 1, "fish gone after the catch"); yield return new WaitForSeconds(0.3f); var fj = GameObject.Find("fish_jump"); Debug.Log("[pond] jump " + (fj ? fj.transform.position.ToString("F2") + " renderers " + fj.GetComponentsInChildren<Renderer>().Count(r => r.enabled) : "none")); Check(fj && fj.transform.position.y > 0.3f, "caught fish jumps out of the water");
+        if (fj) { var jp = fj.transform.position; var tw = pp.transform.position - jp; tw.y = 0; tw = tw.sqrMagnitude > 0.01f ? tw.normalized : Vector3.back; var rr = Vector3.Cross(Vector3.up, -tw).normalized; yield return CamShot(jp + tw * 1.9f + Vector3.up * 0.12f, jp + rr * 0.55f + Vector3.up * 0.05f, "v0922_fish_caught", 0.03f); } else yield return Shot("v0922_fish_caught");
         var f2 = Fish.AllFish.Where(x => x != f).OrderBy(x => (x.transform.position - pp.transform.position).sqrMagnitude).First();
         int m0 = Pond.Misses, s1 = Pond.Splashes; f2.ForceResolve(false); yield return null;
         Check(Pond.Misses == m0 + 1 && Pond.Splashes > s1 && !f2.Timing, "missed fish darts away with a splash");
@@ -1203,7 +1204,7 @@ public class Game : MonoBehaviour
         cm.localPosition = Vector3.zero; cm.localRotation = Quaternion.identity; res(sumS / Mathf.Max(1, n) * 255f, sumH / Mathf.Max(1, n) * 255f);
     }
     // v0.8.1: general placement-overlap audit must be clean; before/after shots of re-placed scooter/tree spots and signs
-    bool placeShot;
+    bool placeShot; readonly HashSet<string> signShot = new HashSet<string>();
     IEnumerator PlaceCheck()
     {
         int left = PlaceAudit.Run(level.root, false);
@@ -1212,6 +1213,23 @@ public class Game : MonoBehaviour
         Check(PlaceAudit.DoorSunkAfter == 0, "doors stand on their step/ground (sunk before " + PlaceAudit.DoorSunkBefore + ", after " + PlaceAudit.DoorSunkAfter + ", max lift " + PlaceAudit.DoorMaxLift.ToString("F2") + " m)");
         Check(PlaceAudit.CurtainOffAfter == 0, "curtains centred on their windows (off before " + PlaceAudit.CurtainOffBefore + ", after " + PlaceAudit.CurtainOffAfter + ")");
         Check(PlaceAudit.SmallClipAfter == 0, "mailboxes: no part cuts through another (" + PlaceAudit.SmallClipAfter + " clips)");
+        Check(PlaceAudit.SignFaceAfter == 0, level.theme.id + " signs/posters: face clear of awnings/windows/props, not facing a wall (" + PlaceAudit.SignFaceTotal + " signs, bad before " + PlaceAudit.SignFaceBefore + ", after " + PlaceAudit.SignFaceAfter + ")");
+        if (signShot.Add(level.theme.id)) {   // v0.9.22 sign close-ups at eye height 1.6 m: moved signs before (move undone) / after, plus named signs
+            var spots = new List<(Transform t, Vector3 d, Vector3 p, Vector3 n, string nm)>();
+            foreach (var m in PlaceAudit.SignMoves.Where(m => m.t && m.t.name == "sk_text3d").Take(3)) spots.Add((m.t, m.delta, m.p, m.n, "moved"));
+            foreach (var a in level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_art" && t.parent && t.parent.GetComponentInChildren<TextMesh>(true) && (t.parent.GetComponentInChildren<TextMesh>(true).text == "柑仔店" || t.parent.GetComponentInChildren<TextMesh>(true).text == "阿姨家")).Take(3)) { var mv = PlaceAudit.SignMoves.FirstOrDefault(m => m.t == a.parent || m.t == a); if (mv.t) { if (!spots.Any(x => x.t == mv.t)) spots.Insert(0, (mv.t, mv.delta, mv.p, mv.n, "named")); } else spots.Add((null, Vector3.zero, a.position, -a.forward, "named")); }
+            foreach (var a in level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_roundwin" && t.parent && t.parent.name == "shelter").Take(1)) { float off = Mathf.Abs(a.localPosition.x); Debug.Log("[busstop] ring pattern offset from wall centre " + off.ToString("F3") + " m"); Check(off < 0.01f, "bus stop ring pattern centred on its wall board (offset " + off.ToString("F3") + " m)"); spots.Add((a, a.parent.TransformVector(new Vector3(-0.75f, 0, 0)), a.position, -a.forward, "bus")); }   // before = old x 0.75 offset re-applied
+            int si = 0;
+            foreach (var sp in spots)
+            {
+                var n = sp.n; n.y = 0; if (n.sqrMagnitude < 0.01f) continue; n.Normalize(); var at = sp.p; float free = Physics.Raycast(at + n * 0.1f, n, out var hh, 3f, Art.ShotMask, QueryTriggerInteraction.Ignore) ? hh.distance : 3f;
+                var from = at + n * Mathf.Clamp(free, 1.0f, 2.4f); from.y = (Physics.Raycast(new Vector3(from.x, Mathf.Min(at.y, from.y) + 0.3f, from.z), Vector3.down, out var gh, 8f, Art.ShotMask, QueryTriggerInteraction.Ignore) ? gh.point.y : 0f) + 1.6f;
+                if (sp.nm == "bus" && sp.t) { from = sp.t.parent.TransformPoint(new Vector3(0, 1.6f, 1.15f)); at = sp.t.parent.TransformPoint(new Vector3(0, 1.2f, -0.66f)); }   // straight-on from the open lane side, eye height, clear of posts
+                string nm = "v0922_sign_" + level.theme.id + (si++) + "_" + sp.nm;
+                if (sp.t) { sp.t.position -= sp.d; yield return CamShot(from, at, nm + "_before", 0.3f); sp.t.position += sp.d; yield return CamShot(from, sp.nm == "bus" ? at : at + sp.d, nm + "_after", 0.3f); }
+                if (!sp.t) yield return CamShot(from, at, nm, 0.3f);   // named signs: normal shot, focus gem live as in play
+            }
+        }
         if (placeShot) yield break; placeShot = true;
         {   // v0.9.21 before/after: doors (lift undone for the "before" frame), mailboxes, curtains
             Vector3 View(Bounds b, Transform t, float dist, float up)
@@ -1230,7 +1248,7 @@ public class Game : MonoBehaviour
                 var dv = PlaceAudit.LiftedDoors[i]; if (!dv || !dv.GetComponentsInChildren<Renderer>().Any(r => r.enabled)) continue; var dp = Art.RenderBounds(dv.gameObject).center; if (FindObjectsOfType<Interactable>().Where(x => !(x is Door)).Any(lc => { var lb = Art.RenderBounds(lc.gameObject); lb.Expand(new Vector3(1.6f, 3f, 1.6f)); var d = lb.center - dp; d.y = 0; return lb.Contains(dp) || d.magnitude < 1.8f; })) continue; shot++; var b = Art.RenderBounds(dv.gameObject); float L = PlaceAudit.LiftAmt[i];   // skip doors with a prop in front so the sill stays visible
                 Debug.Log("[doorshot] " + dv.name + " b " + b.center.ToString("F2") + "/" + b.size.ToString("F2")); var bot = new Bounds(new Vector3(b.center.x, b.min.y + 0.5f, b.center.z), b.size); var from = View(bot, dv, 2.4f, 0.5f); var at = new Vector3(b.center.x, b.min.y + 0.35f, b.center.z);
                 dv.position -= Vector3.up * L; yield return CamShot(from, at, "v0921_door_" + tag + i + "_before", 0.8f);
-                dv.position += Vector3.up * L; yield return CamShot(from, at, "v0921_door_" + tag + i + "_after", 0.8f);
+                dv.position += Vector3.up * L; yield return CamShot(from, at, "v0921_door_" + tag + i + "_after", 0.8f); { var sd = Quaternion.Euler(0, 50, 0) * (from - at); var fs = at + sd; if (Physics.Linecast(at + sd.normalized * 0.4f, fs, Art.ShotMask, QueryTriggerInteraction.Ignore)) fs = at + Quaternion.Euler(0, -50, 0) * (from - at); dv.position -= Vector3.up * L; yield return CamShot(fs, at, "v0922_door_" + tag + i + "_side_before", 0.5f); dv.position += Vector3.up * L; yield return CamShot(fs, at, "v0922_door_" + tag + i + "_side_after", 0.5f); }
             }
             int mi = 0;
             foreach (var (mbb, face) in PlaceAudit.MailSpots.Take(2))
@@ -1240,7 +1258,7 @@ public class Game : MonoBehaviour
             }
             int ci = 0;
             foreach (var cu in level.root.GetComponentsInChildren<Transform>().Where(t => t.name == "sk_curtain").Take(2))
-            { var b = Art.RenderBounds(cu.gameObject); if (b.size.y < 0.3f) continue; yield return CamShot(View(b, cu, 3.2f, 0.1f), b.center - Vector3.up * 0.2f, "v0921_curtain_" + tag + (ci++), 0.15f); }
+            { var b = Art.RenderBounds(cu.gameObject); if (b.size.y < 0.3f) continue; var cf = View(b, cu, 3.2f, 0.1f); var ca = b.center - Vector3.up * 0.2f; yield return CamShot(cf, ca, "v0921_curtain_" + tag + ci, 0.15f); var cs = ca + Quaternion.Euler(0, 45, 0) * (cf - ca); if (Physics.Linecast(ca + (cs - ca).normalized * 0.4f, cs, Art.ShotMask, QueryTriggerInteraction.Ignore)) cs = ca + Quaternion.Euler(0, -45, 0) * (cf - ca); yield return CamShot(cs, ca, "v0922_curtain_" + tag + (ci++) + "_side", 0.15f); }
         }
         var pick = new List<PlaceAudit.Move>();
         pick.AddRange(PlaceAudit.Moves.Where(m => m.t && (m.what == "sk_scooter" || m.what == "RideScooter" || m.what == "sk_tree")).Take(2));

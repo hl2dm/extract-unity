@@ -81,7 +81,7 @@ public class HintRing : MonoBehaviour
         mr = rg.AddComponent<MeshRenderer>(); mr.sharedMaterial = Art.Emissive(Color.white, 1f); mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; mr.receiveShadows = false;
         var lossy = transform.lossyScale; rg.transform.localScale = new Vector3(radius / Mathf.Max(lossy.x, 1e-3f), 1, radius * aspect / Mathf.Max(lossy.z, 1e-3f));
         var m = new GameObject("focusGem"); m.AddComponent<MeshFilter>().sharedMesh = GemMesh(); m.AddComponent<MeshRenderer>(); marker = m.transform;   // v0.9.8 faceted down-pointing gem (was a spinning cube)
-        marker.localScale = Vector3.one * 0.11f;   // world-space, unparented: owner scale (flat rugs etc.) no longer stretches it
+        marker.localScale = Vector3.one * 0.09f;   // world-space, unparented: owner scale (flat rugs etc.) no longer stretches it
         mk = m.GetComponent<MeshRenderer>(); mk.sharedMaterial = Art.Emissive(Color.white, 1f); mk.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
     }
     // shrink the ring until its outline no longer passes through neighbouring props / walls
@@ -104,6 +104,7 @@ public class HintRing : MonoBehaviour
         }
         if (shrinks > 0) Debug.Log("[ring] " + (owner ? owner.name : "?") + " shrunk " + ox.ToString("0.00") + "->" + radius.ToString("0.00"));
     }
+    int nextSign; Transform nearSign;
     void LateUpdate()
     {
         if (!owner) { Destroy(gameObject); return; }
@@ -123,7 +124,11 @@ public class HintRing : MonoBehaviour
         mk.enabled = foc && !empty && !(owner is Station);
         if (mk.enabled)
         {
-            var b = owner.TopPoint; marker.position = b + Vector3.up * (Calm.On ? 0.28f + 0.03f * Mathf.Sin(t * 1.6f) : 0.28f + 0.06f * Mathf.Sin(t * 4)); marker.rotation = Quaternion.Euler(0, t * (Calm.On ? 25 : 90), 0);
+            var b = owner.TopPoint; marker.position = b + Vector3.up * (Calm.On ? 0.28f + 0.03f * Mathf.Sin(t * 1.6f) : 0.28f + 0.06f * Mathf.Sin(t * 4)); float gs = 0.09f;
+            if (Time.frameCount >= nextSign) { nextSign = Time.frameCount + 20; nearSign = null;   // v0.9.22: sign lookup throttled (every 20 frames), result cached
+                foreach (var f in SoftProps.SignFaces) { if (!f) continue; var lp = f.InverseTransformPoint(marker.position); if (Mathf.Abs(lp.x) > 0.58f || lp.y < -0.75f || lp.y > 0.62f || lp.z > 0.05f || lp.z < -1.8f) continue; nearSign = f; break; } }
+            if (nearSign) { float by = nearSign.TransformPoint(new Vector3(0, -0.5f, 0)).y - 0.14f; var mp = marker.position; mp.y = Mathf.Max(b.y + 0.06f, Mathf.Min(mp.y, by)); marker.position = mp; gs = 0.065f; }   // gem drops under the board, smaller
+            marker.localScale = Vector3.one * gs; marker.rotation = Quaternion.Euler(0, t * (Calm.On ? 25 : 90), 0);
             mpb.SetColor("_EmissionColor", col * (Calm.On ? 1.2f : 5f)); mpb.SetColor("_BaseColor", col); mk.SetPropertyBlock(mpb);
         }
     }

@@ -908,7 +908,7 @@ public static class SoftProps
         {   // v0.9.10 B: one gouache sign system - painted arched board w/ icon + real-font CJK lettering
             var omp = PushM(MatK.Wood); float Hp = size * 9f * 1.25f, Wp = Hp * (300f + s.Length * 210f) / 300f;
             Block(g, new Vector3(0, -Hp * 0.06f, 0.3f), new Vector3(Wp * 0.97f, Hp * 0.78f, 0.22f), H("7a5236"), 0.06f, false);
-            Picture(g, new Vector3(0, 0, 0.185f), Quaternion.identity, Wp, Hp, "art_sg" + sgi); MatA = omp; SignCount++;
+            SignFaces.Add(Picture(g, new Vector3(0, 0, 0.185f), Quaternion.identity, Wp, Hp, "art_sg" + sgi)); MatA = omp; SignCount++;
             var ht = Text(g, new Vector3(0, 0, 0.3f), Quaternion.identity, s, size / 8f, c); ht.GetComponent<MeshRenderer>().enabled = false;   // keeps name for tests
             return g;
         }
@@ -1088,7 +1088,8 @@ public static class SoftProps
     /// v0.9.7 picture frame: moulded frame, mat, simple painted scene
     static readonly HashSet<string> UsedSigns = new HashSet<string>();
     static readonly string[] SignPool = { "早餐店", "冰店", "書局", "花店", "麵包", "豆花", "文具", "理髮", "柑仔店", "阿姨家" }   /* only names with painted sign art */;
-    public static void ResetSigns() { UsedSigns.Clear(); }
+    public static readonly List<Transform> SignFaces = new List<Transform>();   // v0.9.22 painted sign faces: the focus gem keeps out of the space in front of them
+    public static void ResetSigns() { UsedSigns.Clear(); SignFaces.RemoveAll(t => !t); }
     public static string UniqueSign(string want)
     {
         if (UsedSigns.Count >= SignPool.Length) UsedSigns.Clear();

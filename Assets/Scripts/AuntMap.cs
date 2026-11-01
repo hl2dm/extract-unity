@@ -393,7 +393,7 @@ public static partial class LevelGen
         var sg = Group(g, "shop_sign", new Vector3(0, FY + 3.75f, -0.35f));
         Block(sg, Vector3.zero, new Vector3(4.2f, 0.9f, 0.16f), White, 0.25f, false);
         SoftProps.Text3D(sg, new Vector3(0, 0, -0.3f), "柑仔店", 0.15f, Coral);
-        foreach (int s in new[] { -1, 1 }) Ball(sg, new Vector3(s * 1.75f, 0, -0.06f), new Vector3(0.4f, 0.4f, 0.1f), s < 0 ? Rose : ButterD, 10);
+        // v0.9.22: the two old rose/butter knob balls sat between the board and the painted face and poked a pink facet through it - removed
         SCont(g, "shelf", new Vector3(-3.0f, FY, 5.6f), 180, Rose, "零食貨架");
         SCont(g, "shelf", new Vector3(-1.6f, FY, 5.6f), 180, Sky, "餅乾貨架");
         SCont(g, "display", new Vector3(1.0f, FY, 5.7f), 180, Butter, "玩具展示櫃");

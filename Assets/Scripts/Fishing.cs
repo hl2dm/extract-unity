@@ -198,6 +198,7 @@ public class Fish : Interactable
         barMark.localPosition = new Vector3((marker - 0.5f) * 0.88f, 0, -0.024f);
     }
     void OnDestroy() { if (bar) Destroy(bar.gameObject); }   // bar is unparented now
-    public string BarDbg() { var cam = Camera.main; return bar ? ("bar " + bar.position.ToString("F2") + " act " + bar.gameObject.activeInHierarchy + " vp " + (cam ? cam.WorldToViewportPoint(bar.position).ToString("F2") : "-") + " fish " + transform.position.ToString("F2")) : "no bar"; }
+    public float MarkW => barMark ? Art.RenderBounds(barMark.gameObject).size.magnitude : -1;
+    public string BarDbg() { var cam = Camera.main; return bar ? ("bar " + bar.position.ToString("F2") + " act " + bar.gameObject.activeInHierarchy + " vp " + (cam ? cam.WorldToViewportPoint(bar.position).ToString("F2") : "-") + " fish " + transform.position.ToString("F2") + " mark scale " + barMark.lossyScale.ToString("F3") + " col " + (barMark.GetComponent<Renderer>().sharedMaterial.HasProperty("_BaseColor") ? barMark.GetComponent<Renderer>().sharedMaterial.GetColor("_BaseColor").ToString("F2") : "?")) : "no bar"; }
     void HideBar() { if (bar) bar.gameObject.SetActive(false); }
 }

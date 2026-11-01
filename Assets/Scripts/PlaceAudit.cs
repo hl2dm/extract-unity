@@ -166,9 +166,70 @@ public static class PlaceAudit
         MailSpots.Clear(); SmallClipBefore = SmallClipAfter = SmallClip(root, true); Debug.Log("[smallclip] small-prop interpenetrations " + SmallClipAfter);
         CurtainOffBefore = CurtainAlign(root, false); CurtainAlign(root, true); CurtainOffAfter = CurtainAlign(root, false);
         Debug.Log("[curtainaudit] curtains off-centre before " + CurtainOffBefore + " after " + CurtainOffAfter + " (max shift " + CurtainMaxOff.ToString("F2") + " m)");
+        SignMoves.Clear(); SignFaceMoved = 0; if (!System.Environment.GetCommandLineArgs().Contains("-nosignface")) { SignFaceBefore = SignFace(root, true); SignFaceAfter = SignFace(root, false); }
+        Debug.Log("[signface] signs " + SignFaceTotal + " blocked/facing-wall before " + SignFaceBefore + " after " + SignFaceAfter + " (moved " + SignFaceMoved + ")");
         DressBefore = Dress(root, false); Dress(root, true); DressAfter = Dress(root, false); Debug.Log("[dressaudit] door-vs-dressing overlaps before " + DressBefore + " after " + DressAfter);
         Debug.Log("[placeaudit] before props " + pp0 + " wall " + pw0 + " door " + pd0 + " signs " + s0 + " | fixed " + Fixed + " hidden " + Hidden + " | after props " + PropHits + " wall " + WallHits + " door " + DoorHits + " signs " + SignHits);
     }
+
+
+    /// v0.9.22 sign face audit: every painted sign/label/poster (sk_art quad) is sampled on a 5x3 grid; a ray from 0.8 m in front
+    /// of the face back to it must not hit anything (awnings, roofs, windows, planters, lamps, trees, props, walls). Bad signs are
+    /// nudged forward / up (or shrunk) until clean. Runs before MeshMerge so meshes are readable for temp colliders.
+    public static int SignFaceBefore, SignFaceAfter, SignFaceMoved, SignFaceTotal;
+    public static readonly List<(Transform t, Vector3 delta, Vector3 p, Vector3 n, string why)> SignMoves = new List<(Transform, Vector3, Vector3, Vector3, string)>();
+    static List<Transform> Arts(Transform root) => root.GetComponentsInChildren<Transform>(true).Where(t => t.name == "sk_art" && t.gameObject.activeInHierarchy && t.GetComponent<MeshRenderer>() && t.GetComponent<MeshRenderer>().enabled && t.lossyScale.x > 0.25f && t.lossyScale.y > 0.2f).ToList();
+    static string FaceHit(Transform a)
+    {
+        var n = -a.forward; int hits = 0; string who = null; var own = a.parent && a.parent.GetComponentsInChildren<Renderer>().Length < 40 ? a.parent : a;   // a clock's own bezel etc. is decoration, not an obstacle
+        var ls = a.lossyScale; int nx = Mathf.Clamp(Mathf.CeilToInt(Mathf.Abs(ls.x) / 0.12f), 5, 40), ny = Mathf.Clamp(Mathf.CeilToInt(Mathf.Abs(ls.y) / 0.12f), 3, 12);   // v0.9.22: dense grid (<=12 cm) so a small facet poking through a wide board is caught
+        for (int i = 0; i < nx; i++) for (int j = 0; j < ny; j++)
+        {
+            var p = a.TransformPoint(new Vector3(-0.42f + i * 0.84f / (nx - 1), -0.36f + j * 0.72f / (ny - 1), 0));
+            if (Physics.Raycast(p + n * 0.8f, -n, out var h, 0.775f, ~0, QueryTriggerInteraction.Ignore) && !h.collider.transform.IsChildOf(own)) { hits++; who = who ?? h.collider.name + "@" + (h.collider.transform.parent ? h.collider.transform.parent.name : ""); }
+        }
+        if (hits > 0) return hits + "x " + who;
+        // eye-height views (1.6 m) from the walkable side, 2.5-4.5 m out and off to the sides: nothing within 1.2 m of the face may cut across it
+        var c = a.position; var rt = Vector3.Cross(Vector3.up, n).normalized; var nh = n; nh.y = 0; if (nh.sqrMagnitude < 0.1f) return null; nh.Normalize();
+        foreach (float d in new[] { 2.5f, 4.5f }) foreach (float lat in new[] { -1.5f, 0f, 1.5f })
+        {
+            var e = c + nh * d + rt * lat; if (!Physics.Raycast(new Vector3(e.x, c.y + 0.5f, e.z), Vector3.down, out var g, 12f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            e.y = g.point.y + 1.6f; if (e.y > c.y + 0.3f || Physics.CheckSphere(e, 0.25f, ~0, QueryTriggerInteraction.Ignore)) continue;
+            if (Physics.Linecast(e, c + n * 1.25f, ~0, QueryTriggerInteraction.Ignore)) continue;   // viewpoint not open to the sign
+            int eh = 0; string ew = null;
+            for (int i = 0; i < nx; i++) for (int j = 0; j < ny; j++)
+            {
+                var p = a.TransformPoint(new Vector3(-0.42f + i * 0.84f / (nx - 1), -0.36f + j * 0.72f / (ny - 1), 0)); var dv = p - e; float L = dv.magnitude;
+                if (Physics.Raycast(e, dv / L, out var h, L - 0.025f, ~0, QueryTriggerInteraction.Ignore) && h.distance > L - 1.2f && !h.collider.transform.IsChildOf(own)) { eh++; ew = ew ?? h.collider.name + "@" + (h.collider.transform.parent ? h.collider.transform.parent.name : ""); }
+            }
+            if (eh >= 2) return "eye " + eh + "x " + ew;
+        }
+        return null;
+    }
+    public static int SignFace(Transform root, bool fix)
+    {
+        var arts = Arts(root); SignFaceTotal = arts.Count; if (arts.Count == 0) return 0;
+        var sb = arts.Select(a => { var b = Art.RenderBounds(a.gameObject); b.Expand(0.9f); return b; }).ToList();
+        var temp = new List<Collider>();
+        foreach (var mr in root.GetComponentsInChildren<MeshRenderer>())
+        {
+            if (!mr.enabled || mr.name == "sk_art" || mr.GetComponent<Collider>()) continue; var mf = mr.GetComponent<MeshFilter>(); if (!mf || !mf.sharedMesh || !mf.sharedMesh.isReadable) continue;
+            var rb = mr.bounds; if (!sb.Any(b => b.Intersects(rb))) continue; var mc = mr.gameObject.AddComponent<MeshCollider>(); mc.sharedMesh = mf.sharedMesh; temp.Add(mc);
+        }
+        Physics.SyncTransforms(); int bad = 0;
+        foreach (var a in arts)
+        {
+            var why = FaceHit(a); if (why == null) continue; bad++;
+            if (!fix) { Debug.Log("[signface] bad " + Path(a) + " " + why); continue; }
+            var t = a.parent && a.parent.name.StartsWith("sk_") && a.parent.name != "shelter" ? a.parent : a; var n = -a.forward; var p0 = t.position; var ps = a.position; bool ok = false;
+            foreach (float up in new[] { 0f, 0.12f, 0.25f, 0.4f }) { foreach (float fw in new[] { 0.05f, 0.1f, 0.18f, 0.26f, 0.35f }) { t.position = p0 + n * fw + Vector3.up * up; Physics.SyncTransforms(); if (FaceHit(a) == null) { ok = true; break; } } if (ok) break; }
+            if (!ok) { var s0 = t.localScale; t.position = p0 + n * 0.12f; t.localScale = s0 * 0.8f; Physics.SyncTransforms(); ok = FaceHit(a) == null; if (!ok) { t.position = p0; t.localScale = s0; } }
+            if (ok) { SignFaceMoved++; SignMoves.Add((t, t.position - p0, ps, n, why)); }
+            Debug.Log("[signface] " + (ok ? "fixed " : "UNFIXED ") + Path(a) + " " + why + " moved " + (t.position - p0).ToString("F2"));
+        }
+        foreach (var c in temp) Object.DestroyImmediate(c); Physics.SyncTransforms(); return bad;
+    }
+    static string Path(Transform t) { var s = t.name; for (var p = t.parent; p && s.Length < 90; p = p.parent) s = p.name + "/" + s; return s; }
 
     /// v0.9.21 door grounding: a door whose bottom is buried in the step / plinth / sidewalk / terrain in front of it gets lifted
     /// so its sill sits on the top of that surface (every door on every map, before MeshMerge so bounds are exact).

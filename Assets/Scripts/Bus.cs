@@ -28,7 +28,7 @@ public class Bus : Interactable
         var arc = SoftKit.Cyl(sh, new Vector3(0, 2.45f, 0), 1.05f, 3.7f, SoftKit.PinkD, 0.2f, Quaternion.Euler(0, 0, 90), 26); arc.transform.localScale = new Vector3(0.42f, 1, 1);
         foreach (int s in new[] { -1, 1 }) for (int i = 0; i < 4; i++) SoftKit.Ball(sh, new Vector3(-1.4f + i * 0.93f, 2.38f, s * 1.0f), new Vector3(0.9f, 0.22f, 0.18f), i % 2 == 0 ? SoftKit.Pink : SoftKit.White, 10);
         SoftKit.Block(sh, new Vector3(0, 1.25f, -0.75f), new Vector3(3.2f, 2.1f, 0.12f), SoftKit.Butter, 0.08f, true);
-        var rw = SoftProps.RoundWin(sh, new Vector3(0.75f, 1.55f, -0.66f), 0.42f, SoftKit.White, true); rw.localRotation = Quaternion.Euler(0, 180, 0);
+        var rw = SoftProps.RoundWin(sh, new Vector3(0f, 1.55f, -0.66f), 0.42f, SoftKit.White, true); rw.localRotation = Quaternion.Euler(0, 180, 0);   // v0.9.22: ring pattern centred on the back-wall board (was x 0.75)
         SoftKit.Block(sh, new Vector3(-0.3f, 0.48f, -0.4f), new Vector3(2.4f, 0.12f, 0.5f), SoftKit.Coral, 0.05f, true);
         foreach (int s in new[] { -1, 1 }) SoftKit.Block(sh, new Vector3(-0.3f + s * 1.0f, 0.22f, -0.4f), new Vector3(0.12f, 0.42f, 0.4f), SoftKit.MintD, 0.04f, false);
         SoftProps.FlowerPot(sh, new Vector3(-1.75f, 0.06f, 0.9f), SoftKit.Sky, SoftKit.Rose, 0.8f, false);
