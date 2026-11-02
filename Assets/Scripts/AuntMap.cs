@@ -502,7 +502,8 @@ public static partial class LevelGen
         TownRow(root, 22.6f, 58f, -9.5f, 180, deco, ref k);
         PT("townrows"); yield return null;
         // back row silhouettes (seen from the high shots)
-        for (float x = -54; x < 56; x += 9.5f) { SoftProps.TownHouse(root, new Vector3(x, 0, 24f), 0, 9f, 9, 3 + deco.Next(2), new[] { Lite(Lav, 0.2f), Lite(Sky, 0.2f), Lite(Mint, 0.2f), Lite(Butter, 0.2f) }[deco.Next(4)], White, new[] { Rose, LavD, SkyD }[deco.Next(3)], deco); }
+        for (float x = -54; x < 56; x += 9.5f) { if (x > -21f && x < 9f) continue;   // v0.9.25: keep the strip behind the aunt house open (back windows looked straight into a house front 3 m away)
+            SoftProps.TownHouse(root, new Vector3(x, 0, 24f), 0, 9f, 9, 3 + deco.Next(2), new[] { Lite(Lav, 0.2f), Lite(Sky, 0.2f), Lite(Mint, 0.2f), Lite(Butter, 0.2f) }[deco.Next(4)], White, new[] { Rose, LavD, SkyD }[deco.Next(3)], deco); }
         PT("backrow"); yield return null;
         var shop = CandyShop(root, new Vector3(-23.6f, 0, -9.5f), 180);
         // no-ride zones (scooter must be parked outside; dismount to go in)

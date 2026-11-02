@@ -432,6 +432,7 @@ public static class SoftProps
     {   // v0.9.6: real window: recessed reveal, thin frame with depth, mullions, sill, dim interior + curtains, soft glass streaks (no opaque sky slab, no glow sticker)
         var g = Group(p, "sk_win", center); WinSpots.Add((g.position, -g.forward, g.right)); WinDim[g] = new Vector2(w, h); var om = PushM(0.5f);
         int hs = Mathf.Abs(Mathf.RoundToInt(p.TransformPoint(center).x * 7.3f + p.TransformPoint(center).y * 3.1f + p.TransformPoint(center).z * 5.7f));
+        arch = false;   // v0.9.25: the "arch" was a full ellipse ring + disc that crossed the glass (read as an oval cage + brown blob); flat lintel only
         float rise = arch ? Mathf.Min(w / 2, 0.42f) : 0f, fb = 0.1f, dep = 0.13f;
         Color inside = Color.Lerp(new Color(0.36f, 0.28f, 0.32f), new Color(0.5f, 0.4f, 0.34f), (hs % 5) / 4f);
         // v0.9.24 simple pastel window: deep recess, soft warm back-light, one pair of flat tied-back curtains, single frame, one glass sheen.

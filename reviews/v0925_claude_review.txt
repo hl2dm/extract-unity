@@ -1,0 +1,24 @@
+## Findings
+
+**Windows (w)**
+
+- Style simplification landed: all window instances (aunt-house kitchen, aunt-house bedroom, hub room) now show a plain frame + glass + two flat, un-pleated curtain panels. No louvers, mullions, iron grilles, or pleated fabric remain anywhere I can see.
+- Previous v0.9.24 issues appear fixed:
+  - **Louver/bar dents through the aunt-house glass**: gone — the playground scene viewed through the kitchen window (`v0921_curtain_aunt0.png`) is clean, no dark bar artifacts overlaid on the glass.
+  - **Brown geometry behind the round hub window**: not present in `v0921_curtain_hub_27.png`/`_29.png` — the close-up window interior is a flat warm cream fill with no stray brown shapes.
+  - **Right curtain longer than left**: in the straight-on shot (`v0921_curtain_aunt1.png`) both panels are now symmetric in length and vertical placement; the asymmetry only reappears as ordinary perspective foreshortening in angled shots (`v0922_*_side.png`), which is expected, not a bug.
+- Minor remaining nitpicks:
+  - The hub window's "glass" is a flat, scene-less light gradient (`v0921_curtain_hub_29.png`), which reads a bit like a placeholder next to the aunt-house windows that render an actual outdoor view through the glass — a small consistency gap, not an error.
+  - In `v0921_curtain_aunt0.png` the window's top-right wood jamb return pokes out past the right curtain panel; it's legible as window-box depth from the camera angle rather than a floating/clipping part, but it's worth a glance to confirm it's intentional.
+- No z-fighting, no floating geometry, no clutter — readability is good and the look is consistent with the storybook style.
+
+**Title card (t)** — reviewed `t25.png` since no `v0925_title.png` exists; assuming this is the intended file.
+
+- Logo "熊熊搜刮隊" is highly legible: thick brown outline, warm orange fill, consistent stroke weight across all characters, good contrast against the cream background.
+- "BEAR BAG SQUAD" subtitle uses a matching outlined condensed font — consistent with the logo treatment.
+- Knitted bear mascot (scarf, candy, fish) nails the cozy/cute tone.
+- Prompt text "按任意鍵 / 點一下開始" is a single consistent bold rounded sans-serif — no mixed glyph styles, no tofu boxes, no fallback-font mismatch between the Chinese characters and the "/" separator.
+- Layout is clean and centered, no clipping or overlap between logo, mascot, and subtitle.
+
+SCORES w=8 t=9
+END

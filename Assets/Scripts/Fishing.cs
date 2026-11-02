@@ -162,9 +162,21 @@ public class Fish : Interactable
     {   // payoff: the caught fish flips out of the water in its real colours, then lands in the bag
         var j = new GameObject("fish_jump").transform; j.SetParent(null, false); var p0 = transform.position + Vector3.up * Pond.Surface; float s = Mathf.Max(0.8f, k.size) * 1.2f;
         var c = Data.H(k.r >= 3 ? "f08a4b" : k.r == 2 ? "9a8a6a" : k.r == 1 ? "6cc0d8" : "a7b6b0");
-        SoftKit.Ball(j, Vector3.zero, new Vector3(0.12f, 0.16f, 0.36f) * s, c, 12, false, null, "jump_body", 0.02f);
-        SoftKit.Ball(j, new Vector3(0, 0, -0.22f * s), new Vector3(0.03f, 0.16f, 0.12f) * s, Color.Lerp(c, Color.white, 0.25f), 8, false, null, "jump_tail", 0.02f);
-        foreach (int sx in new[] { -1, 1 }) SoftKit.Ball(j, new Vector3(sx * 0.055f * s, 0.03f, 0.12f * s), Vector3.one * 0.03f * s, Data.H("2a2630"), 6, false, null, "jump_eye", 0.01f);
+        // v0.9.25 friendlier jumping fish: plump body + lighter belly, tapered rear, forked tail, dorsal/pectoral fins, big eyes with highlights, little mouth
+        var lt = Color.Lerp(c, Color.white, 0.45f); var dk = Color.Lerp(c, Data.H("2a2630"), 0.25f); var ink = Data.H("2a2630");
+        SoftKit.Ball(j, Vector3.zero, new Vector3(0.15f, 0.2f, 0.34f) * s, c, 14, false, null, "jump_body", 0.02f);
+        SoftKit.Ball(j, new Vector3(0, -0.035f, 0.02f) * s, new Vector3(0.13f, 0.12f, 0.27f) * s, lt, 12, false, null, "jump_belly", 0.02f);
+        SoftKit.Ball(j, new Vector3(0, 0.005f, -0.16f) * s, new Vector3(0.09f, 0.12f, 0.16f) * s, c, 10, false, null, "jump_rear", 0.02f);
+        foreach (int sy in new[] { -1, 1 }) SoftKit.Ball(j, new Vector3(0, sy * 0.06f, -0.27f) * s, new Vector3(0.025f, 0.13f, 0.09f) * s, dk, 8, false, Quaternion.Euler(sy * -35, 0, 0), "jump_tail", 0.01f);
+        SoftKit.Ball(j, new Vector3(0, 0.1f, -0.02f) * s, new Vector3(0.025f, 0.08f, 0.15f) * s, dk, 8, false, Quaternion.Euler(-15, 0, 0), "jump_dorsal", 0.01f);
+        foreach (int sx in new[] { -1, 1 })
+        {
+            SoftKit.Ball(j, new Vector3(sx * 0.075f, -0.03f, 0.04f) * s, new Vector3(0.02f, 0.05f, 0.08f) * s, dk, 6, false, Quaternion.Euler(0, sx * 30, sx * 20), "jump_fin", 0.01f);
+            SoftKit.Ball(j, new Vector3(sx * 0.06f, 0.035f, 0.1f) * s, Vector3.one * 0.05f * s, Color.white, 8, false, null, "jump_eyew", 0.005f);
+            SoftKit.Ball(j, new Vector3(sx * 0.075f, 0.035f, 0.11f) * s, Vector3.one * 0.032f * s, ink, 6, false, null, "jump_eye", 0.005f);
+            SoftKit.Ball(j, new Vector3(sx * 0.083f, 0.045f, 0.115f) * s, Vector3.one * 0.011f * s, Color.white, 4, false, null, "jump_glint", 0f);
+        }
+        SoftKit.Ball(j, new Vector3(0, -0.02f, 0.165f) * s, new Vector3(0.04f, 0.018f, 0.02f) * s, Data.H("d9708a"), 6, false, null, "jump_mouth", 0.005f);
         foreach (var mr in j.GetComponentsInChildren<MeshRenderer>()) mr.shadowCastingMode = ShadowCastingMode.Off;
         for (float t = 0; t < 1.4f; t += Time.deltaTime) { float u = t / 1.4f; j.position = p0 + Vector3.up * (Mathf.Sin(u * Mathf.PI) * 0.9f); j.rotation = Quaternion.Euler(-60 + u * 140, 30, Mathf.Sin(u * 20) * 15); yield return null; }
         Pond.Ripple(p0, 0.8f); Destroy(j.gameObject);

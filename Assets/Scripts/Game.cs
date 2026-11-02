@@ -767,7 +767,7 @@ public class Game : MonoBehaviour
         foreach (var t in picked)
         {
             var b = Art.RenderBounds(t.gameObject); float d = Mathf.Clamp(b.size.magnitude * 0.9f, 1.1f, 2.4f); Vector3 eye = Vector3.zero; bool ok = false;
-            foreach (var sg in new[] { -1f, 1f }) { foreach (var k in new[] { 1f, 0.7f, 0.45f }) { var f = t.forward * sg; f.y = 0; f.Normalize(); var e = b.center + f * d * k + Vector3.up * 0.1f + t.right * 0.2f * k;
+            foreach (var sg in new[] { -1f, 1f }) { foreach (var k in new[] { 1f, 0.7f, 0.45f }) { var f = t.forward * sg; f.y = 0; f.Normalize(); var e = b.center + f * d * k + Vector3.up * 0.1f;   // v0.9.25 centred so both curtain panels are judged symmetrically
                 if (!Physics.Linecast(e, b.center + f * 0.25f) && !RBlock(e, b.center, t) && !Physics.CheckSphere(e, 0.2f) && Physics.Raycast(e, Vector3.down, 6f)) { eye = e; ok = true; break; } } if (ok) break; }
             if (!ok) continue;
             Debug.Log("[closeup] curtain " + t.name + " @" + t.position); yield return CamShot(eye, b.center, pre + (n++), 0.5f);
@@ -1278,7 +1278,8 @@ public class Game : MonoBehaviour
                 if (sp.nm == "bus" && sp.t) { from = sp.t.parent.TransformPoint(new Vector3(0, 1.6f, 1.15f)); at = sp.t.parent.TransformPoint(new Vector3(0, 1.2f, -0.66f)); }   // straight-on from the open lane side, eye height, clear of posts
                 string nm = "v0922_sign_" + level.theme.id + (si++) + "_" + sp.nm;
                 if (sp.t) { sp.t.position -= sp.d; yield return CamShot(from, at, nm + "_before", 0.3f); sp.t.position += sp.d; yield return CamShot(from, sp.nm == "bus" ? at : at + sp.d, nm + "_after", 0.3f); }
-                if (!sp.t) yield return CamShot(from, at, nm, 0.3f);   // named signs: normal shot, focus gem live as in play
+                if (!sp.t) { var hid = new List<Renderer>(); if (sp.nm == "bus") foreach (var bb in Object.FindObjectsByType<Bus>(FindObjectsSortMode.None)) foreach (var rr in bb.GetComponentsInChildren<Renderer>()) if (rr.enabled && rr.bounds.SqrDistance(from) < 9f) { rr.enabled = false; hid.Add(rr); }   // v0.9.25 a bus parked at the stop filled the whole frame (flat pink shot)
+                    yield return CamShot(from, at, nm, 0.3f); foreach (var rr in hid) if (rr) rr.enabled = true; }   // named signs: normal shot, focus gem live as in play
             }
         }
         if (placeShot) yield break; placeShot = true;
