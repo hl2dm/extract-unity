@@ -45,7 +45,8 @@ public class Bus : Interactable
         // bus
         b.lane = stop + side * 2.6f;
         var bt = new GameObject("Bus").transform; bt.SetParent(parent, false); b.bus = bt; SafetyNet.Movers.RemoveAll(m => !m); SafetyNet.Movers.Add(bt);
-        var brb = bt.gameObject.AddComponent<Rigidbody>(); brb.isKinematic = true; brb.interpolation = RigidbodyInterpolation.None; brb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;   // moving collider done properly bt.rotation = Quaternion.LookRotation(laneDir);
+        var brb = bt.gameObject.AddComponent<Rigidbody>(); brb.isKinematic = true; brb.interpolation = RigidbodyInterpolation.None; brb.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;   // moving collider done properly
+        bt.rotation = Quaternion.LookRotation(laneDir);   // v0.9.26: this line had slipped into the comment above in v0.9.24, so the bus drove sideways
         // SoftKit chubby bus: butter body, sky roof + skirt, mint stripe, headlight eyes and a smile
         var C = SoftKit.Butter;
         SoftKit.Block(bt, new Vector3(0, 1.75f, 0), new Vector3(2.5f, 2.4f, 8.4f), C, 0.55f, true, 0, 0.02f);
@@ -95,7 +96,7 @@ public class Bus : Interactable
                 if (Game.I.runT >= nextArrive || tl <= 63f) { state = BS.Arriving; tState = 0; Game.I.busN++; guaranteed = tl <= 63f; bus.gameObject.SetActive(true); bus.position = BusStopPos - dir * 60; Sfx.At("honk", BusStopPos, 1f, 6, 80); Game.I.Toast("叭叭！公車來了，快去公車站！"); }
                 break;
             case BS.Arriving:
-                { float k = Mathf.Clamp01(tState / 4.5f); float e = 1 - (1 - k) * (1 - k); bus.position = Vector3.Lerp(BusStopPos - dir * 60, BusStopPos, e); Spin(60 * (1 - e) + 2);
+                { float k = Mathf.Clamp01(tState / 4.5f); float e = 1 - (1 - k) * (1 - k); Drive(Vector3.Lerp(BusStopPos - dir * 60, BusStopPos, e)); Spin(60 * (1 - e) + 2);
                   if (k >= 1) { state = BS.Waiting; tState = 0; waitLeft = UnityEngine.Random.Range(6f, 8f); Sfx.At("honk", BusStopPos, 0.8f, 6, 80); } }
                 break;
             case BS.Waiting:
@@ -103,7 +104,7 @@ public class Bus : Interactable
                 if (!guaranteed) { waitLeft -= dt; if (waitLeft <= 0) { state = BS.Leaving; tState = 0; Game.I.Toast("公車開走了…下一班大約 " + Mathf.CeilToInt(Data.BusEvery - 4.5f - 8) + " 秒後。"); nextArrive = Game.I.runT + Data.BusEvery - 12.5f; } }
                 break;
             case BS.Leaving:
-                { float k = Mathf.Clamp01(tState / 4f); bus.position = BusStopPos + dir * (k * k * 70); Spin(k * 60); if (k >= 1) { state = BS.Away; bus.gameObject.SetActive(false); } }
+                { float k = Mathf.Clamp01(tState / 4f); Drive(BusStopPos + dir * (k * k * 70)); Spin(k * 60); if (k >= 1) { state = BS.Away; bus.gameObject.SetActive(false); } }
                 break;
         }
         if (bus.gameObject.activeSelf) { if ((bus.position - prevBus).sqrMagnitude > 100f) prevBus = bus.position; HitCheck(prevBus, bus.position); prevBus = bus.position; }
@@ -126,20 +127,24 @@ public class Bus : Interactable
         return true;
     }
     float lastHitToast = -9;
+    /// v0.9.26: move the bus and keep its nose pointing along its travel (works for straight lanes and any future turns)
+    public void Drive(Vector3 to) { var d = to - bus.position; d.y = 0; if (d.sqrMagnitude > 1e-6f) bus.rotation = Quaternion.LookRotation(d.normalized); bus.position = to; }
+    /// test helper: where the bus is at time ts in the arriving (0) or leaving (1) leg
+    public Vector3 LegPos(int leg, float ts) { if (leg == 0) { float k = Mathf.Clamp01(ts / 4.5f), e = 1 - (1 - k) * (1 - k); return Vector3.Lerp(BusStopPos - dir * 60, BusStopPos, e); } float q = Mathf.Clamp01(ts / 4f); return BusStopPos + dir * (q * q * 70); }
     void Spin(float v) { foreach (var w in wheels) if (w) w.Rotate(Vector3.up, v * Time.deltaTime * 20, Space.Self); }
     /// test helper: bring the bus to the stop right now
-    public void ForceArrive() { bus.gameObject.SetActive(true); bus.position = BusStopPos; state = BS.Waiting; tState = 1; waitLeft = 8; guaranteed = true; }
+    public void ForceArrive() { bus.gameObject.SetActive(true); bus.rotation = Quaternion.LookRotation(dir); bus.position = BusStopPos; state = BS.Waiting; tState = 1; waitLeft = 8; guaranteed = true; }
 
     public IEnumerator Cinematic(Camera cam, Action<string, string> sub, Func<bool> skip)
     {
-        cine = true; float t = 0; bus.gameObject.SetActive(true); var start = BusStopPos; bus.position = start;
+        cine = true; float t = 0; bus.gameObject.SetActive(true); var start = BusStopPos; bus.rotation = Quaternion.LookRotation(dir); bus.position = start;
         string[] lines = Data.CineSubs; string line1 = lines[UnityEngine.Random.Range(0, lines.Length)], line2 = lines[UnityEngine.Random.Range(0, lines.Length)];
         var side = Vector3.Cross(Vector3.up, dir).normalized;
         Sfx.Play("honk", 0.7f);
         while (t < 8f)
         {
             float dt = Time.deltaTime; t += dt; if (t > 1.0f && skip()) break;
-            float go = Mathf.Max(0, t - 2.2f); bus.position = start + dir * (go * go * 1.6f); Spin(go * 25);
+            float go = Mathf.Max(0, t - 2.2f); Drive(start + dir * (go * go * 1.6f)); Spin(go * 25);
             if (door) door.localPosition = new Vector3(-1.27f, 1.5f, 3.3f - (t < 1.8f ? 1.1f : Mathf.Clamp01(1 - (t - 1.8f) * 2) * 1.1f));
             Sfx.Engine(0.6f, 0.9f + Mathf.Min(0.5f, go * 0.08f));
             Vector3 cp, look;

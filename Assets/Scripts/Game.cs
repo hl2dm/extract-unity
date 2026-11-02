@@ -521,6 +521,13 @@ public class Game : MonoBehaviour
     IEnumerator BusHitTest()
     {
         float runT0 = runT, fz0 = Pet.FreezeAll; int cr0 = caughtRun, pc0 = player.caught; Pet.FreezeAll = 999; var b = level.bus; var bt = b.bus; bool act = bt.gameObject.activeSelf; var p0 = bt.position; var r0 = bt.rotation; Bus.TestDrive = true; bt.gameObject.SetActive(true);
+        { // v0.9.26: the bus faces where it drives (it drove broadside in v0.9.24/25), door + long axis line up with the stop
+            float worst = 0; bool doorOk = true, axisOk = true; bt.rotation = r0;
+            for (int leg = 0; leg < 2; leg++) { bt.position = b.LegPos(leg, 0); for (float tq = 0.1f; tq < 4f; tq += 0.1f) { var prev = bt.position; b.Drive(b.LegPos(leg, tq)); var v = bt.position - prev; v.y = 0; if (v.sqrMagnitude > 1e-6f) worst = Mathf.Max(worst, Vector3.Angle(bt.forward, v)); } }
+            var st0 = b.state; float wl0 = b.waitLeft; bool g0 = b.guaranteed; b.ForceArrive(); b.state = st0; b.waitLeft = wl0; b.guaranteed = g0; var dw = b.door.position - bt.position; var tw = b.stopPos - bt.position; dw.y = tw.y = 0; doorOk = Vector3.Dot(dw, tw) > 0 && Vector3.Distance(Vector3.ProjectOnPlane(b.door.position, Vector3.up), Vector3.ProjectOnPlane(b.stopPos, Vector3.up)) < 4.5f;
+            var bb = new Bounds(bt.position, Vector3.zero); foreach (var rn in bt.GetComponentsInChildren<Renderer>()) bb.Encapsulate(rn.bounds); var ax = new Vector3(Mathf.Abs(b.Dir.x), 0, Mathf.Abs(b.Dir.z)); float along = Vector3.Dot(bb.size, ax), across = Vector3.Dot(bb.size, new Vector3(ax.z, 0, ax.x)); axisOk = along > across * 2f;
+            Check(worst < 3f && doorOk && axisOk && Vector3.Angle(bt.forward, b.Dir) < 3f, "bus heading: forward vs velocity worst " + worst.ToString("F1") + " deg, door faces stop " + doorOk + ", long axis along lane " + axisOk + " (" + along.ToString("F1") + " x " + across.ToString("F1") + ")");
+        }
         bhCases = bhBad = bhHit = 0; bhWhy = ""; var dir = b.Dir; var side = Vector3.Cross(Vector3.up, dir).normalized;
         float[] ts = { -30, -18, -7, 4, 15, 26 }; float[] lxs = { -1.2f, -0.35f, 0.4f, 1.15f }; float[] sp = { 7, 15, 26 }; int[] gaits = { 1, 2, 0 }; int k = 0;
         foreach (var t in ts) foreach (var lx in lxs) { var lpt = b.LanePoint(t); if (Mathf.Abs(lpt.x) > 52 || Mathf.Abs(lpt.z) > 52) continue; var hd = Quaternion.Euler(0, (k % 3 - 1) * 20f, 0) * (k % 2 == 0 ? dir : -dir); yield return BusCase(b, b.LanePoint(t), hd, lx, sp[k % 3], gaits[(k / 3) % 3]); k++; }
